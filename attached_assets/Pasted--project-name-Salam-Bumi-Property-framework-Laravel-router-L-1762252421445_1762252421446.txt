@@ -1,0 +1,222 @@
+{
+  "project": {
+    "name": "Salam Bumi Property",
+    "framework": "Laravel",
+    "router": "Laravel Native Router",
+    "database": "PostgreSQL",
+    "slogan": "Finding the Best Properties Will Be Easier and More Precise",
+    "logo_path": "/public/assets/logo.webp",
+    "property_types": [
+      "apartment",
+      "gudang",
+      "villa",
+      "hotel",
+      "kost",
+      "rumah",
+      "ruko",
+      "tanah",
+      "bangunan_komersial"
+    ],
+    "transaction_statuses": ["dijual", "disewakan"]
+  },
+  "url_structure": {
+    "pattern": "/{status}-{jenis_properti}-{kota}",
+    "example": [
+      "/dijual-rumah-jakarta",
+      "/disewakan-ruko-bandung"
+    ],
+    "slug_rules": {
+      "status": "dijual | disewakan",
+      "jenis_properti": "lowercase, use standardized types only",
+      "kota": "location slug (e.g., jakarta, bandung)"
+    }
+  },
+  "frontend": {
+    "navigation": ["Home", "About Us", "Portfolio Gallery", "Notaris", "FAQ"],
+    "dummy_content_required": true,
+    "search_and_filter": {
+      "search_bar": true,
+      "filters": {
+        "price_range": { "min": "number", "max": "number" },
+        "bedrooms": "number",
+        "bathrooms": "number",
+        "land_area": { "min": "number", "max": "number" },
+        "building_area": { "min": "number", "max": "number" },
+        "legal_status": ["SHM", "SHGB", "PPJB", "Girik", "Letter C"]
+      }
+    },
+    "banner": {
+      "title": "Property Pilihan",
+      "type": "auto-slider",
+      "source": "properties marked as 'Property Pilihan' in admin"
+    },
+    "newest_listings": {
+      "count": 4,
+      "desktop_layout": "4-column grid",
+      "mobile_layout": "2-column grid"
+    },
+    "property_card": {
+      "label_position": "top-left corner",
+      "max_labels": 1,
+      "label_priority": ["SOLD", "Hot Listing", "Premium", "Featured"],
+      "labels": {
+        "Premium": { "style": "blue badge", "text": "Premium" },
+        "Featured": { "style": "gold badge", "text": "Featured" },
+        "Hot Listing": {
+          "style": "red badge",
+          "text": "Hot",
+          "additional_ui": {
+            "drop_price_sticker": true,
+            "drop_price_indicator": "downward red arrow",
+            "show_old_price": true,
+            "strikethrough_old_price": true,
+            "display_new_price": true
+          }
+        },
+        "SOLD": {
+          "image_opacity": 0.4,
+          "overlay_banner": {
+            "type": "diagonal banner",
+            "direction": "bottom-left to top-right",
+            "text": "SOLD",
+            "color": "red",
+            "font_weight": "bold"
+          }
+        }
+      }
+    },
+    "property_detail_page": {
+      "image_gallery": {
+        "count": "4–5 images",
+        "type": "auto-sliding carousel"
+      },
+      "request_form": {
+        "fields": ["Nama (text)", "Nomor WhatsApp (text)", "Pesan (textarea)"],
+        "submit_to": "Laravel Controller Method handling inquiries/save"
+      },
+      "actions": {
+        "save_to_favorites": {
+          "storage": "localStorage"
+        },
+        "share_to_social": {
+          "uses_dynamic_og_tags": true,
+          "url_format": "/{status}-{jenis_properti}-{kota}?id={property_id}"
+        }
+      }
+    }
+  },
+  "admin_dashboard": {
+    "access_route": "/admin/dashboard",
+    "auth_method": "Laravel Authentication with role-based middleware (admin only)",
+    "public_registration": false,
+    "features": {
+      "property_management": {
+        "manual_input": true,
+        "csv_import": {
+          "delimiter": ",",
+          "required_headers": [
+            "kode_listing",
+            "jenis_properti",
+            "luas_tanah",
+            "luas_bangunan",
+            "kamar_tidur",
+            "kamar_mandi",
+            "legalitas",
+            "harga_properti",
+            "provinsi",
+            "kabupaten",
+            "image_url",
+            "image_url1",
+            "image_url2",
+            "image_url3",
+            "image_url4"
+          ],
+          "template_download": true
+        },
+        "bulk_edit": true,
+        "owner_contact_field": {
+          "visible_in_admin_only": true,
+          "not_shown_on_frontend": true
+        }
+      },
+      "property_labeling": {
+        "options": ["Premium", "Featured", "Hot Listing", "SOLD"],
+        "single_selection": true,
+        "hot_listing_extra_fields": {
+          "price_old": { "required": true, "type": "number" }
+        },
+        "property_pilihan_toggle": {
+          "description": "Mark property to appear in 'Property Pilihan' banner"
+        }
+      },
+      "analytics": {
+        "time_ranges": ["1D", "3D", "7D", "1M", "3M", "1Y"],
+        "actions": ["reset", "export as CSV"]
+      },
+      "third_party_integrations": {
+        "fields": [
+          "Google Analytics ID",
+          "Google Tag",
+          "Facebook Pixel",
+          "TikTok Pixel"
+        ],
+        "auto_inject_on_save": true
+      }
+    }
+  },
+  "database": {
+    "tables": {
+      "properties": {
+        "columns": {
+          "id": "UUID (primary key)",
+          "kode_listing": "text",
+          "jenis_properti": "text",
+          "luas_tanah": "numeric",
+          "luas_bangunan": "numeric",
+          "kamar_tidur": "integer",
+          "kamar_mandi": "integer",
+          "legalitas": "text",
+          "harga_properti": "numeric",
+          "provinsi": "text (slug)",
+          "kabupaten": "text (slug)",
+          "image_url": "text",
+          "image_url1": "text (nullable)",
+          "image_url2": "text (nullable)",
+          "image_url3": "text (nullable)",
+          "image_url4": "text (nullable)",
+          "is_premium": "boolean",
+          "is_featured": "boolean",
+          "is_hot": "boolean",
+          "is_sold": "boolean",
+          "price_old": "numeric (nullable)",
+          "is_property_pilihan": "boolean",
+          "owner_contact": "text (admin-only)",
+          "status": "text (dijual/disewakan)",
+          "created_at": "timestamp",
+          "updated_at": "timestamp"
+        },
+        "rls_policy": "public read, admin-only write"
+      },
+      "inquiries": {
+        "columns": ["id", "property_id", "name", "whatsapp", "message", "created_at"],
+        "rls_policy": "admin-only access"
+      }
+    }
+  },
+  "security_and_best_practices": {
+    "auth": "Use Laravel Authentication with role-based middleware for /admin/* routes",
+    "rls_enabled": true,
+    "env_vars": [
+      "DB_CONNECTION=pgsql",
+      "DB_HOST",
+      "DB_PORT",
+      "DB_DATABASE",
+      "DB_USERNAME",
+      "DB_PASSWORD"
+    ],
+    "image_handling": "Use Laravel's public storage and libraries like Intervention Image for image processing",
+    "favorites_storage": "localStorage (no user accounts)",
+    "meta_tags": "Dynamic Open Graph & Twitter Card per property page via Laravel Blade",
+    "performance": "Lazy load images, code splitting, responsive design using Laravel Mix"
+  }
+}
