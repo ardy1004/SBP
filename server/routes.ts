@@ -67,10 +67,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public Property Routes
   app.get("/api/properties/pilihan", async (req, res) => {
     try {
-      const properties = await storage.getPropertyPilihan();
-      res.json(properties);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch properties" });
+      console.error("Error fetching properties:", error);
+      res.status(500).json({ error: "Failed to fetch properties", details: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
@@ -112,7 +110,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const properties = await storage.getAllProperties(filters);
       res.json(properties);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch properties" });
+      console.error("Error fetching properties:", error);
+      res.status(500).json({ error: "Failed to fetch properties", details: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
