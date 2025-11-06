@@ -102,7 +102,7 @@ export default function HomePage() {
 
   // Fetch property pilihan
   const { data: propertyPilihan = [] } = useQuery<Property[]>({
-    queryKey: ['/api/properties/pilihan'],
+    queryKey: [`${import.meta.env.VITE_API_URL}/api/properties/pilihan`],
   });
 
   // Build query params from all filters
@@ -122,11 +122,10 @@ export default function HomePage() {
 
   // Fetch filtered properties from backend
   const queryString = buildQueryParams();
-  const queryUrl = queryString ? `/api/properties?${queryString}` : '/api/properties';
-  const { data: allProperties = [], isLoading } = useQuery<Property[]>({
-    queryKey: [queryUrl],
-  });
-
+    const queryUrl = queryString ? `/api/properties?${queryString}` : '/api/properties';
+    const { data: allProperties = [], isLoading } = useQuery<Property[]>({ 
+      queryKey: [`${import.meta.env.VITE_API_URL}${queryUrl}`],
+    });
   // Simple approach: just use slice directly in render
   const displayedProperties = allProperties.slice(0, visibleCount);
 
