@@ -19,6 +19,17 @@ app.use(express.urlencoded({ extended: false }));
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
+
+  // Log request body for debugging
+  if (path.startsWith("/api") && req.method !== 'GET') {
+    console.log(`=== REQUEST BODY DEBUG ===`);
+    console.log(`Path: ${req.method} ${path}`);
+    console.log(`Content-Type: ${req.headers['content-type']}`);
+    console.log(`Raw body:`, req.rawBody);
+    console.log(`Parsed body:`, req.body);
+    console.log(`=== END REQUEST BODY DEBUG ===`);
+  }
+
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
@@ -71,11 +82,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
 })();

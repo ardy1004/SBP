@@ -27,9 +27,13 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
     if (num >= 1000000000) {
-      return `Rp ${(num / 1000000000).toFixed(1)}M`;
+      const value = num / 1000000000;
+      // Jika bilangan bulat, tampilkan tanpa desimal, jika ada desimal tampilkan 1 digit
+      return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
     } else if (num >= 1000000) {
-      return `Rp ${(num / 1000000).toFixed(1)}jt`;
+      const value = num / 1000000;
+      // Jika bilangan bulat, tampilkan tanpa desimal, jika ada desimal tampilkan 1 digit
+      return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
     }
     return `Rp ${num.toLocaleString('id-ID')}`;
   };
@@ -51,7 +55,7 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
           Properti Pilihan
         </h2>
 
-        <div className="relative aspect-[16/9] rounded-xl overflow-hidden shadow-xl">
+        <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden shadow-xl">
           {/* Image */}
           <img
             src={currentProperty.imageUrl}
@@ -65,25 +69,82 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-          {/* Content Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
-            <h3 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-property-title">
-              {currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1)} - {currentProperty.kabupaten.charAt(0).toUpperCase() + currentProperty.kabupaten.slice(1)}
-            </h3>
-            <p className="text-xl md:text-2xl font-semibold mb-4" data-testid="text-property-price">
-              {formatPrice(currentProperty.hargaProperti)}
-            </p>
-            <div className="flex gap-4 text-sm md:text-base">
-              {currentProperty.kamarTidur && (
-                <span>{currentProperty.kamarTidur} Kamar Tidur</span>
+          {/* Property Label Badge - Top Left Corner */}
+          {(currentProperty.isPremium || currentProperty.isFeatured || currentProperty.isHot) && (
+            <div className="absolute top-2 left-2 z-10">
+              {currentProperty.isPremium && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black shadow-lg animate-pulse">
+                  👑 PREMIUM
+                </span>
               )}
-              {currentProperty.kamarMandi && (
-                <span>{currentProperty.kamarMandi} Kamar Mandi</span>
+              {currentProperty.isFeatured && !currentProperty.isPremium && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white shadow-lg">
+                  💎 FEATURED
+                </span>
               )}
-              {currentProperty.luasTanah && (
-                <span>{currentProperty.luasTanah}m² Tanah</span>
+              {currentProperty.isHot && !currentProperty.isPremium && !currentProperty.isFeatured && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-600 text-white shadow-lg">
+                  🔥 HOT
+                </span>
               )}
             </div>
+          )}
+
+          {/* Content Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 lg:p-6 text-white">
+
+            {/* Kode Listing (small size) */}
+            <p className="text-xs text-white/80 mb-0.5 font-mono" data-testid="text-kode-listing">
+              {currentProperty.kodeListing}
+            </p>
+
+            {/* Property Title - Responsive sizing */}
+            <h3 className="text-lg md:text-xl lg:text-2xl font-bold mb-0.5 md:mb-1 leading-tight" data-testid="text-property-title">
+              {currentProperty.judulProperti || `${currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1).replace(/_/g, ' ')} di ${currentProperty.kabupaten.charAt(0).toUpperCase() + currentProperty.kabupaten.slice(1)}`}
+            </h3>
+
+            {/* Location */}
+            <p className="text-xs md:text-sm text-white/90 mb-1 md:mb-1.5 leading-tight">
+              📍 {currentProperty.kabupaten.charAt(0).toUpperCase() + currentProperty.kabupaten.slice(1)}, {currentProperty.provinsi.charAt(0).toUpperCase() + currentProperty.provinsi.slice(1)}
+            </p>
+
+            {/* Price */}
+            <p className="text-base md:text-lg lg:text-xl font-semibold mb-1 md:mb-1.5" data-testid="text-property-price">
+              {formatPrice(currentProperty.hargaProperti)}
+            </p>
+
+            {/* Property Specifications - Compact Layout */}
+            <div className="flex flex-wrap gap-x-2 md:gap-x-3 gap-y-0.5 text-xs md:text-sm">
+              {currentProperty.luasTanah && (
+                <span className="font-medium">
+                  LT: <span className="font-normal">{currentProperty.luasTanah}m²</span>
+                </span>
+              )}
+              {currentProperty.luasBangunan && (
+                <span className="font-medium">
+                  LB: <span className="font-normal">{currentProperty.luasBangunan}m²</span>
+                </span>
+              )}
+              {currentProperty.kamarTidur && (
+                <span className="font-medium">
+                  K.Tidur: <span className="font-normal">{currentProperty.kamarTidur}</span>
+                </span>
+              )}
+              {currentProperty.kamarMandi && (
+                <span className="font-medium">
+                  K.Mandi: <span className="font-normal">{currentProperty.kamarMandi}</span>
+                </span>
+              )}
+            </div>
+
+            {/* Legalitas - if present */}
+            {currentProperty.legalitas && (
+              <div className="mt-0.5 md:mt-1 pt-0.5 md:pt-1 border-t border-white/20">
+                <p className="text-xs text-white/80">
+                  <span className="font-medium">Legalitas:</span> {currentProperty.legalitas}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Navigation Buttons */}

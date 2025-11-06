@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { ImageDropzone } from "@/components/ImageDropzone";
+import { MultiImageDropzone } from "@/components/MultiImageDropzone";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, LEGAL_STATUSES, type Property } from "@shared/schema";
 
 interface PropertyFormProps {
@@ -23,6 +25,7 @@ interface PropertyFormProps {
 export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
   const [formData, setFormData] = useState({
     kodeListing: "",
+    judulProperti: "",
     jenisProperti: "",
     luasTanah: "",
     luasBangunan: "",
@@ -49,37 +52,110 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     isPropertyPilihan: false,
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (property) {
+      setIsLoading(true);
+      console.log('Loading property data:', property);
+
+      // Reset form first
       setFormData({
-        kodeListing: property.kodeListing,
-        jenisProperti: property.jenisProperti,
-        luasTanah: property.luasTanah || "",
-        luasBangunan: property.luasBangunan || "",
-        kamarTidur: property.kamarTidur?.toString() || "",
-        kamarMandi: property.kamarMandi?.toString() || "",
-        legalitas: property.legalitas || "",
-        hargaProperti: property.hargaProperti,
-        provinsi: property.provinsi,
-        kabupaten: property.kabupaten,
-        alamatLengkap: property.alamatLengkap || "",
-        deskripsi: property.deskripsi || "",
-        imageUrl: property.imageUrl,
-        imageUrl1: property.imageUrl1 || "",
-        imageUrl2: property.imageUrl2 || "",
-        imageUrl3: property.imageUrl3 || "",
-        imageUrl4: property.imageUrl4 || "",
-        status: property.status,
-        ownerContact: property.ownerContact || "",
-        isPremium: property.isPremium,
-        isFeatured: property.isFeatured,
-        isHot: property.isHot,
-        isSold: property.isSold,
-        priceOld: property.priceOld || "",
-        isPropertyPilihan: property.isPropertyPilihan,
+        kodeListing: "",
+        judulProperti: "",
+        jenisProperti: "",
+        luasTanah: "",
+        luasBangunan: "",
+        kamarTidur: "",
+        kamarMandi: "",
+        legalitas: "",
+        hargaProperti: "",
+        provinsi: "",
+        kabupaten: "",
+        alamatLengkap: "",
+        deskripsi: "",
+        imageUrl: "",
+        imageUrl1: "",
+        imageUrl2: "",
+        imageUrl3: "",
+        imageUrl4: "",
+        status: "dijual",
+        ownerContact: "",
+        isPremium: false,
+        isFeatured: false,
+        isHot: false,
+        isSold: false,
+        priceOld: "",
+        isPropertyPilihan: false,
+      });
+
+      // Then set with property data
+      setTimeout(() => {
+        const newFormData = {
+          kodeListing: property.kodeListing || "",
+          judulProperti: property.judulProperti || "",
+          jenisProperti: property.jenisProperti || "",
+          luasTanah: property.luasTanah ? property.luasTanah.toString() : "",
+          luasBangunan: property.luasBangunan ? property.luasBangunan.toString() : "",
+          kamarTidur: property.kamarTidur ? property.kamarTidur.toString() : "",
+          kamarMandi: property.kamarMandi ? property.kamarMandi.toString() : "",
+          legalitas: property.legalitas || "",
+          hargaProperti: property.hargaProperti ? property.hargaProperti.toString() : "",
+          provinsi: property.provinsi || "",
+          kabupaten: property.kabupaten || "",
+          alamatLengkap: property.alamatLengkap || "",
+          deskripsi: property.deskripsi || "",
+          imageUrl: property.imageUrl || "",
+          imageUrl1: property.imageUrl1 || "",
+          imageUrl2: property.imageUrl2 || "",
+          imageUrl3: property.imageUrl3 || "",
+          imageUrl4: property.imageUrl4 || "",
+          status: property.status || "dijual",
+          ownerContact: property.ownerContact || "",
+          isPremium: Boolean(property.isPremium),
+          isFeatured: Boolean(property.isFeatured),
+          isHot: Boolean(property.isHot),
+          isSold: Boolean(property.isSold),
+          priceOld: property.priceOld ? property.priceOld.toString() : "",
+          isPropertyPilihan: Boolean(property.isPropertyPilihan),
+        };
+
+        console.log('Setting form data to:', newFormData);
+        setFormData(newFormData);
+        setIsLoading(false);
+      }, 50);
+    } else {
+      // Reset form for new property
+      setFormData({
+        kodeListing: "",
+        judulProperti: "",
+        jenisProperti: "",
+        luasTanah: "",
+        luasBangunan: "",
+        kamarTidur: "",
+        kamarMandi: "",
+        legalitas: "",
+        hargaProperti: "",
+        provinsi: "",
+        kabupaten: "",
+        alamatLengkap: "",
+        deskripsi: "",
+        imageUrl: "",
+        imageUrl1: "",
+        imageUrl2: "",
+        imageUrl3: "",
+        imageUrl4: "",
+        status: "dijual",
+        ownerContact: "",
+        isPremium: false,
+        isFeatured: false,
+        isHot: false,
+        isSold: false,
+        priceOld: "",
+        isPropertyPilihan: false,
       });
     }
   }, [property]);
@@ -118,6 +194,38 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     }
   };
 
+  const handleImageUploadSuccess = (fieldName: keyof typeof formData, url: string) => {
+    setFormData(prev => ({ ...prev, [fieldName]: url }));
+  };
+
+  const handleImagesChange = useCallback((imageUrls: string[]) => {
+    // Only update if all URLs are valid (no blob URLs) or empty array
+    const hasBlobUrls = imageUrls.some(url => url && url.startsWith('blob:'));
+    const hasValidUrls = imageUrls.some(url => url && !url.startsWith('blob:'));
+
+    if (!hasBlobUrls && (hasValidUrls || imageUrls.length === 0)) {
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: imageUrls[0] || '',
+        imageUrl1: imageUrls[1] || '',
+        imageUrl2: imageUrls[2] || '',
+        imageUrl3: imageUrls[3] || '',
+        imageUrl4: imageUrls[4] || '',
+      }));
+    }
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Memuat data properti...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -129,6 +237,16 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             onChange={(e) => setFormData({ ...formData, kodeListing: e.target.value })}
             required
             data-testid="input-kode-listing"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="judulProperti">Judul Properti</Label>
+          <Input
+            id="judulProperti"
+            value={formData.judulProperti}
+            onChange={(e) => setFormData({ ...formData, judulProperti: e.target.value })}
+            data-testid="input-judul-properti"
           />
         </div>
 
@@ -168,7 +286,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           <Label htmlFor="hargaProperti">Harga Properti *</Label>
           <Input
             id="hargaProperti"
-            type="number"
+            type="text"
             value={formData.hargaProperti}
             onChange={(e) => setFormData({ ...formData, hargaProperti: e.target.value })}
             required
@@ -180,7 +298,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           <Label htmlFor="luasTanah">Luas Tanah (m²)</Label>
           <Input
             id="luasTanah"
-            type="number"
+            type="text"
             value={formData.luasTanah}
             onChange={(e) => setFormData({ ...formData, luasTanah: e.target.value })}
             data-testid="input-luas-tanah"
@@ -191,7 +309,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           <Label htmlFor="luasBangunan">Luas Bangunan (m²)</Label>
           <Input
             id="luasBangunan"
-            type="number"
+            type="text"
             value={formData.luasBangunan}
             onChange={(e) => setFormData({ ...formData, luasBangunan: e.target.value })}
             data-testid="input-luas-bangunan"
@@ -202,7 +320,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           <Label htmlFor="kamarTidur">Kamar Tidur</Label>
           <Input
             id="kamarTidur"
-            type="number"
+            type="text"
             value={formData.kamarTidur}
             onChange={(e) => setFormData({ ...formData, kamarTidur: e.target.value })}
             data-testid="input-kamar-tidur"
@@ -213,7 +331,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           <Label htmlFor="kamarMandi">Kamar Mandi</Label>
           <Input
             id="kamarMandi"
-            type="number"
+            type="text"
             value={formData.kamarMandi}
             onChange={(e) => setFormData({ ...formData, kamarMandi: e.target.value })}
             data-testid="input-kamar-mandi"
@@ -289,39 +407,25 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         />
       </div>
 
-      <div className="space-y-3">
-        <Label>Gambar (URL)</Label>
-        <Input
-          placeholder="Image URL (Utama) *"
-          value={formData.imageUrl}
-          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-          required
-          data-testid="input-image-url"
-        />
-        <Input
-          placeholder="Image URL 1"
-          value={formData.imageUrl1}
-          onChange={(e) => setFormData({ ...formData, imageUrl1: e.target.value })}
-          data-testid="input-image-url1"
-        />
-        <Input
-          placeholder="Image URL 2"
-          value={formData.imageUrl2}
-          onChange={(e) => setFormData({ ...formData, imageUrl2: e.target.value })}
-          data-testid="input-image-url2"
-        />
-        <Input
-          placeholder="Image URL 3"
-          value={formData.imageUrl3}
-          onChange={(e) => setFormData({ ...formData, imageUrl3: e.target.value })}
-          data-testid="input-image-url3"
-        />
-        <Input
-          placeholder="Image URL 4"
-          value={formData.imageUrl4}
-          onChange={(e) => setFormData({ ...formData, imageUrl4: e.target.value })}
-          data-testid="input-image-url4"
-        />
+      <div className="space-y-4">
+        <div>
+          <Label>Gambar Properti *</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Gambar akan dikonversi otomatis ke format .webp. Gambar pertama akan menjadi gambar utama.
+            Seret gambar untuk mengatur urutan dan menentukan gambar utama.
+          </p>
+          <MultiImageDropzone
+            onImagesChange={handleImagesChange}
+            initialImages={[
+              formData.imageUrl,
+              formData.imageUrl1,
+              formData.imageUrl2,
+              formData.imageUrl3,
+              formData.imageUrl4,
+            ].filter(url => url && url.trim())}
+            maxImages={5}
+          />
+        </div>
       </div>
 
       <div className="space-y-3 border-t pt-4">
@@ -359,7 +463,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
               <Label htmlFor="priceOld">Harga Lama (untuk Hot Listing)</Label>
               <Input
                 id="priceOld"
-                type="number"
+                type="text"
                 value={formData.priceOld}
                 onChange={(e) => setFormData({ ...formData, priceOld: e.target.value })}
                 data-testid="input-price-old"

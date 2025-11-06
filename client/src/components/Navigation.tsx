@@ -13,6 +13,7 @@ export function Navigation() {
     { path: "/portfolio", label: "Portfolio Gallery" },
     { path: "/notaris", label: "Notaris" },
     { path: "/faq", label: "FAQ" },
+    { path: "/contact", label: "Contact" },
   ];
 
   return (
@@ -54,9 +55,7 @@ export function Navigation() {
                 <Heart className="h-5 w-5" />
               </Button>
             </Link>
-            <Link href="/admin/login" data-testid="link-admin">
-              <Button variant="outline">Admin</Button>
-            </Link>
+            {/* Admin button hidden for security - access via /admin/login directly */}
           </div>
 
           {/* Mobile Menu Button */}
@@ -105,9 +104,7 @@ export function Navigation() {
                   Favorites
                 </Button>
               </Link>
-              <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)} data-testid="link-mobile-admin">
-                <Button variant="outline" className="w-full">Admin</Button>
-              </Link>
+              {/* Admin button hidden for security - access via /admin/login directly */}
             </div>
           </div>
         </div>

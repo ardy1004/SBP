@@ -14,12 +14,17 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<any> {
   const token = getAuthToken();
-  
+
   const headers: HeadersInit = data instanceof FormData ? {} : (data ? { "Content-Type": "application/json" } : {});
-  
+
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
+
+  console.log('=== API REQUEST ===');
+  console.log('Method:', method);
+  console.log('URL:', url);
+  console.log('Data:', data);
 
   const res = await fetch(url, {
     method,
@@ -28,8 +33,45 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  console.log('Response status:', res.status);
+  console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+
   await throwIfResNotOk(res);
-  return res.json();
+
+  // Handle empty response body
+  const contentLength = res.headers.get('content-length');
+  const contentType = res.headers.get('content-type');
+
+  console.log('Content-Length:', contentLength);
+  console.log('Content-Type:', contentType);
+
+  // For PUT requests that return empty body, return success indicator
+  if (method === 'PUT' && (!contentLength || contentLength === '0')) {
+    console.log('PUT request with empty response body - assuming success');
+    return { success: true };
+  }
+
+  if (!contentLength || contentLength === '0' || !contentType?.includes('application/json')) {
+    console.log('Empty or non-JSON response, returning empty object');
+    return {};
+  }
+
+  const responseText = await res.text();
+  console.log('Response text:', responseText);
+
+  if (!responseText.trim()) {
+    console.log('Empty response text, returning empty object');
+    return {};
+  }
+
+  try {
+    const jsonResponse = JSON.parse(responseText);
+    console.log('Parsed JSON response:', jsonResponse);
+    return jsonResponse;
+  } catch (error) {
+    console.error('Failed to parse JSON:', error);
+    throw new Error(`Invalid JSON response: ${responseText}`);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

@@ -108,22 +108,26 @@ export default function PropertyDetailPage() {
     return `Rp ${num.toLocaleString('id-ID')}`;
   };
 
+  const getTitle = () => {
+    return property.judulProperti || `${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')} di ${property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)}`;
+  };
+
   return (
     <>
       <Helmet>
-        <title>{`${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1)} ${property.status.charAt(0).toUpperCase() + property.status.slice(1)} di ${property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)} - Salam Bumi Property`}</title>
+        <title>{`${getTitle()} - Salam Bumi Property`}</title>
         <meta name="description" content={property.deskripsi || `${property.jenisProperti} ${property.status} dengan ${property.kamarTidur} kamar tidur, ${property.kamarMandi} kamar mandi di ${property.kabupaten}, ${property.provinsi}. Harga: ${formatPrice(property.hargaProperti)}`} />
-        
+
         {/* Open Graph */}
-        <meta property="og:title" content={`${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1)} ${property.status.charAt(0).toUpperCase() + property.status.slice(1)} - ${property.kabupaten}`} />
+        <meta property="og:title" content={getTitle()} />
         <meta property="og:description" content={property.deskripsi || `Properti ${property.status} di ${property.kabupaten}`} />
         <meta property="og:image" content={property.imageUrl} />
         <meta property="og:url" content={window.location.href} />
         <meta property="og:type" content="website" />
-        
+
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1)} ${property.status.charAt(0).toUpperCase() + property.status.slice(1)}`} />
+        <meta name="twitter:title" content={getTitle()} />
         <meta name="twitter:description" content={property.deskripsi || `Properti ${property.status} di ${property.kabupaten}`} />
         <meta name="twitter:image" content={property.imageUrl} />
       </Helmet>
@@ -150,7 +154,7 @@ export default function PropertyDetailPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-property-title">
-                      {property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')} - {property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)}
+                      {getTitle()}
                     </h1>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
@@ -256,7 +260,7 @@ export default function PropertyDetailPage() {
 
               {/* Property Labels */}
               <div className="flex flex-wrap gap-2">
-                {property.isPremium && <Badge variant="blue">Premium</Badge>}
+                {property.isPremium && <Badge variant="secondary">Premium</Badge>}
                 {property.isFeatured && <Badge className="bg-amber-500 text-white">Featured</Badge>}
                 {property.isHot && <Badge variant="destructive">Hot Listing</Badge>}
                 {property.isSold && <Badge variant="destructive">SOLD</Badge>}

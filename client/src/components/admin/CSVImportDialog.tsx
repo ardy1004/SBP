@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,28 +23,27 @@ export function CSVImportDialog({ onSuccess }: { onSuccess: () => void }) {
   const downloadTemplate = () => {
     const headers = [
       "kode_listing",
+      "judul_properti",
+      "deskripsi",
       "jenis_properti",
       "luas_tanah",
       "luas_bangunan",
       "kamar_tidur",
       "kamar_mandi",
       "legalitas",
-      "harga_properti",
+      "harga_property",
       "provinsi",
       "kabupaten",
-      "alamat_lengkap",
-      "deskripsi",
+      "created_at",
       "image_url",
       "image_url1",
       "image_url2",
       "image_url3",
       "image_url4",
-      "status",
-      "owner_contact",
     ];
 
     const csvContent = headers.join(",") + "\n" +
-      "PROP001,rumah,100,80,3,2,SHM,1500000000,jakarta,jakarta-selatan,Jl. Example No. 1,Rumah minimalis modern,https://example.com/img1.jpg,https://example.com/img2.jpg,,,,,dijual,081234567890";
+      "PROP001,Rumah Minimalis Modern Jakarta Selatan,Rumah minimalis modern dengan lokasi strategis,rumah,100,80,3,2,SHM,1500000000,jakarta,jakarta-selatan,2024-01-01,https://example.com/img1.jpg,https://example.com/img2.jpg,,,,,";
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -104,6 +104,9 @@ export function CSVImportDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Import Properti dari CSV</DialogTitle>
+          <DialogDescription>
+            Import properti dalam jumlah besar menggunakan file CSV
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

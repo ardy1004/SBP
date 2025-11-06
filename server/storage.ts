@@ -88,6 +88,22 @@ export class DatabaseStorage implements IStorage {
           )
         );
       }
+      if (filters.keyword && filters.keyword.trim()) {
+        const keyword = filters.keyword.trim().toLowerCase();
+        conditions.push(
+          or(
+            sql`${properties.kodeListing} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.judulProperti} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.deskripsi} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.jenisProperti} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.kabupaten} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.provinsi} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.alamatLengkap} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.status} ILIKE ${`%${keyword}%`}`,
+            sql`${properties.legalitas} ILIKE ${`%${keyword}%`}`
+          )
+        );
+      }
       if (filters.minPrice) {
         conditions.push(gte(properties.hargaProperti, filters.minPrice.toString()));
       }
@@ -143,12 +159,58 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProperty(id: string, updateData: Partial<InsertProperty>): Promise<Property> {
-    const [property] = await db
+    console.log('=== STORAGE UPDATE PROPERTY ===');
+    console.log('ID:', id);
+    console.log('Update data:', updateData);
+
+    // First check if property exists
+    const existingProperty = await this.getPropertyById(id);
+    console.log('Existing property before update:', {
+      id: existingProperty?.id,
+      kodeListing: existingProperty?.kodeListing,
+      jenisProperti: existingProperty?.jenisProperti
+    });
+
+    if (!existingProperty) {
+      throw new Error(`Property with ID ${id} not found`);
+    }
+
+    // Perform the update
+    const result = await db
       .update(properties)
       .set({ ...updateData, updatedAt: new Date() })
-      .where(eq(properties.id, id))
-      .returning();
-    return property;
+      .where(eq(properties.id, id));
+
+    console.log('Update result:', result);
+
+    // Fetch the updated property
+    const updatedProperty = await this.getPropertyById(id);
+    console.log('Updated property after update:', {
+      id: updatedProperty?.id,
+      kodeListing: updatedProperty?.kodeListing,
+      jenisProperti: updatedProperty?.jenisProperti
+    });
+
+    if (!updatedProperty) {
+      throw new Error(`Failed to fetch updated property with ID: ${id}`);
+    }
+
+    // Verify the update was applied
+    const hasChanged = Object.keys(updateData).some(key => {
+      const oldValue = existingProperty[key as keyof Property];
+      const newValue = updatedProperty[key as keyof Property];
+      const changed = oldValue !== newValue;
+      if (changed) {
+        console.log(`Field ${key} changed: ${oldValue} -> ${newValue}`);
+      }
+      return changed;
+    });
+
+    if (!hasChanged) {
+      console.log('WARNING: No fields were actually updated!');
+    }
+
+    return updatedProperty;
   }
 
   async deleteProperty(id: string): Promise<void> {

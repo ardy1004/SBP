@@ -54,6 +54,11 @@ export function Footer() {
                   <span className="text-sm text-muted-foreground hover:text-foreground hover-elevate inline-block px-2 py-1 -ml-2 rounded-md">FAQ</span>
                 </Link>
               </li>
+              <li>
+                <Link href="/contact" data-testid="link-footer-contact">
+                  <span className="text-sm text-muted-foreground hover:text-foreground hover-elevate inline-block px-2 py-1 -ml-2 rounded-md">Contact</span>
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -13,6 +13,7 @@ import PortfolioPage from "@/pages/PortfolioPage";
 import NotarisPage from "@/pages/NotarisPage";
 import FAQPage from "@/pages/FAQPage";
 import FavoritesPage from "@/pages/FavoritesPage";
+import Contact from "@/pages/Contact";
 import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminPropertiesPage from "@/pages/admin/AdminPropertiesPage";
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/notaris" component={NotarisPage} />
       <Route path="/faq" component={FAQPage} />
       <Route path="/favorites" component={FavoritesPage} />
+      <Route path="/contact" component={Contact} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLoginPage} />

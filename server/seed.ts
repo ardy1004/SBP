@@ -6,16 +6,16 @@ async function seed() {
 
   try {
     // Check if admin user already exists
-    const existingAdmin = await storage.getAdminUserByUsername("admin");
+    const existingAdmin = await storage.getAdminUserByUsername("admin@sbp.com");
 
     if (!existingAdmin) {
       // Create default admin user
       const hashedPassword = await bcrypt.hash("admin123", 10);
       await storage.createAdminUser({
-        username: "admin",
+        username: "admin@sbp.com",
         password: hashedPassword,
       });
-      console.log("✓ Created default admin user (username: admin, password: admin123)");
+      console.log("✓ Created default admin user (username: admin@sbp.com, password: admin123)");
     } else {
       console.log("✓ Admin user already exists");
     }
@@ -29,6 +29,8 @@ async function seed() {
       const sampleProperties = [
         {
           kodeListing: "PROP001",
+          judulProperti: "Rumah Minimalis Modern Jakarta Selatan",
+          deskripsi: "Rumah minimalis modern dengan lokasi strategis di Jakarta Selatan. Dekat dengan akses tol dan pusat perbelanjaan.",
           jenisProperti: "rumah",
           luasTanah: "100",
           luasBangunan: "80",
@@ -38,8 +40,7 @@ async function seed() {
           hargaProperti: "1500000000",
           provinsi: "jakarta",
           kabupaten: "jakarta-selatan",
-          alamatLengkap: "Jl. Raya Kebagusan No. 123",
-          deskripsi: "Rumah minimalis modern dengan lokasi strategis di Jakarta Selatan. Dekat dengan akses tol dan pusat perbelanjaan.",
+          alamatLengkap: "Jl. Raya Kebagusan No. 123, Pakuncen, Jakarta Selatan",
           imageUrl: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&h=600&fit=crop",
           imageUrl1: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop",
           imageUrl2: "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=600&fit=crop",
@@ -55,7 +56,37 @@ async function seed() {
           isPropertyPilihan: true,
         },
         {
+          kodeListing: "PROP006",
+          judulProperti: "Villa Mewah Pemandangan Laut Bali",
+          deskripsi: "Villa mewah dengan pemandangan laut yang eksotis. Cocok untuk investasi atau hunian pribadi. Lokasi dekat dengan pantai Seminyak.",
+          jenisProperti: "villa",
+          luasTanah: "300",
+          luasBangunan: "200",
+          kamarTidur: 4,
+          kamarMandi: 3,
+          legalitas: "SHM",
+          hargaProperti: "2500000000",
+          provinsi: "bali",
+          kabupaten: "badung",
+          alamatLengkap: "Jl. Sunset Road, Badung, Bali",
+          imageUrl: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop",
+          imageUrl1: "https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800&h=600&fit=crop",
+          imageUrl2: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop",
+          imageUrl3: null,
+          imageUrl4: null,
+          status: "dijual",
+          ownerContact: "+62 821 5555 6666",
+          isPremium: false,
+          isFeatured: false,
+          isHot: true,
+          isSold: false,
+          priceOld: "2800000000",
+          isPropertyPilihan: true,
+        },
+        {
           kodeListing: "PROP002",
+          judulProperti: "Apartemen Sky Tower Jakarta Pusat",
+          deskripsi: "Apartemen modern dengan view kota yang menakjubkan. Dilengkapi dengan fasilitas lengkap seperti kolam renang, gym, dan keamanan 24 jam.",
           jenisProperti: "apartment",
           luasTanah: null,
           luasBangunan: "45",
@@ -66,7 +97,6 @@ async function seed() {
           provinsi: "jakarta",
           kabupaten: "jakarta-pusat",
           alamatLengkap: "Apartemen Sky Tower, Jakarta Pusat",
-          deskripsi: "Apartemen modern dengan view kota yang menakjubkan. Dilengkapi dengan fasilitas lengkap seperti kolam renang, gym, dan keamanan 24 jam.",
           imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop",
           imageUrl1: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop",
           imageUrl2: null,
@@ -83,6 +113,8 @@ async function seed() {
         },
         {
           kodeListing: "PROP003",
+          judulProperti: "Villa Mewah Pemandangan Laut Bali",
+          deskripsi: "Villa mewah dengan pemandangan laut yang eksotis. Cocok untuk investasi atau hunian pribadi. Lokasi dekat dengan pantai Seminyak.",
           jenisProperti: "villa",
           luasTanah: "300",
           luasBangunan: "200",
@@ -93,7 +125,6 @@ async function seed() {
           provinsi: "bali",
           kabupaten: "badung",
           alamatLengkap: "Jl. Sunset Road, Badung, Bali",
-          deskripsi: "Villa mewah dengan pemandangan laut yang eksotis. Cocok untuk investasi atau hunian pribadi. Lokasi dekat dengan pantai Seminyak.",
           imageUrl: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop",
           imageUrl1: "https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800&h=600&fit=crop",
           imageUrl2: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop",
@@ -110,6 +141,8 @@ async function seed() {
         },
         {
           kodeListing: "PROP004",
+          judulProperti: "Ruko Strategis Puri Indah Jakarta Barat",
+          deskripsi: "Ruko strategis di kawasan komersial Puri Indah. Cocok untuk berbagai jenis usaha dengan lokasi yang ramai dan akses mudah.",
           jenisProperti: "ruko",
           luasTanah: "80",
           luasBangunan: "150",
@@ -120,7 +153,6 @@ async function seed() {
           provinsi: "jakarta",
           kabupaten: "jakarta-barat",
           alamatLengkap: "Jl. Puri Indah Raya, Jakarta Barat",
-          deskripsi: "Ruko strategis di kawasan komersial Puri Indah. Cocok untuk berbagai jenis usaha dengan lokasi yang ramai dan akses mudah.",
           imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop",
           imageUrl1: null,
           imageUrl2: null,
@@ -137,6 +169,8 @@ async function seed() {
         },
         {
           kodeListing: "PROP005",
+          judulProperti: "Kost Eksklusif Jakarta Timur",
+          deskripsi: "Kost eksklusif dengan 10 kamar yang sudah terisi penuh. ROI menarik untuk investasi. Lokasi dekat dengan kampus dan perkantoran.",
           jenisProperti: "kost",
           luasTanah: "150",
           luasBangunan: "200",
@@ -147,7 +181,6 @@ async function seed() {
           provinsi: "jakarta",
           kabupaten: "jakarta-timur",
           alamatLengkap: "Jl. Kalimalang, Jakarta Timur",
-          deskripsi: "Kost eksklusif dengan 10 kamar yang sudah terisi penuh. ROI menarik untuk investasi. Lokasi dekat dengan kampus dan perkantoran.",
           imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop",
           imageUrl1: null,
           imageUrl2: null,
@@ -175,7 +208,7 @@ async function seed() {
 
     console.log("\nSeeding completed successfully!");
     console.log("\nAdmin Credentials:");
-    console.log("Username: admin");
+    console.log("Username: admin@sbp.com");
     console.log("Password: admin123");
 
     process.exit(0);
