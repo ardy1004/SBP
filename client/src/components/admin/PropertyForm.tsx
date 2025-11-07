@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { MultiImageDropzone } from "@/components/MultiImageDropzone";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, LEGAL_STATUSES, type Property } from "@shared/schema";
@@ -175,10 +175,19 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
       };
 
       if (property) {
-        await apiRequest('PUT', `/api/admin/properties/${property.id}`, payload);
+        const { error } = await supabase
+          .from('properties')
+          .update(payload)
+          .eq('id', property.id);
+
+        if (error) throw error;
         toast({ title: "Properti berhasil diupdate" });
       } else {
-        await apiRequest('POST', '/api/admin/properties', payload);
+        const { error } = await supabase
+          .from('properties')
+          .insert(payload);
+
+        if (error) throw error;
         toast({ title: "Properti berhasil ditambahkan" });
       }
 

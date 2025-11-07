@@ -7,7 +7,8 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { CSVImportDialog } from "@/components/admin/CSVImportDialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
+import { queryClient } from "@/lib/queryClient";
 import type { Property } from "@shared/schema";
 import {
   Dialog,
@@ -48,7 +49,20 @@ export default function AdminPropertiesPage() {
   const { toast } = useToast();
 
   const { data: properties = [], isLoading } = useQuery<Property[]>({
-    queryKey: ['/api/admin/properties'],
+    queryKey: ['admin-properties'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching properties:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
   });
 
   // Filter and search properties
@@ -66,17 +80,39 @@ export default function AdminPropertiesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest('DELETE', `/api/admin/properties/${id}`, {}),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/properties'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       toast({ title: "Properti berhasil dihapus" });
+    },
+    onError: (error: any) => {
+      console.error('Delete error:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Gagal menghapus properti",
+        variant: "destructive",
+      });
     },
   });
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: string[]) => apiRequest('DELETE', '/api/admin/properties', { ids }),
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+    },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/properties'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       setSelectedIds([]);
       toast({ title: `${variables.length} properti berhasil dihapus` });
     },
@@ -91,8 +127,16 @@ export default function AdminPropertiesPage() {
   });
 
   const bulkUpdateMutation = useMutation({
-    mutationFn: ({ ids, updates }: { ids: string[], updates: any }) =>
-      apiRequest('PUT', '/api/admin/properties/bulk', { ids, updates }),
+    mutationFn: async ({ ids, updates }: { ids: string[], updates: any }) => {
+      const { data, error } = await supabase
+        .from('properties')
+        .update(updates)
+        .in('id', ids)
+        .select();
+
+      if (error) throw error;
+      return { updated: data?.length || 0, properties: data };
+    },
     onSuccess: async (data, variables) => {
       console.log('=== BULK UPDATE SUCCESS ===');
       console.log('Response data:', data);
@@ -102,15 +146,15 @@ export default function AdminPropertiesPage() {
 
       // Force multiple invalidations and refetches to ensure UI updates
       console.log('Invalidating queries...');
-      await queryClient.invalidateQueries({ queryKey: ['/api/admin/properties'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
 
       console.log('Refetching queries...');
-      await queryClient.refetchQueries({ queryKey: ['/api/admin/properties'] });
+      await queryClient.refetchQueries({ queryKey: ['admin-properties'] });
 
       // Additional refetch after a short delay
       setTimeout(async () => {
         console.log('Additional refetch to ensure UI updates...');
-        await queryClient.refetchQueries({ queryKey: ['/api/admin/properties'] });
+        await queryClient.refetchQueries({ queryKey: ['admin-properties'] });
       }, 100);
 
       setSelectedIds([]);
@@ -249,7 +293,7 @@ export default function AdminPropertiesPage() {
               </div>
 
               <div className="flex gap-2">
-                <CSVImportDialog onSuccess={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/properties'] })} />
+                <CSVImportDialog onSuccess={() => queryClient.invalidateQueries({ queryKey: ['admin-properties'] })} />
                 <Button
                   variant={isBulkMode ? "secondary" : "outline"}
                   onClick={() => {
@@ -630,7 +674,7 @@ export default function AdminPropertiesPage() {
             property={selectedProperty}
             onSuccess={() => {
               setIsFormOpen(false);
-              queryClient.invalidateQueries({ queryKey: ['/api/admin/properties'] });
+              queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
             }}
           />
         </DialogContent>
