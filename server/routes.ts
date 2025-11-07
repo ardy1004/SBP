@@ -98,6 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties", async (req, res) => {
     try {
+      // Parse and validate all filter parameters
       const filters = {
         status: req.query.status as string,
         type: req.query.type as string,
@@ -106,11 +107,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
         bedrooms: req.query.bedrooms ? parseInt(req.query.bedrooms as string) : undefined,
         bathrooms: req.query.bathrooms ? parseInt(req.query.bathrooms as string) : undefined,
+        minLandArea: req.query.minLandArea ? parseFloat(req.query.minLandArea as string) : undefined,
+        maxLandArea: req.query.maxLandArea ? parseFloat(req.query.maxLandArea as string) : undefined,
+        minBuildingArea: req.query.minBuildingArea ? parseFloat(req.query.minBuildingArea as string) : undefined,
+        maxBuildingArea: req.query.maxBuildingArea ? parseFloat(req.query.maxBuildingArea as string) : undefined,
         legalStatus: req.query.legalStatus as string,
         keyword: req.query.keyword as string,
       };
 
+      // Validate numeric filters
+      if (filters.minPrice !== undefined && isNaN(filters.minPrice)) {
+        return res.status(400).json({ error: "Invalid minPrice parameter" });
+      }
+      if (filters.maxPrice !== undefined && isNaN(filters.maxPrice)) {
+        return res.status(400).json({ error: "Invalid maxPrice parameter" });
+      }
+      if (filters.bedrooms !== undefined && isNaN(filters.bedrooms)) {
+        return res.status(400).json({ error: "Invalid bedrooms parameter" });
+      }
+      if (filters.bathrooms !== undefined && isNaN(filters.bathrooms)) {
+        return res.status(400).json({ error: "Invalid bathrooms parameter" });
+      }
+      if (filters.minLandArea !== undefined && isNaN(filters.minLandArea)) {
+        return res.status(400).json({ error: "Invalid minLandArea parameter" });
+      }
+      if (filters.maxLandArea !== undefined && isNaN(filters.maxLandArea)) {
+        return res.status(400).json({ error: "Invalid maxLandArea parameter" });
+      }
+      if (filters.minBuildingArea !== undefined && isNaN(filters.minBuildingArea)) {
+        return res.status(400).json({ error: "Invalid minBuildingArea parameter" });
+      }
+      if (filters.maxBuildingArea !== undefined && isNaN(filters.maxBuildingArea)) {
+        return res.status(400).json({ error: "Invalid maxBuildingArea parameter" });
+      }
+
+      console.log('=== API PROPERTIES REQUEST ===');
+      console.log('Filters:', filters);
+
       const properties = await storage.getAllProperties(filters);
+
+      console.log(`Found ${properties.length} properties matching filters`);
+
       res.json(properties);
     } catch (error) {
       console.error("Error fetching properties:", error);

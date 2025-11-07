@@ -115,6 +115,10 @@ export default function HomePage() {
     if (advancedFilters.maxPrice) params.set('maxPrice', advancedFilters.maxPrice.toString());
     if (advancedFilters.bedrooms) params.set('bedrooms', advancedFilters.bedrooms.toString());
     if (advancedFilters.bathrooms) params.set('bathrooms', advancedFilters.bathrooms.toString());
+    if (advancedFilters.minLandArea) params.set('minLandArea', advancedFilters.minLandArea.toString());
+    if (advancedFilters.maxLandArea) params.set('maxLandArea', advancedFilters.maxLandArea.toString());
+    if (advancedFilters.minBuildingArea) params.set('minBuildingArea', advancedFilters.minBuildingArea.toString());
+    if (advancedFilters.maxBuildingArea) params.set('maxBuildingArea', advancedFilters.maxBuildingArea.toString());
     if (advancedFilters.legalStatus) params.set('legalStatus', advancedFilters.legalStatus);
     if (keyword.trim()) params.set('keyword', keyword.trim());
     return params.toString();

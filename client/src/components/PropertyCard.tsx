@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown } from "lucide-react";
+import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown, Eye, Calendar } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,76 +16,124 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
     const num = parseFloat(price);
     if (num >= 1000000000) {
       const value = num / 1000000000;
-      // Jika bilangan bulat, tampilkan tanpa desimal, jika ada desimal tampilkan 1 digit
       return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
     } else if (num >= 1000000) {
       const value = num / 1000000;
-      // Jika bilangan bulat, tampilkan tanpa desimal, jika ada desimal tampilkan 1 digit
       return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
     }
     return `Rp ${num.toLocaleString('id-ID')}`;
   };
 
-  // Determine label based on priority: SOLD > Hot Listing > Premium > Featured
+  const getPropertyTypeLabel = (type: string) => {
+    const typeMap: Record<string, string> = {
+      rumah: '🏠 Rumah',
+      kost: '🏢 Kost',
+      apartment: '🏙️ Apartment',
+      villa: '🏖️ Villa',
+      gudang: '📦 Gudang',
+      ruko: '🏪 Ruko',
+      tanah: '🌱 Tanah',
+      bangunan_komersial: '🏢 Komersial',
+      hotel: '🏨 Hotel'
+    };
+    return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+  };
+
+  const getStatusColor = (status: string) => {
+    return status === 'dijual' ? 'bg-emerald-500' : 'bg-blue-500';
+  };
+
   const getLabel = () => {
-    if (property.isSold) return { type: 'sold', text: 'SOLD', color: 'destructive' };
-    if (property.isHot) return { type: 'hot', text: '🔥 HOT', color: 'destructive' };
-    if (property.isPremium) return { type: 'premium', text: '👑 PREMIUM', color: 'premium' };
-    if (property.isFeatured) return { type: 'featured', text: '💎 FEATURED', color: 'featured' };
+    if (property.isHot) return { type: 'hot', text: 'HOT LISTING', color: 'bg-orange-500', icon: '🔥' };
+    if (property.isPremium) return { type: 'premium', text: 'PREMIUM', color: 'bg-purple-500', icon: '👑' };
+    if (property.isFeatured) return { type: 'featured', text: 'FEATURED', color: 'bg-cyan-500', icon: '💎' };
     return null;
   };
 
   const getTitle = () => {
-    return property.judulProperti || `${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')} di ${property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)}`;
+    return property.judulProperti || `${getPropertyTypeLabel(property.jenisProperti)} di ${property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)}`;
   };
 
   const label = getLabel();
   const slug = `/${property.status}-${property.jenisProperti}-${property.kabupaten}?id=${property.id}`;
 
   return (
-    <Card 
-      className={`overflow-hidden hover-elevate transition-all duration-200 ${
-        property.isSold ? 'opacity-90' : ''
-      }`}
+    <Card
+      className={`
+        group relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-xl
+        transition-all duration-300 ease-out hover:-translate-y-1 hover:border-gray-300
+        rounded-lg
+        ${property.isSold ? 'opacity-75' : 'hover:shadow-2xl'}
+      `}
       data-testid={`card-property-${property.id}`}
     >
-      <Link href={slug}>
-        <div className="relative aspect-[5/4] md:aspect-[4/3] overflow-hidden bg-muted">
+      {/* Main Link Area */}
+      <Link href={slug} className="block">
+        {/* Image Container */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
           <img
-            src={property.imageUrl}
+            src={property.imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop'}
             alt={getTitle()}
-            className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${
-              property.isSold ? 'opacity-40' : ''
-            }`}
+            className={`
+              w-full h-full object-cover transition-all duration-500
+              group-hover:scale-110 group-hover:brightness-110
+              ${property.isSold ? 'opacity-50 grayscale' : ''}
+            `}
             onError={(e) => {
               e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
             }}
           />
 
-          {/* Label Badge */}
-          {label && label.type !== 'sold' && (
-            <div className="absolute top-1 left-1">
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Property Type Badge - Raised and shifted towards top-left corner */}
+          <div className="absolute top-2 left-2">
+            <Badge
+              variant="secondary"
+              className="px-2 py-1 text-xs font-medium bg-white/90 text-gray-800 border-0 shadow-md"
+            >
+              {getPropertyTypeLabel(property.jenisProperti)}
+            </Badge>
+          </div>
+
+          {/* Special Label - Now in top-right, shifted closer to corner */}
+          {label && (
+            <div className="absolute top-2 right-2">
               <Badge
-                variant={label.color as any}
-                className="px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide shadow-md"
+                className={`
+                  px-3 py-1.5 text-xs font-bold uppercase tracking-wider
+                  ${label.color} text-white border-0 shadow-lg
+                  animate-pulse
+                `}
                 data-testid={`badge-${label.type}`}
               >
-                {label.text}
+                {label.icon} {label.text}
               </Badge>
             </div>
           )}
 
-          {/* SOLD Diagonal Banner */}
-          {property.isSold && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="absolute inset-0 bg-gradient-to-br from-destructive/20 via-destructive/40 to-destructive/20 transform rotate-[-30deg] scale-150" />
-              <span 
-                className="relative text-5xl md:text-6xl font-bold text-destructive transform rotate-[-30deg] drop-shadow-lg"
-                style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-                data-testid="text-sold"
+          {/* Status Badge - Now in bottom-left, shifted closer to corner, hide if property is sold */}
+          {!property.isSold && (
+            <div className="absolute bottom-2 left-2">
+              <Badge
+                className={`
+                  px-3 py-1 text-xs font-bold uppercase tracking-wider
+                  ${getStatusColor(property.status)} text-white border-0
+                  shadow-lg backdrop-blur-sm
+                `}
               >
-                SOLD
-              </span>
+                {property.status === 'dijual' ? 'DIJUAL' : 'DISEWAKAN'}
+              </Badge>
+            </div>
+          )}
+
+          {/* SOLD Overlay */}
+          {property.isSold && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <div className="bg-red-600 text-white px-8 py-4 rounded-lg font-bold text-xl shadow-2xl transform -rotate-12 border-4 border-white/20">
+                TERJUAL
+              </div>
             </div>
           )}
 
@@ -94,7 +142,13 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-3 right-3 bg-white/90 hover:bg-white"
+              className="
+                absolute top-3 right-3 w-9 h-9 rounded-full
+                bg-white/20 backdrop-blur-md border border-white/30
+                hover:bg-white/30 hover:scale-110
+                transition-all duration-200 shadow-lg
+                opacity-0 group-hover:opacity-100
+              "
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -103,87 +157,137 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
               data-testid="button-favorite"
             >
               <Heart
-                className={`h-4 w-4 ${isFavorite ? 'fill-destructive text-destructive' : ''}`}
+                className={`h-4 w-4 transition-colors duration-200 ${
+                  isFavorite ? 'fill-red-500 text-red-500' : 'text-white'
+                }`}
               />
             </Button>
           )}
         </div>
       </Link>
 
-      <div className="p-3 md:p-4">
-        {/* Kode Listing (small size) */}
-        <p className="text-xs text-muted-foreground mb-1 font-mono" data-testid="text-kode-listing">
-          {property.kodeListing}
-        </p>
-
-        {/* Property Title */}
-        <h3 className="text-base md:text-lg font-semibold text-foreground mb-1.5 md:mb-2 line-clamp-2" data-testid="text-title">
-          {getTitle()}
-        </h3>
-
-        {/* Location */}
-        <div className="flex items-start gap-1.5 md:gap-2 mb-2 md:mb-3">
-          <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-          <p className="text-xs md:text-sm text-foreground font-medium line-clamp-2" data-testid="text-location">
-            {property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)}, {property.provinsi.charAt(0).toUpperCase() + property.provinsi.slice(1)}
-          </p>
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-mono text-gray-500 mb-1" data-testid="text-kode-listing">
+              {property.kodeListing}
+            </p>
+            <Link href={slug}>
+              <h3
+                className="
+                  text-sm font-bold text-gray-900 line-clamp-2
+                  hover:text-blue-600 transition-colors duration-200
+                  cursor-pointer leading-tight
+                "
+                data-testid="text-title"
+              >
+                {getTitle()}
+              </h3>
+            </Link>
+          </div>
         </div>
 
-        {/* Price with Hot Listing indicator */}
-        <div className="mb-3 md:mb-4">
+        {/* Location */}
+        <div className="flex items-center gap-2 text-gray-600">
+          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <span className="text-sm font-medium line-clamp-1" data-testid="text-location">
+            {property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)},
+            {property.provinsi.charAt(0).toUpperCase() + property.provinsi.slice(1)}
+          </span>
+        </div>
+
+        {/* Price */}
+        <div className="space-y-1">
           {property.isHot && property.priceOld && (
-            <div className="flex items-center gap-1.5 md:gap-2 mb-0.5 md:mb-1">
-              <TrendingDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-destructive" />
-              <span className="text-xs md:text-sm text-muted-foreground line-through">
+            <div className="flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-500" />
+              <span className="text-sm text-gray-500 line-through">
                 {formatPrice(property.priceOld)}
               </span>
             </div>
           )}
-          <p className="text-lg md:text-xl lg:text-2xl font-bold text-foreground" data-testid="text-price">
+          <p
+            className="text-xl font-bold text-gray-900"
+            data-testid="text-price"
+          >
             {formatPrice(property.hargaProperti)}
           </p>
         </div>
 
-        {/* Property Specifications - Improved Layout */}
-        <div className="grid grid-cols-2 gap-1.5 md:gap-2 text-xs md:text-sm">
+        {/* Specifications */}
+        <div className="grid grid-cols-2 gap-3 py-3 px-1 border-t border-gray-100">
           {property.luasTanah && (
-            <div className="flex items-center gap-1">
-              <Maximize className="h-2.5 w-2.5 md:h-3 md:w-3 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground font-medium">LT:</span>
-              <span className="text-foreground" data-testid="text-land-area">{property.luasTanah}m²</span>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Maximize className="h-4 w-4 text-gray-400" />
+              <div className="text-xs">
+                <span className="font-medium">LT:</span>
+                <span className="ml-1" data-testid="text-land-area">{property.luasTanah}m²</span>
+              </div>
             </div>
           )}
           {property.luasBangunan && (
-            <div className="flex items-center gap-1">
-              <Maximize className="h-2.5 w-2.5 md:h-3 md:w-3 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground font-medium">LB:</span>
-              <span className="text-foreground" data-testid="text-building-area">{property.luasBangunan}m²</span>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Maximize className="h-4 w-4 text-gray-400" />
+              <div className="text-xs">
+                <span className="font-medium">LB:</span>
+                <span className="ml-1" data-testid="text-building-area">{property.luasBangunan}m²</span>
+              </div>
             </div>
           )}
           {property.kamarTidur && (
-            <div className="flex items-center gap-1">
-              <Bed className="h-2.5 w-2.5 md:h-3 md:w-3 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground font-medium">K.Tidur:</span>
-              <span className="text-foreground" data-testid="text-bedrooms">{property.kamarTidur}</span>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Bed className="h-4 w-4 text-gray-400" />
+              <div className="text-xs">
+                <span className="font-medium">Kamar:</span>
+                <span className="ml-1" data-testid="text-bedrooms">{property.kamarTidur}</span>
+              </div>
             </div>
           )}
           {property.kamarMandi && (
-            <div className="flex items-center gap-1">
-              <Bath className="h-2.5 w-2.5 md:h-3 md:w-3 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground font-medium">K.Mandi:</span>
-              <span className="text-foreground" data-testid="text-bathrooms">{property.kamarMandi}</span>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Bath className="h-4 w-4 text-gray-400" />
+              <div className="text-xs">
+                <span className="font-medium">K.Mandi:</span>
+                <span className="ml-1" data-testid="text-bathrooms">{property.kamarMandi}</span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Legalitas - Separate row if present */}
+        {/* Legalitas */}
         {property.legalitas && (
-          <div className="mt-1.5 md:mt-2 pt-1.5 md:pt-2 border-t border-border/50">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Legalitas:</span> <span className="text-foreground" data-testid="text-legalitas">{property.legalitas}</span>
-            </p>
+          <div className="pt-3 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 font-medium">Legalitas:</span>
+              <Badge
+                variant="outline"
+                className="text-xs px-2 py-0.5 border-gray-300 text-gray-700"
+                data-testid="text-legalitas"
+              >
+                {property.legalitas}
+              </Badge>
+            </div>
           </div>
         )}
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Calendar className="h-3 w-3" />
+            <span>{new Date(property.createdAt).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</span>
+          </div>
+          <Link href={slug}>
+            <Button
+              size="sm"
+              className="h-8 px-3 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Lihat Detail
+            </Button>
+          </Link>
+        </div>
       </div>
     </Card>
   );

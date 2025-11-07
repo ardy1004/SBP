@@ -18,6 +18,22 @@ import {
 import { db } from "./db";
 import { eq, and, gte, lte, desc, sql, or, like } from "drizzle-orm";
 
+export interface PropertyFilters {
+  status?: string;
+  type?: string;
+  location?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  minLandArea?: number;
+  maxLandArea?: number;
+  minBuildingArea?: number;
+  maxBuildingArea?: number;
+  legalStatus?: string;
+  keyword?: string;
+}
+
 export interface IStorage {
   // Admin Users
   getAdminUser(id: string): Promise<AdminUser | undefined>;
@@ -25,7 +41,7 @@ export interface IStorage {
   createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
 
   // Properties
-  getAllProperties(filters?: any): Promise<Property[]>;
+  getAllProperties(filters?: PropertyFilters): Promise<Property[]>;
   getPropertyById(id: string): Promise<Property | undefined>;
   getPropertyPilihan(): Promise<Property[]>;
   getNewestProperties(limit?: number): Promise<Property[]>;
@@ -68,54 +84,92 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Properties
-  async getAllProperties(filters?: any): Promise<Property[]> {
+  async getAllProperties(filters?: PropertyFilters): Promise<Property[]> {
     let query = db.select().from(properties);
 
     const conditions: any[] = [];
 
     if (filters) {
+      // Status filter
       if (filters.status) {
         conditions.push(eq(properties.status, filters.status));
       }
+
+      // Type filter
       if (filters.type) {
         conditions.push(eq(properties.jenisProperti, filters.type));
       }
-      if (filters.location) {
+
+      // Location filter (searches in kabupaten, provinsi, and alamatLengkap)
+      if (filters.location && filters.location.trim()) {
+        const locationTerm = filters.location.trim().toLowerCase();
         conditions.push(
           or(
-            like(properties.kabupaten, `%${filters.location}%`),
-            like(properties.provinsi, `%${filters.location}%`)
+            sql`${properties.kabupaten} ILIKE ${`%${locationTerm}%`}`,
+            sql`${properties.provinsi} ILIKE ${`%${locationTerm}%`}`,
+            sql`${properties.alamatLengkap} ILIKE ${`%${locationTerm}%`}`
           )
         );
       }
+
+      // Keyword search (multi-term search)
       if (filters.keyword && filters.keyword.trim()) {
-        const keyword = filters.keyword.trim().toLowerCase();
-        conditions.push(
-          or(
-            sql`${properties.kodeListing} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.judulProperti} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.deskripsi} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.jenisProperti} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.kabupaten} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.provinsi} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.alamatLengkap} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.status} ILIKE ${`%${keyword}%`}`,
-            sql`${properties.legalitas} ILIKE ${`%${keyword}%`}`
-          )
-        );
+        const keywords: string[] = filters.keyword.trim().toLowerCase().split(/\s+/).filter((word: string) => word.length > 0);
+
+        if (keywords.length > 0) {
+          // For each keyword, create conditions for all searchable fields
+          const keywordConditions = keywords.map((keyword: string) =>
+            or(
+              sql`${properties.kodeListing} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.judulProperti} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.deskripsi} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.jenisProperti} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.kabupaten} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.provinsi} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.alamatLengkap} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.status} ILIKE ${`%${keyword}%`}`,
+              sql`${properties.legalitas} ILIKE ${`%${keyword}%`}`
+            )
+          );
+
+          // Property matches if it matches ANY of the keywords
+          conditions.push(or(...keywordConditions));
+        }
       }
-      if (filters.minPrice) {
-        conditions.push(gte(properties.hargaProperti, filters.minPrice.toString()));
+
+      // Price filters
+      if (filters.minPrice !== undefined) {
+        conditions.push(sql`${properties.hargaProperti} >= ${filters.minPrice.toString()}`);
       }
-      if (filters.maxPrice) {
-        conditions.push(lte(properties.hargaProperti, filters.maxPrice.toString()));
+      if (filters.maxPrice !== undefined) {
+        conditions.push(sql`${properties.hargaProperti} <= ${filters.maxPrice.toString()}`);
       }
-      if (filters.bedrooms) {
+
+      // Bedroom/bathroom filters
+      if (filters.bedrooms !== undefined) {
         conditions.push(eq(properties.kamarTidur, filters.bedrooms));
       }
-      if (filters.bathrooms) {
+      if (filters.bathrooms !== undefined) {
         conditions.push(eq(properties.kamarMandi, filters.bathrooms));
       }
+
+      // Land area filters
+      if (filters.minLandArea !== undefined) {
+        conditions.push(sql`CAST(${properties.luasTanah} AS DECIMAL) >= ${filters.minLandArea}`);
+      }
+      if (filters.maxLandArea !== undefined) {
+        conditions.push(sql`CAST(${properties.luasTanah} AS DECIMAL) <= ${filters.maxLandArea}`);
+      }
+
+      // Building area filters
+      if (filters.minBuildingArea !== undefined) {
+        conditions.push(sql`CAST(${properties.luasBangunan} AS DECIMAL) >= ${filters.minBuildingArea}`);
+      }
+      if (filters.maxBuildingArea !== undefined) {
+        conditions.push(sql`CAST(${properties.luasBangunan} AS DECIMAL) <= ${filters.maxBuildingArea}`);
+      }
+
+      // Legal status filter
       if (filters.legalStatus) {
         conditions.push(eq(properties.legalitas, filters.legalStatus));
       }
