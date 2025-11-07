@@ -30,7 +30,7 @@ export async function apiRequest(
     method,
     headers,
     body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
-    credentials: "include",
+    credentials: "same-origin",
   });
 
   console.log('Response status:', res.status);
@@ -92,7 +92,7 @@ export const getQueryFn: <T>(options: {
     const url = queryKey.length === 1 ? queryKey[0] as string : queryKey.join("/") as string;
 
     const res = await fetch(url, {
-      credentials: "include",
+      credentials: "same-origin",
       headers,
     });
 

@@ -10,7 +10,10 @@ declare module 'http' {
     rawBody: unknown
   }
 }
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true
+}));
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
