@@ -6,26 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminLoginPage() {
   const [, setLocation] = useLocation();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, loading } = useAuth();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
-      const result = await apiRequest('POST', '/api/admin/login', {
-        username,
-        password,
-      });
-
-      localStorage.setItem('adminToken', result.token);
+      await signIn(email, password);
       toast({
         title: "Login Berhasil",
         description: "Selamat datang di Admin Dashboard",
@@ -34,11 +28,9 @@ export default function AdminLoginPage() {
     } catch (error) {
       toast({
         title: "Login Gagal",
-        description: "Username atau password salah",
+        description: "Email atau password salah",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -57,14 +49,14 @@ export default function AdminLoginPage() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                data-testid="input-username"
+                data-testid="input-email"
               />
             </div>
 
@@ -80,8 +72,8 @@ export default function AdminLoginPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
-              {isLoading ? "Loading..." : "Login"}
+            <Button type="submit" className="w-full" disabled={loading} data-testid="button-login">
+              {loading ? "Loading..." : "Login"}
             </Button>
           </form>
         </CardContent>
