@@ -590,6 +590,9 @@ export default function AdminPropertiesPage() {
                               <p className="text-sm text-muted-foreground">
                                 {property.jenisProperti ? (property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')) : 'N/A'} - {property.kabupaten || 'N/A'}
                               </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                ID: {property.id.slice(0, 8)}...
+                              </p>
                             </div>
                             <div className="flex gap-2">
                               <Button
