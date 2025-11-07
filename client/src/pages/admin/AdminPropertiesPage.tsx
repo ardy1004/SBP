@@ -588,7 +588,7 @@ export default function AdminPropertiesPage() {
                                 {property.kodeListing}
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                {property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1)} - {property.kabupaten}
+                                {property.jenisProperti ? (property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')) : 'N/A'} - {property.kabupaten || 'N/A'}
                               </p>
                             </div>
                             <div className="flex gap-2">
