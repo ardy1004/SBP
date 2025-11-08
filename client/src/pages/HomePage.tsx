@@ -103,6 +103,14 @@ export default function HomePage() {
   // Fetch property pilihan
   const { data: propertyPilihan = [] } = useQuery<Property[]>({
     queryKey: [`${import.meta.env.VITE_API_URL}/api/properties/pilihan`],
+    queryFn: async () => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/properties/pilihan`);
+      if (!response.ok) {
+        console.error('Failed to fetch property pilihan:', response.status);
+        return [];
+      }
+      return response.json();
+    },
   });
 
   // Build query params from all filters
@@ -127,8 +135,16 @@ export default function HomePage() {
   // Fetch filtered properties from backend
   const queryString = buildQueryParams();
     const queryUrl = queryString ? `/api/properties?${queryString}` : '/api/properties';
-    const { data: allProperties = [], isLoading } = useQuery<Property[]>({ 
+    const { data: allProperties = [], isLoading } = useQuery<Property[]>({
       queryKey: [`${import.meta.env.VITE_API_URL}${queryUrl}`],
+      queryFn: async () => {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}${queryUrl}`);
+        if (!response.ok) {
+          console.error('Failed to fetch properties:', response.status);
+          return [];
+        }
+        return response.json();
+      },
     });
   // Simple approach: just use slice directly in render
   const displayedProperties = allProperties.slice(0, visibleCount);
