@@ -25,6 +25,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
   };
 
   const getPropertyTypeLabel = (type: string) => {
+    if (!type) return '🏠 Properti';
     const typeMap: Record<string, string> = {
       rumah: '🏠 Rumah',
       kost: '🏢 Kost',
@@ -40,6 +41,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
   };
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-500';
     return status === 'dijual' ? 'bg-emerald-500' : 'bg-blue-500';
   };
 
@@ -51,11 +53,14 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
   };
 
   const getTitle = () => {
+    if (!property.jenisProperti || !property.kabupaten) {
+      return property.judulProperti || 'Properti';
+    }
     return property.judulProperti || `${getPropertyTypeLabel(property.jenisProperti)} di ${property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)}`;
   };
 
   const label = getLabel();
-  const slug = `/${property.status}-${property.jenisProperti}-${property.kabupaten}?id=${property.id}`;
+  const slug = `/${property.status || 'dijual'}-${property.jenisProperti || 'rumah'}-${property.kabupaten || 'jakarta'}?id=${property.id}`;
 
   return (
     <Card
@@ -123,7 +128,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
                   shadow-lg backdrop-blur-sm
                 `}
               >
-                {property.status === 'dijual' ? 'DIJUAL' : 'DISEWAKAN'}
+                {(property.status || 'dijual') === 'dijual' ? 'DIJUAL' : 'DISEWAKAN'}
               </Badge>
             </div>
           )}
@@ -193,8 +198,8 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
         <div className="flex items-center gap-2 text-gray-600">
           <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
           <span className="text-sm font-medium line-clamp-1" data-testid="text-location">
-            {property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1)},
-            {property.provinsi.charAt(0).toUpperCase() + property.provinsi.slice(1)}
+            {property.kabupaten ? property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1) : 'Lokasi tidak tersedia'},
+            {property.provinsi ? property.provinsi.charAt(0).toUpperCase() + property.provinsi.slice(1) : ''}
           </span>
         </div>
 
