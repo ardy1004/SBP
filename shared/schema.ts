@@ -136,7 +136,7 @@ export const PROPERTY_TYPES = [
 
 export const PROPERTY_STATUSES = ["dijual", "disewakan"] as const;
 
-export const LEGAL_STATUSES = ["SHM", "SHGB", "PPJB", "Girik", "Letter C"] as const;
+export const LEGAL_STATUSES = ["SHM", "SHGB", "PPJB", "Girik", "Letter C", "SHM & PBG", "SHGB & PBG"] as const;
 
 export type PropertyType = typeof PROPERTY_TYPES[number];
 export type PropertyStatus = typeof PROPERTY_STATUSES[number];
