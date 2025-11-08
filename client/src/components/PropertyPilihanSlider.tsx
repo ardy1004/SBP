@@ -107,7 +107,7 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
           {/* Property Type Badge */}
           <div className="absolute top-4 right-4 z-10">
             <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-lg">
-              {currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1).replace(/_/g, ' ')}
+              {currentProperty.jenisProperti ? currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1).replace(/_/g, ' ') : 'Properti'}
             </span>
           </div>
 
@@ -121,7 +121,7 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
 
               {/* Property Title */}
               <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-3 leading-tight drop-shadow-lg" data-testid="text-property-title">
-                {currentProperty.judulProperti || `${currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1).replace(/_/g, ' ')} di ${currentProperty.kabupaten.charAt(0).toUpperCase() + currentProperty.kabupaten.slice(1)}`}
+                {currentProperty.judulProperti || `${currentProperty.jenisProperti ? currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1).replace(/_/g, ' ') : 'Properti'} di ${currentProperty.kabupaten ? currentProperty.kabupaten.charAt(0).toUpperCase() + currentProperty.kabupaten.slice(1) : 'Lokasi'}`}
               </h3>
 
               {/* Location */}
@@ -130,8 +130,8 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
                   <span className="text-sm">📍</span>
                 </div>
                 <p className="text-sm md:text-base text-white/95 font-medium">
-                  {currentProperty.kabupaten.charAt(0).toUpperCase() + currentProperty.kabupaten.slice(1)},
-                  {currentProperty.provinsi.charAt(0).toUpperCase() + currentProperty.provinsi.slice(1)}
+                  {currentProperty.kabupaten ? currentProperty.kabupaten.charAt(0).toUpperCase() + currentProperty.kabupaten.slice(1) : 'Lokasi tidak tersedia'},
+                  {currentProperty.provinsi ? currentProperty.provinsi.charAt(0).toUpperCase() + currentProperty.provinsi.slice(1) : ''}
                 </p>
               </div>
 
