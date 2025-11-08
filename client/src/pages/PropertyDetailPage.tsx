@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { InquiryForm } from "@/components/InquiryForm";
 import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 import type { Property } from "@shared/schema";
 
 export default function PropertyDetailPage() {
@@ -21,7 +22,81 @@ export default function PropertyDetailPage() {
   });
 
   const { data: property, isLoading } = useQuery<Property>({
-    queryKey: ['/api/properties', propertyId],
+    queryKey: ['property-detail', propertyId],
+    queryFn: async () => {
+      if (!propertyId) throw new Error('No property ID provided');
+
+      console.log('=== PROPERTY DETAIL QUERY ===');
+      console.log('Property ID:', propertyId);
+
+      // Try to fetch from server API first
+      try {
+        const response = await fetch(`/api/properties/${propertyId}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Fetched from server API:', data);
+          return data;
+        }
+      } catch (error) {
+        console.log('Server API failed, trying Supabase:', error);
+      }
+
+      // Fallback to Supabase direct query
+      console.log('Fetching from Supabase...');
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', propertyId)
+        .single();
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+
+      console.log('Raw Supabase data:', data);
+
+      // Transform snake_case to camelCase
+      const transformedProperty = {
+        id: data.id,
+        kodeListing: data.kode_listing,
+        judulProperti: data.judul_properti,
+        deskripsi: data.deskripsi,
+        jenisProperti: data.jenis_properti,
+        luasTanah: data.luas_tanah,
+        luasBangunan: data.luas_bangunan,
+        kamarTidur: data.kamar_tidur,
+        kamarMandi: data.kamar_mandi,
+        legalitas: data.legalitas,
+        hargaProperti: data.harga_properti,
+        provinsi: data.provinsi,
+        kabupaten: data.kabupaten,
+        alamatLengkap: data.alamat_lengkap,
+        imageUrl: data.image_url,
+        imageUrl1: data.image_url1,
+        imageUrl2: data.image_url2,
+        imageUrl3: data.image_url3,
+        imageUrl4: data.image_url4,
+        imageUrl5: data.image_url5,
+        imageUrl6: data.image_url6,
+        imageUrl7: data.image_url7,
+        imageUrl8: data.image_url8,
+        imageUrl9: data.image_url9,
+        isPremium: data.is_premium,
+        isFeatured: data.is_featured,
+        isHot: data.is_hot,
+        isSold: data.is_sold,
+        priceOld: data.price_old,
+        isPropertyPilihan: data.is_property_pilihan,
+        ownerContact: data.owner_contact,
+        status: data.status,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+      };
+
+      console.log('Transformed property:', transformedProperty);
+      return transformedProperty;
+    },
     enabled: !!propertyId,
   });
 
