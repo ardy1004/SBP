@@ -605,6 +605,9 @@ export default function AdminPropertiesPage() {
                               <p className="text-sm font-medium text-primary mt-1">
                                 {formatPrice((property as any).harga_properti)}
                               </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Legalitas: {(property as any).legalitas || 'N/A'}
+                              </p>
                             </div>
                             <div className="flex gap-2">
                               <Button
