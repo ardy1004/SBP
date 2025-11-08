@@ -7,7 +7,6 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { CSVImportDialog } from "@/components/admin/CSVImportDialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 import { queryClient } from "@/lib/queryClient";
 import type { Property } from "@shared/schema";
 import {
@@ -51,16 +50,25 @@ export default function AdminPropertiesPage() {
   const { data: properties = [], isLoading } = useQuery<Property[]>({
     queryKey: ['admin-properties'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false });
+      console.log('🏠 AdminPropertiesPage: Fetching properties from API...');
 
-      if (error) {
-        console.error('Error fetching properties:', error);
-        throw error;
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
       }
 
+      const response = await fetch('/api/admin/properties', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch properties');
+      }
+
+      const data = await response.json();
+      console.log(`✅ AdminPropertiesPage: Fetched ${data?.length || 0} properties`);
       return data || [];
     },
   });
@@ -81,12 +89,21 @@ export default function AdminPropertiesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('properties')
-        .delete()
-        .eq('id', id);
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
+      }
 
-      if (error) throw error;
+      const response = await fetch(`/api/admin/properties/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete property');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
@@ -104,12 +121,23 @@ export default function AdminPropertiesPage() {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase
-        .from('properties')
-        .delete()
-        .in('id', ids);
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
+      }
 
-      if (error) throw error;
+      const response = await fetch('/api/admin/properties', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete properties');
+      }
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
@@ -128,14 +156,26 @@ export default function AdminPropertiesPage() {
 
   const bulkUpdateMutation = useMutation({
     mutationFn: async ({ ids, updates }: { ids: string[], updates: any }) => {
-      const { data, error } = await supabase
-        .from('properties')
-        .update(updates)
-        .in('id', ids)
-        .select();
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
+      }
 
-      if (error) throw error;
-      return { updated: data?.length || 0, properties: data };
+      const response = await fetch('/api/admin/properties/bulk', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ids, updates }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update properties');
+      }
+
+      const data = await response.json();
+      return { updated: data.updated || 0, properties: data.properties };
     },
     onSuccess: async (data, variables) => {
       console.log('=== BULK UPDATE SUCCESS ===');
