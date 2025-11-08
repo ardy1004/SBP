@@ -57,6 +57,7 @@ function VanillaPagination({
       >
         {displayedProperties.map((property, index) => {
           console.log(`VANILLA: Rendering property ${index + 1}/${displayedProperties.length}:`, property?.kodeListing || 'undefined');
+          console.log(`VANILLA: Property object:`, property);
           return (
             <PropertyCard
               key={`vanilla-${property?.id || index}-${Date.now()}-${internalVisibleCount}-${index}`}
@@ -101,8 +102,48 @@ export default function HomePage() {
   const [visibleCount, setVisibleCount] = useState(8);
   const [forceRender, setForceRender] = useState(0);
 
+  // Transform function to convert Supabase snake_case to camelCase
+  const transformSupabaseProperty = (supabaseProperty: any): Property => {
+    return {
+      id: supabaseProperty.id,
+      kodeListing: supabaseProperty.kode_listing,
+      judulProperti: supabaseProperty.judul_properti,
+      deskripsi: supabaseProperty.deskripsi,
+      jenisProperti: supabaseProperty.jenis_properti,
+      luasTanah: supabaseProperty.luas_tanah,
+      luasBangunan: supabaseProperty.luas_bangunan,
+      kamarTidur: supabaseProperty.kamar_tidur,
+      kamarMandi: supabaseProperty.kamar_mandi,
+      legalitas: supabaseProperty.legalitas,
+      hargaProperti: supabaseProperty.harga_properti,
+      provinsi: supabaseProperty.provinsi,
+      kabupaten: supabaseProperty.kabupaten,
+      alamatLengkap: supabaseProperty.alamat_lengkap,
+      imageUrl: supabaseProperty.image_url,
+      imageUrl1: supabaseProperty.image_url1,
+      imageUrl2: supabaseProperty.image_url2,
+      imageUrl3: supabaseProperty.image_url3,
+      imageUrl4: supabaseProperty.image_url4,
+      imageUrl5: supabaseProperty.image_url5,
+      imageUrl6: supabaseProperty.image_url6,
+      imageUrl7: supabaseProperty.image_url7,
+      imageUrl8: supabaseProperty.image_url8,
+      imageUrl9: supabaseProperty.image_url9,
+      isPremium: supabaseProperty.is_premium,
+      isFeatured: supabaseProperty.is_featured,
+      isHot: supabaseProperty.is_hot,
+      isSold: supabaseProperty.is_sold,
+      priceOld: supabaseProperty.price_old,
+      isPropertyPilihan: supabaseProperty.is_property_pilihan,
+      ownerContact: supabaseProperty.owner_contact,
+      status: supabaseProperty.status,
+      createdAt: new Date(supabaseProperty.created_at),
+      updatedAt: new Date(supabaseProperty.updated_at),
+    };
+  };
+
   // Fetch property pilihan directly from Supabase
-  const { data: propertyPilihan = [] } = useQuery<Property[]>({
+  const { data: rawPropertyPilihan = [] } = useQuery<any[]>({
     queryKey: ['properties-pilihan-homepage'],
     queryFn: async () => {
       console.log('🏠 HomePage: Fetching pilihan properties from Supabase...');
@@ -119,10 +160,14 @@ export default function HomePage() {
         throw error;
       }
 
-      console.log(`✅ HomePage: Fetched ${data?.length || 0} pilihan properties`);
+      console.log(`✅ HomePage: Fetched ${data?.length || 0} raw pilihan properties from Supabase`);
+      console.log('Raw pilihan first property:', data?.[0]);
       return data || [];
     },
   });
+
+  // Transform the raw Supabase pilihan data
+  const propertyPilihan = rawPropertyPilihan.map(transformSupabaseProperty);
 
   // Build query params from all filters
   const buildQueryParams = () => {
@@ -143,9 +188,10 @@ export default function HomePage() {
     return params.toString();
   };
 
+
   // Fetch filtered properties directly from Supabase
   const queryString = buildQueryParams();
-  const { data: allProperties = [], isLoading, error } = useQuery<Property[]>({
+  const { data: rawProperties = [], isLoading, error } = useQuery<any[]>({
     queryKey: [`properties-${queryString}`],
     queryFn: async () => {
       console.log('🏠 HomePage: Fetching properties from Supabase...');
@@ -209,36 +255,40 @@ export default function HomePage() {
         return [
           {
             id: "fallback-1",
-            kodeListing: "DEMO001",
-            judulProperti: "Rumah Demo Minimalis Jakarta",
+            kode_listing: "DEMO001",
+            judul_properti: "Rumah Demo Minimalis Jakarta",
             deskripsi: "Rumah demo untuk testing",
-            jenisProperti: "rumah",
-            luasTanah: "100",
-            luasBangunan: "80",
-            kamarTidur: 3,
-            kamarMandi: 2,
+            jenis_properti: "rumah",
+            luas_tanah: "100",
+            luas_bangunan: "80",
+            kamar_tidur: 3,
+            kamar_mandi: 2,
             legalitas: "SHM",
-            hargaProperti: "500000000",
+            harga_properti: "500000000",
             provinsi: "jakarta",
             kabupaten: "jakarta-selatan",
-            alamatLengkap: "Jl. Demo No. 123",
-            imageUrl: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&h=600&fit=crop",
+            alamat_lengkap: "Jl. Demo No. 123",
+            image_url: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&h=600&fit=crop",
             status: "dijual",
-            isPremium: false,
-            isFeatured: false,
-            isHot: false,
-            isSold: false,
-            isPropertyPilihan: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            is_premium: false,
+            is_featured: false,
+            is_hot: false,
+            is_sold: false,
+            is_property_pilihan: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           }
         ];
       }
 
-      console.log(`✅ HomePage: Fetched ${data?.length || 0} properties`);
+      console.log(`✅ HomePage: Fetched ${data?.length || 0} raw properties from Supabase`);
+      console.log('Raw first property:', data?.[0]);
       return data || [];
     },
   });
+
+  // Transform the raw Supabase data to match our Property interface
+  const allProperties = rawProperties.map(transformSupabaseProperty);
   // Simple approach: just use slice directly in render
   const displayedProperties = allProperties.slice(0, visibleCount);
 
@@ -249,6 +299,8 @@ export default function HomePage() {
   console.log('isLoading:', isLoading);
   console.log('error:', error);
   console.log('First property sample:', allProperties[0]?.kodeListing || 'No properties');
+  console.log('First property object keys:', allProperties[0] ? Object.keys(allProperties[0]) : 'No properties');
+  console.log('First property object:', allProperties[0]);
 
   // Force re-render when visibleCount changes
   useEffect(() => {
