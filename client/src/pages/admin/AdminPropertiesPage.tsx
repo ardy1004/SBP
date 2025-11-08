@@ -48,7 +48,7 @@ export default function AdminPropertiesPage() {
   const [bulkJenisPropertiValue, setBulkJenisPropertiValue] = useState<string>("");
   const { toast } = useToast();
 
-  const { data: properties = [], isLoading } = useQuery<Property[]>({
+  const { data: rawProperties = [], isLoading } = useQuery<any[]>({
     queryKey: ['admin-properties'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -61,15 +61,54 @@ export default function AdminPropertiesPage() {
         throw error;
       }
 
+      console.log('Raw properties from Supabase:', data?.slice(0, 3));
       return data || [];
     },
   });
+
+  // Transform Supabase snake_case to camelCase for admin panel
+  const properties = rawProperties.map((property: any) => ({
+    id: property.id,
+    kodeListing: property.kode_listing,
+    judulProperti: property.judul_properti,
+    deskripsi: property.deskripsi,
+    jenisProperti: property.jenis_properti,
+    luasTanah: property.luas_tanah,
+    luasBangunan: property.luas_bangunan,
+    kamarTidur: property.kamar_tidur,
+    kamarMandi: property.kamar_mandi,
+    legalitas: property.legalitas,
+    hargaProperti: property.harga_properti,
+    provinsi: property.provinsi,
+    kabupaten: property.kabupaten,
+    alamatLengkap: property.alamat_lengkap,
+    imageUrl: property.image_url,
+    imageUrl1: property.image_url1,
+    imageUrl2: property.image_url2,
+    imageUrl3: property.image_url3,
+    imageUrl4: property.image_url4,
+    imageUrl5: property.image_url5,
+    imageUrl6: property.image_url6,
+    imageUrl7: property.image_url7,
+    imageUrl8: property.image_url8,
+    imageUrl9: property.image_url9,
+    isPremium: property.is_premium,
+    isFeatured: property.is_featured,
+    isHot: property.is_hot,
+    isSold: property.is_sold,
+    priceOld: property.price_old,
+    isPropertyPilihan: property.is_property_pilihan,
+    ownerContact: property.owner_contact,
+    status: property.status,
+    createdAt: new Date(property.created_at),
+    updatedAt: new Date(property.updated_at),
+  }));
 
   // Filter and search properties
   const filteredProperties = properties.filter(property => {
     const matchesSearch = !searchTerm ||
       property.kodeListing.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.judulProperti?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (property.judulProperti && property.judulProperti.toLowerCase().includes(searchTerm.toLowerCase())) ||
       property.provinsi.toLowerCase().includes(searchTerm.toLowerCase()) ||
       property.kabupaten.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -574,41 +613,61 @@ export default function AdminPropertiesPage() {
                           </div>
                         )}
                         <div className="w-24 h-24 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-                          {property.imageUrl ? (
-                            <img
-                              src={property.imageUrl}
-                              alt={property.kodeListing}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400 text-xs">No Image</div>';
-                              }}
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center w-full h-full text-gray-400 text-xs">
-                              No Image
-                            </div>
-                          )}
-                        </div>
+                           {property.imageUrl ? (
+                             <img
+                               src={property.imageUrl}
+                               alt={property.kodeListing}
+                               className="w-full h-full object-cover"
+                               onError={(e) => {
+                                 // Try fallback images
+                                 const img = e.currentTarget as HTMLImageElement;
+                                 const currentSrc = img.src;
+                                 const fallbackImages = [
+                                   property.imageUrl1,
+                                   property.imageUrl2,
+                                   property.imageUrl3,
+                                   property.imageUrl4,
+                                   property.imageUrl5,
+                                 ].filter(Boolean);
+
+                                 // Find next fallback image
+                                 const currentIndex = fallbackImages.indexOf(currentSrc);
+                                 const nextImage = fallbackImages[currentIndex + 1];
+
+                                 if (nextImage) {
+                                   img.src = nextImage;
+                                 } else {
+                                   // No more fallbacks, show "No Image"
+                                   img.style.display = 'none';
+                                   img.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400 text-xs">No Image</div>';
+                                 }
+                               }}
+                             />
+                           ) : (
+                             <div className="flex items-center justify-center w-full h-full text-gray-400 text-xs">
+                               No Image
+                             </div>
+                           )}
+                         </div>
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <h3 className="font-semibold text-lg" data-testid="text-listing-code">
-                                {(property as any).judul_properti || (property as any).kode_listing}
-                              </h3>
-                              <p className="text-sm text-muted-foreground">
-                                {(property as any).kabupaten || 'N/A'}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                ID: {(property as any).kode_listing}
-                              </p>
-                              <p className="text-sm font-medium text-primary mt-1">
-                                {formatPrice((property as any).harga_properti)}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Legalitas: {(property as any).legalitas || 'N/A'}
-                              </p>
-                            </div>
+                                <h3 className="font-semibold text-lg" data-testid="text-listing-code">
+                                  {property.judulProperti || property.kodeListing}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {property.kabupaten || 'N/A'}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  ID: {property.kodeListing}
+                                </p>
+                                <p className="text-sm font-medium text-primary mt-1">
+                                  {formatPrice(property.hargaProperti)}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Legalitas: {property.legalitas || 'N/A'}
+                                </p>
+                              </div>
                             <div className="flex gap-2">
                               <Button
                                 variant="ghost"
