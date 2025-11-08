@@ -585,13 +585,16 @@ export default function AdminPropertiesPage() {
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <h3 className="font-semibold text-lg" data-testid="text-listing-code">
-                                {property.kodeListing}
+                                {(property as any).judul_properti || (property as any).kode_listing}
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                {property.jenisProperti ? (property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')) : 'N/A'} - {property.kabupaten || 'N/A'}
+                                {(property as any).kabupaten || 'N/A'}
                               </p>
                               <p className="text-xs text-muted-foreground mt-1">
-                                ID: {property.id.slice(0, 8)}...
+                                ID: {(property as any).kode_listing}
+                              </p>
+                              <p className="text-sm font-medium text-primary mt-1">
+                                {formatPrice((property as any).harga_properti)}
                               </p>
                             </div>
                             <div className="flex gap-2">
@@ -617,9 +620,7 @@ export default function AdminPropertiesPage() {
                             </div>
                           </div>
 
-                          <p className="font-semibold text-primary mb-2" data-testid="text-property-price">
-                            {formatPrice(property.hargaProperti)}
-                          </p>
+                          {/* Price moved to header section */}
 
                           <div className="flex flex-wrap gap-2 mb-3">
                             {property.isPremium && <Badge variant="secondary">Premium</Badge>}
