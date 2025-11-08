@@ -9,6 +9,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Property } from "@shared/schema";
+import { supabase } from "@/lib/supabase";
 
 // VANILLA JAVASCRIPT PAGINATION - Complete replacement for React state issues
 function VanillaPagination({
@@ -100,16 +101,26 @@ export default function HomePage() {
   const [visibleCount, setVisibleCount] = useState(8);
   const [forceRender, setForceRender] = useState(0);
 
-  // Fetch property pilihan
+  // Fetch property pilihan directly from Supabase
   const { data: propertyPilihan = [] } = useQuery<Property[]>({
-    queryKey: [`${import.meta.env.VITE_API_URL}/api/properties/pilihan`],
+    queryKey: ['properties-pilihan-homepage'],
     queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/properties/pilihan`);
-      if (!response.ok) {
-        console.error('Failed to fetch property pilihan:', response.status);
-        return [];
+      console.log('🏠 HomePage: Fetching pilihan properties from Supabase...');
+
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('is_property_pilihan', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('❌ HomePage: Supabase pilihan query error:', error);
+        throw error;
       }
-      return response.json();
+
+      console.log(`✅ HomePage: Fetched ${data?.length || 0} pilihan properties`);
+      return data || [];
     },
   });
 
@@ -132,20 +143,74 @@ export default function HomePage() {
     return params.toString();
   };
 
-  // Fetch filtered properties from backend
+  // Fetch filtered properties directly from Supabase
   const queryString = buildQueryParams();
-    const queryUrl = queryString ? `/api/properties?${queryString}` : '/api/properties';
-    const { data: allProperties = [], isLoading } = useQuery<Property[]>({
-      queryKey: [`${import.meta.env.VITE_API_URL}${queryUrl}`],
-      queryFn: async () => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}${queryUrl}`);
-        if (!response.ok) {
-          console.error('Failed to fetch properties:', response.status);
-          return [];
-        }
-        return response.json();
-      },
-    });
+  const { data: allProperties = [], isLoading, error } = useQuery<Property[]>({
+    queryKey: [`properties-${queryString}`],
+    queryFn: async () => {
+      console.log('🏠 HomePage: Fetching properties from Supabase...');
+
+      let query = supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      // Apply filters
+      if (searchFilters.status) {
+        query = query.eq('status', searchFilters.status);
+      }
+      if (searchFilters.type) {
+        query = query.eq('jenis_properti', searchFilters.type);
+      }
+      if (searchFilters.location) {
+        const locationTerm = searchFilters.location.toLowerCase();
+        query = query.or(`kabupaten.ilike.%${locationTerm}%,provinsi.ilike.%${locationTerm}%,alamat_lengkap.ilike.%${locationTerm}%`);
+      }
+
+      // Apply advanced filters
+      if (advancedFilters.minPrice) {
+        query = query.gte('harga_properti', advancedFilters.minPrice.toString());
+      }
+      if (advancedFilters.maxPrice) {
+        query = query.lte('harga_properti', advancedFilters.maxPrice.toString());
+      }
+      if (advancedFilters.bedrooms) {
+        query = query.eq('kamar_tidur', advancedFilters.bedrooms);
+      }
+      if (advancedFilters.bathrooms) {
+        query = query.eq('kamar_mandi', advancedFilters.bathrooms);
+      }
+      if (advancedFilters.minLandArea) {
+        query = query.gte('luas_tanah', advancedFilters.minLandArea.toString());
+      }
+      if (advancedFilters.maxLandArea) {
+        query = query.lte('luas_tanah', advancedFilters.maxLandArea.toString());
+      }
+      if (advancedFilters.minBuildingArea) {
+        query = query.gte('luas_bangunan', advancedFilters.minBuildingArea.toString());
+      }
+      if (advancedFilters.maxBuildingArea) {
+        query = query.lte('luas_bangunan', advancedFilters.maxBuildingArea.toString());
+      }
+      if (advancedFilters.legalStatus) {
+        query = query.eq('legalitas', advancedFilters.legalStatus);
+      }
+      if (keyword.trim()) {
+        const searchTerm = keyword.trim().toLowerCase();
+        query = query.or(`kode_listing.ilike.%${searchTerm}%,judul_properti.ilike.%${searchTerm}%,jenis_properti.ilike.%${searchTerm}%,kabupaten.ilike.%${searchTerm}%,provinsi.ilike.%${searchTerm}%,alamat_lengkap.ilike.%${searchTerm}%,status.ilike.%${searchTerm}%,legalitas.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('❌ HomePage: Supabase query error:', error);
+        throw error;
+      }
+
+      console.log(`✅ HomePage: Fetched ${data?.length || 0} properties`);
+      return data || [];
+    },
+  });
   // Simple approach: just use slice directly in render
   const displayedProperties = allProperties.slice(0, visibleCount);
 
