@@ -74,8 +74,8 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
     >
       {/* Main Link Area */}
       <Link href={slug} className="block">
-        {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+        {/* Image Container - Adjusted padding for mobile */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 p-1 sm:p-2">
           <img
             src={property.imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop'}
             alt={getTitle()}
@@ -96,7 +96,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
           <div className="absolute top-2 left-2">
             <Badge
               variant="secondary"
-              className="px-2 py-1 text-xs font-medium bg-white/90 text-gray-800 border-0 shadow-md"
+              className="px-1.5 py-0.5 text-[10px] font-medium bg-white/90 text-gray-800 border-0 shadow-md"
             >
               {getPropertyTypeLabel(property.jenisProperti)}
             </Badge>
@@ -107,7 +107,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             <div className="absolute top-2 right-2">
               <Badge
                 className={`
-                  px-3 py-1.5 text-xs font-bold uppercase tracking-wider
+                  px-2 py-1 text-[10px] font-bold uppercase tracking-wider
                   ${label.color} text-white border-0 shadow-lg
                   animate-pulse
                 `}
@@ -123,7 +123,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             <div className="absolute bottom-2 left-2">
               <Badge
                 className={`
-                  px-3 py-1 text-xs font-bold uppercase tracking-wider
+                  px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider
                   ${getStatusColor(property.status)} text-white border-0
                   shadow-lg backdrop-blur-sm
                 `}
@@ -133,10 +133,10 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             </div>
           )}
 
-          {/* SOLD Overlay */}
+          {/* SOLD Overlay - More compact for mobile */}
           {property.isSold && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <div className="bg-red-600 text-white px-8 py-4 rounded-lg font-bold text-xl shadow-2xl transform -rotate-12 border-4 border-white/20">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+              <div className="bg-red-600 text-white px-4 py-2 sm:px-8 sm:py-4 rounded-md sm:rounded-lg font-bold text-sm sm:text-xl shadow-2xl transform -rotate-6 sm:-rotate-12 border-2 sm:border-4 border-white/20">
                 TERJUAL
               </div>
             </div>
@@ -171,12 +171,12 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
         </div>
       </Link>
 
-      {/* Content */}
-      <div className="p-4 space-y-3">
+      {/* Content - Adjusted padding for mobile */}
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-mono text-gray-500 mb-1" data-testid="text-kode-listing">
+            <p className="text-xs font-mono text-gray-500 mb-1.5 sm:mb-1" data-testid="text-kode-listing">
               {property.kodeListing}
             </p>
             <Link href={slug}>
@@ -184,7 +184,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
                 className="
                   text-sm font-bold text-gray-900 line-clamp-2
                   hover:text-blue-600 transition-colors duration-200
-                  cursor-pointer leading-tight
+                  cursor-pointer leading-snug mb-1.5 sm:mb-2
                 "
                 data-testid="text-title"
               >
@@ -194,35 +194,35 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
           </div>
         </div>
 
-        {/* Location */}
-        <div className="flex items-center gap-2 text-gray-600">
-          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span className="text-sm font-medium line-clamp-1" data-testid="text-location">
-            {property.kabupaten ? property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1) : 'Lokasi tidak tersedia'},
-            {property.provinsi ? property.provinsi.charAt(0).toUpperCase() + property.provinsi.slice(1) : ''}
+        {/* Location - Smaller text on mobile */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600">
+          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+          <span className="text-xs sm:text-sm font-medium line-clamp-1" data-testid="text-location">
+            {property.kabupaten ? property.kabupaten.charAt(0).toUpperCase() + property.kabupaten.slice(1) : 'Lokasi tidak tersedia'}
+            {property.provinsi ? `, ${property.provinsi.charAt(0).toUpperCase() + property.provinsi.slice(1)}` : ''}
           </span>
         </div>
 
-        {/* Price */}
-        <div className="space-y-1">
+        {/* Price - More compact spacing */}
+        <div className="space-y-0.5 sm:space-y-1">
           {property.isHot && property.priceOld && (
-            <div className="flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-500" />
-              <span className="text-sm text-gray-500 line-through">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+              <span className="text-xs sm:text-sm text-gray-500 line-through">
                 {formatPrice(property.priceOld)}
               </span>
             </div>
           )}
           <p
-            className="text-xl font-bold text-gray-900"
+            className="text-lg sm:text-xl font-bold text-gray-900"
             data-testid="text-price"
           >
             {formatPrice(property.hargaProperti)}
           </p>
         </div>
 
-        {/* Specifications */}
-        <div className="grid grid-cols-2 gap-3 py-3 px-1 border-t border-gray-100">
+        {/* Specifications - Adjusted padding for mobile */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 py-2 sm:py-3 px-1 border-t border-gray-100">
           {property.luasTanah && (
             <div className="flex items-center gap-2 text-gray-600">
               <Maximize className="h-4 w-4 text-gray-400" />
@@ -261,9 +261,9 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
           )}
         </div>
 
-        {/* Legalitas */}
+        {/* Legalitas - Adjusted padding for mobile */}
         {property.legalitas && (
-          <div className="pt-3 border-t border-gray-200">
+          <div className="pt-2 sm:pt-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 font-medium">Legalitas:</span>
               <Badge
@@ -277,18 +277,18 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
           </div>
         )}
 
-        {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Calendar className="h-3 w-3" />
+        {/* Footer Actions - More compact for mobile */}
+        <div className="flex items-center justify-between pt-1.5 sm:pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500">
+            <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             <span>{new Date(property.createdAt).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</span>
           </div>
           <Link href={slug}>
             <Button
               size="sm"
-              className="h-8 px-3 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white"
+              className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <Eye className="h-3 w-3 mr-1" />
+              <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
               Lihat Detail
             </Button>
           </Link>
