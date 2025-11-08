@@ -61,6 +61,9 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     if (property) {
       setIsLoading(true);
       console.log('Loading property data:', property);
+      console.log('Property keys:', Object.keys(property));
+      console.log('Property kodeListing:', property.kodeListing);
+      console.log('Property judulProperti:', property.judulProperti);
 
       // Reset form first
       setFormData({
@@ -92,35 +95,35 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         isPropertyPilihan: false,
       });
 
-      // Then set with property data
+      // Then set with property data - use camelCase properties from transformed data
       setTimeout(() => {
         const newFormData = {
-          kodeListing: (property as any).kode_listing || "",
-          judulProperti: (property as any).judul_properti || "",
-          jenisProperti: (property as any).jenis_properti || "",
-          luasTanah: (property as any).luas_tanah || "",
-          luasBangunan: (property as any).luas_bangunan || "",
-          kamarTidur: (property as any).kamar_tidur ? (property as any).kamar_tidur.toString() : "",
-          kamarMandi: (property as any).kamar_mandi ? (property as any).kamar_mandi.toString() : "",
-          legalitas: (property as any).legalitas || "",
-          hargaProperti: (property as any).harga_properti || "",
-          provinsi: (property as any).provinsi || "",
-          kabupaten: (property as any).kabupaten || "",
-          alamatLengkap: (property as any).alamat_lengkap || "",
-          deskripsi: (property as any).deskripsi || "",
-          imageUrl: (property as any).image_url || "",
-          imageUrl1: (property as any).image_url1 || "",
-          imageUrl2: (property as any).image_url2 || "",
-          imageUrl3: (property as any).image_url3 || "",
-          imageUrl4: (property as any).image_url4 || "",
-          status: (property as any).status || "dijual",
-          ownerContact: (property as any).owner_contact || "",
-          isPremium: Boolean((property as any).is_premium),
-          isFeatured: Boolean((property as any).is_featured),
-          isHot: Boolean((property as any).is_hot),
-          isSold: Boolean((property as any).is_sold),
-          priceOld: (property as any).price_old || "",
-          isPropertyPilihan: Boolean((property as any).is_property_pilihan),
+          kodeListing: property.kodeListing || "",
+          judulProperti: property.judulProperti || "",
+          jenisProperti: property.jenisProperti || "",
+          luasTanah: property.luasTanah || "",
+          luasBangunan: property.luasBangunan || "",
+          kamarTidur: property.kamarTidur ? property.kamarTidur.toString() : "",
+          kamarMandi: property.kamarMandi ? property.kamarMandi.toString() : "",
+          legalitas: property.legalitas || "",
+          hargaProperti: property.hargaProperti || "",
+          provinsi: property.provinsi || "",
+          kabupaten: property.kabupaten || "",
+          alamatLengkap: property.alamatLengkap || "",
+          deskripsi: property.deskripsi || "",
+          imageUrl: property.imageUrl || "",
+          imageUrl1: property.imageUrl1 || "",
+          imageUrl2: property.imageUrl2 || "",
+          imageUrl3: property.imageUrl3 || "",
+          imageUrl4: property.imageUrl4 || "",
+          status: property.status || "dijual",
+          ownerContact: property.ownerContact || "",
+          isPremium: Boolean(property.isPremium),
+          isFeatured: Boolean(property.isFeatured),
+          isHot: Boolean(property.isHot),
+          isSold: Boolean(property.isSold),
+          priceOld: property.priceOld || "",
+          isPropertyPilihan: Boolean(property.isPropertyPilihan),
         };
 
         console.log('Setting form data to:', newFormData);
