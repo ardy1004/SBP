@@ -573,14 +573,23 @@ export default function AdminPropertiesPage() {
                             />
                           </div>
                         )}
-                        <img
-                          src={property.imageUrl}
-                          alt={property.kodeListing}
-                          className="w-24 h-24 object-cover rounded-md"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200&h=200&fit=crop';
-                          }}
-                        />
+                        <div className="w-24 h-24 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+                          {property.imageUrl ? (
+                            <img
+                              src={property.imageUrl}
+                              alt={property.kodeListing}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400 text-xs">No Image</div>';
+                              }}
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center w-full h-full text-gray-400 text-xs">
+                              No Image
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
                             <div>
