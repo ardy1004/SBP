@@ -3,42 +3,42 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function PortfolioPage() {
   const projects = [
     {
-      title: "Survey Lokasi Properti A",
+      title: "Dampingi Klien Negosiasi Kost Exclusive",
       location: "Yogyakarta",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/da94e869-53dc-447c-be01-94b6a31cdbae_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Dokumentasi survey lokasi lengkap dengan analisis lingkungan",
     },
     {
-      title: "Survey Lokasi Properti B",
+      title: "Penyerahan dokumen AJB Notaris",
       location: "Sleman",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/e29ea026-1025-4590-97d8-bb6e5fe18713_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Survey detail dengan pemetaan aksesibilitas dan fasilitas umum",
     },
     {
-      title: "Dokumentasi AJB Properti C",
+      title: "Dokumentasi Proses AJB Notaris : Kost Exclusive dekat UPN",
       location: "Yogyakarta",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/6e28aee2-087e-4051-99d6-5eead23d2698_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Proses dokumentasi Akta Jual Beli dengan verifikasi legalitas",
     },
     {
-      title: "Survey & AJB Properti D",
+      title: "Dokumentasi Proses AJB Notaris : Kost Exclusive dekat UII",
       location: "Bantul",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/957b50e0-5769-481b-9de6-11c02b0822d8_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Dokumentasi lengkap survey lokasi dan proses AJB",
     },
     {
-      title: "Verifikasi Lokasi Properti E",
+      title: "Dokumentasi Proses AJB Notaris : Kost Exclusive dekat UGM",
       location: "Kulon Progo",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/8800b8fc-fc97-46a0-b7d8-f91cd64027f8_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Verifikasi menyeluruh lokasi dengan dokumentasi foto profesional",
     },
     {
-      title: "Dokumentasi Legal Properti F",
+      title: "Dokumentasi Proses AJB Notaris : Kost Exclusive dekat UGM",
       location: "Gunung Kidul",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/23854ae2-be1f-416f-85ed-15e6d694a66a_imgupscaler.ai_V2(Pro)_2K.webp",
