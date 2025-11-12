@@ -4,6 +4,11 @@ compatibility_date = "2024-01-01"
 # Build output directory for Cloudflare Pages
 pages_build_output_dir = "dist/public"
 
+# Build commands for Cloudflare Pages
+[build]
+command = "npm run build"
+cwd = "."
+
 # Environment variables for the application
 [vars]
 NODE_ENV = "production"
