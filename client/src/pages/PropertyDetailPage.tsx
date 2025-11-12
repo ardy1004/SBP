@@ -30,19 +30,7 @@ export default function PropertyDetailPage() {
       console.log('=== PROPERTY DETAIL QUERY ===');
       console.log('Property ID:', propertyId);
 
-      // Try to fetch from server API first
-      try {
-        const response = await fetch(`/api/properties/${propertyId}`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Fetched from server API:', data);
-          return data;
-        }
-      } catch (error) {
-        console.log('Server API failed, trying Supabase:', error);
-      }
-
-      // Fallback to Supabase direct query
+      // Fetch from Supabase directly
       console.log('Fetching from Supabase...');
       const { data, error } = await supabase
         .from('properties')
@@ -103,21 +91,47 @@ export default function PropertyDetailPage() {
 
   useEffect(() => {
     if (property) {
-      // Track property view
-      apiRequest('POST', '/api/analytics/event', {
-        eventType: 'property_view',
-        propertyId: property.id,
-        metadata: JSON.stringify({ path: location }),
-      }).catch(() => {});
+      // Track property view in Supabase
+      const trackAnalytics = async () => {
+        try {
+          const { error } = await supabase
+            .from('analytics_events')
+            .insert({
+              event_type: 'property_view',
+              property_id: property.id,
+              metadata: JSON.stringify({ path: location }),
+            });
+
+          if (error) {
+            console.error('Analytics tracking failed:', error);
+          } else {
+            console.log('Analytics event tracked');
+          }
+        } catch (error) {
+          console.error('Analytics tracking error:', error);
+        }
+      };
+
+      trackAnalytics();
     }
   }, [property, location]);
 
   const handleInquirySubmit = async (data: { name: string; whatsapp: string; message: string }) => {
     if (!property) return;
-    await apiRequest('POST', '/api/inquiries', {
-      propertyId: property.id,
-      ...data,
-    });
+
+    const { error } = await supabase
+      .from('inquiries')
+      .insert({
+        property_id: property.id,
+        name: data.name,
+        whatsapp: data.whatsapp,
+        message: data.message,
+      });
+
+    if (error) {
+      console.error('Inquiry submission error:', error);
+      throw new Error('Failed to submit inquiry');
+    }
   };
 
   const toggleFavorite = () => {
@@ -360,51 +374,13 @@ function RelatedPropertiesSection({ currentProperty }: { currentProperty: Proper
       console.log('=== FETCHING RELATED PROPERTIES ===');
       console.log('Current property:', currentProperty.kodeListing);
 
-      try {
-        // Try server API first
-        const response = await fetch('/api/properties');
-        if (response.ok) {
-          const allProperties = await response.json();
-          console.log('Fetched from server API:', allProperties.length, 'properties');
-
-          // Filter and sort related properties with more inclusive logic
-          let filtered = allProperties
-            .filter((prop: any) => prop.id !== currentProperty.id) // Exclude current property
-            .filter((prop: any) => prop.status !== 'sold') // Exclude sold properties
-            .map((prop: any) => ({
-              ...prop,
-              relevanceScore: calculateRelevanceScore(prop, currentProperty)
-            }))
-            .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-            .slice(0, 3); // Get top 3 by relevance
-
-          // If we don't have enough high-relevance matches, add some fallback properties
-          if (filtered.length < 2) {
-            const fallbackProperties = allProperties
-              .filter((prop: any) =>
-                prop.id !== currentProperty.id &&
-                prop.status !== 'sold' &&
-                !filtered.some((f: any) => f.id === prop.id) // Not already included
-              )
-              .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-              .slice(0, 3 - filtered.length);
-
-            filtered = [...filtered, ...fallbackProperties];
-          }
-
-          console.log('Filtered related properties:', filtered.length);
-          return filtered.map(transformSupabaseProperty);
-        }
-      } catch (error) {
-        console.log('Server API failed, trying Supabase:', error);
-      }
-
-      // Fallback to Supabase
+      // Fetch from Supabase directly
       console.log('Fetching from Supabase...');
       const { data, error } = await supabase
         .from('properties')
         .select('*')
         .neq('id', currentProperty.id) // Exclude current property
+        .neq('status', 'sold') // Exclude sold properties
         .order('created_at', { ascending: false })
         .limit(20); // Get more to filter
 

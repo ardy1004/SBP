@@ -14,12 +14,16 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<any> {
   const session = authService.getCurrentSession();
-  const token = session?.access_token;
+  const supabaseToken = session?.access_token;
+  const adminToken = localStorage.getItem('adminToken');
 
   const headers: HeadersInit = data instanceof FormData ? {} : (data ? { "Content-Type": "application/json" } : {});
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  // Use admin token for admin endpoints, supabase token for others
+  if (url.includes('/api/admin/') && adminToken) {
+    headers["Authorization"] = `Bearer ${adminToken}`;
+  } else if (supabaseToken) {
+    headers["Authorization"] = `Bearer ${supabaseToken}`;
   }
 
   console.log('=== API REQUEST ===');
@@ -82,16 +86,20 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const session = authService.getCurrentSession();
-    const token = session?.access_token;
+    const supabaseToken = session?.access_token;
+    const adminToken = localStorage.getItem('adminToken');
     const headers: HeadersInit = {};
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
 
     // If queryKey has a single item, use it as-is (it's a complete URL)
     // Otherwise join with "/" for hierarchical paths
     const url = queryKey.length === 1 ? queryKey[0] as string : queryKey.join("/") as string;
+
+    // Use admin token for admin endpoints, supabase token for others
+    if (url.includes('/api/admin/') && adminToken) {
+      headers["Authorization"] = `Bearer ${adminToken}`;
+    } else if (supabaseToken) {
+      headers["Authorization"] = `Bearer ${supabaseToken}`;
+    }
 
     const res = await fetch(url, {
       credentials: "same-origin",

@@ -224,6 +224,20 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
       };
 
       console.log('Submitting payload:', payload);
+      console.log('Image URLs in payload:', {
+        image_url: payload.image_url,
+        image_url1: payload.image_url1,
+        image_url2: payload.image_url2,
+        image_url3: payload.image_url3,
+        image_url4: payload.image_url4,
+      });
+      console.log('Form data image URLs:', {
+        imageUrl: formData.imageUrl,
+        imageUrl1: formData.imageUrl1,
+        imageUrl2: formData.imageUrl2,
+        imageUrl3: formData.imageUrl3,
+        imageUrl4: formData.imageUrl4,
+      });
 
       if (property) {
         const { error } = await supabase
@@ -266,19 +280,41 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
   };
 
   const handleImagesChange = useCallback((imageUrls: string[]) => {
+    console.log('handleImagesChange called with URLs:', imageUrls);
+
     // Only update if all URLs are valid (no blob URLs) or empty array
     const hasBlobUrls = imageUrls.some(url => url && url.startsWith('blob:'));
     const hasValidUrls = imageUrls.some(url => url && !url.startsWith('blob:'));
 
+    console.log('hasBlobUrls:', hasBlobUrls, 'hasValidUrls:', hasValidUrls);
+
     if (!hasBlobUrls && (hasValidUrls || imageUrls.length === 0)) {
-      setFormData(prev => ({
-        ...prev,
+      const newFormData = {
         imageUrl: imageUrls[0] || '',
         imageUrl1: imageUrls[1] || '',
         imageUrl2: imageUrls[2] || '',
         imageUrl3: imageUrls[3] || '',
         imageUrl4: imageUrls[4] || '',
-      }));
+      };
+
+      console.log('Updating formData with image URLs:', newFormData);
+
+      setFormData(prev => {
+        // Only update if URLs actually changed
+        const currentUrls = [prev.imageUrl, prev.imageUrl1, prev.imageUrl2, prev.imageUrl3, prev.imageUrl4];
+        const urlsChanged = JSON.stringify(currentUrls) !== JSON.stringify(Object.values(newFormData));
+
+        if (urlsChanged) {
+          console.log('URLs changed, updating formData');
+          return {
+            ...prev,
+            ...newFormData
+          };
+        } else {
+          console.log('URLs unchanged, skipping update');
+          return prev;
+        }
+      });
     }
   }, []);
 
@@ -491,6 +527,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
               formData.imageUrl4,
             ].filter(url => url && url.trim())}
             maxImages={5}
+            propertyId={formData.kodeListing || undefined}
           />
         </div>
       </div>

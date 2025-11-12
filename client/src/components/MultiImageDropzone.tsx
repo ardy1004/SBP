@@ -20,7 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Upload, XCircle, CheckCircle, Loader, Trash2, GripVertical, Star } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/use-debounce';
 
@@ -35,6 +35,7 @@ interface MultiImageDropzoneProps {
   onImagesChange: (images: string[]) => void;
   initialImages?: string[];
   maxImages?: number;
+  propertyId?: string; // kodeListing or temporary ID
 }
 
 function SortableImageItem({
@@ -121,7 +122,8 @@ function SortableImageItem({
 export function MultiImageDropzone({
   onImagesChange,
   initialImages = [],
-  maxImages = 5
+  maxImages = 5,
+  propertyId
 }: MultiImageDropzoneProps) {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [uploadingCount, setUploadingCount] = useState(0);
@@ -160,58 +162,66 @@ export function MultiImageDropzone({
     }
   }, [images, uploadingCount, isDragging, onImagesChange]);
   const handleDeleteImage = useCallback(async (imageId: string) => {
-    const imageToDelete = images.find(img => img.id === imageId);
-    if (!imageToDelete) return;
-
-    try {
-      // Extract filename from URL
-      const urlParts = imageToDelete.url.split('/');
-      const filename = urlParts[urlParts.length - 1];
-
-      if (filename && !imageToDelete.url.startsWith('blob:')) {
-        console.log('Deleting image:', filename);
-        // Remove .webp extension if present to get the actual filename
-        const filenameWithoutExt = filename.replace('.webp', '');
-        await apiRequest('DELETE', `/api/upload/images/${filenameWithoutExt}.webp`, {});
+    // Remove from local state only (Cloudflare R2 handles storage)
+    setImages(prev => {
+      const newImages = prev.filter(img => img.id !== imageId);
+      // Update main image status
+      if (newImages.length > 0) {
+        newImages[0].isMain = true;
       }
+      return newImages;
+    });
 
-      // Remove from local state
-      setImages(prev => {
-        const newImages = prev.filter(img => img.id !== imageId);
-        // Update main image status
-        if (newImages.length > 0) {
-          newImages[0].isMain = true;
-        }
-        return newImages;
-      });
+    // Notify parent component about image changes
+    const remainingUrls = images
+      .filter(img => img.id !== imageId)
+      .map(img => img.url);
+    onImagesChange(remainingUrls);
 
-      // Notify parent component about image changes
-      const remainingUrls = images
-        .filter(img => img.id !== imageId)
-        .map(img => img.url);
-      onImagesChange(remainingUrls);
-
-      toast({ title: 'Gambar berhasil dihapus' });
-    } catch (error) {
-      console.error('Delete image error:', error);
-      toast({
-        title: 'Gagal menghapus gambar',
-        description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menghapus gambar.',
-        variant: 'destructive',
-      });
-    }
+    toast({ title: 'Gambar berhasil dihapus dari form' });
   }, [images, toast, onImagesChange]);
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('images', file); // Backend expects 'images' (plural)
 
-    const response = await apiRequest('POST', '/api/upload/image', formData);
-    if (response.success && response.image.webpUrl) {
-      return response.image.webpUrl;
-    } else {
-      throw new Error(response.message || 'Upload gagal');
+    console.log('Uploading file:', file.name, 'to backend API');
+
+    // Get admin token from localStorage
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      throw new Error('Admin token tidak ditemukan. Silakan login kembali.');
     }
+
+    const response = await fetch('/api/upload/images', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+      },
+      body: formData,
+    });
+
+    console.log('Upload response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('Upload error response:', errorText);
+      throw new Error(`Upload gagal: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Upload result:', result);
+
+    if (!result.success || !result.images || result.images.length === 0) {
+      throw new Error(result.error || 'No image URL returned from backend');
+    }
+
+    // Return the WebP URL from backend (Sharp.js processed)
+    // Backend returns webpUrl as `/uploads/filename.webp`
+    const webpUrl = result.images[0].webpUrl;
+    console.log('WebP URL from backend:', webpUrl);
+
+    return webpUrl;
   }, []);
 
   const onDrop = useCallback(async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
