@@ -189,7 +189,7 @@ export function MultiImageDropzone({
     console.log('Uploading file:', file.name, 'to Cloudflare Worker');
 
     // Upload directly to Cloudflare Worker
-    const workerUrl = 'https://sbp-upload-worker.ardy1004.workers.dev';
+    const workerUrl = 'https://sbp-upload-worker.salambumiproperty-f1b.workers.dev';
     const response = await fetch(workerUrl, {
       method: 'POST',
       body: formData,
