@@ -183,46 +183,39 @@ export function MultiImageDropzone({
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
     const formData = new FormData();
-    formData.append('images', file); // Backend expects 'images' (plural)
+    formData.append('image', file); // Worker expects 'image' (singular)
+    formData.append('propertyId', propertyId || 'temp'); // Use propertyId or temp
 
-    console.log('Uploading file:', file.name, 'to backend API');
+    console.log('Uploading file:', file.name, 'to Cloudflare Worker');
 
-    // Get admin token from localStorage
-    const adminToken = localStorage.getItem('adminToken');
-    if (!adminToken) {
-      throw new Error('Admin token tidak ditemukan. Silakan login kembali.');
-    }
-
-    const response = await fetch('/api/upload/images', {
+    // Upload directly to Cloudflare Worker
+    const workerUrl = 'https://sbp-upload-worker.ardy1004.workers.dev';
+    const response = await fetch(workerUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`,
-      },
       body: formData,
     });
 
-    console.log('Upload response status:', response.status);
+    console.log('Worker response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('Upload error response:', errorText);
+      console.log('Worker error response:', errorText);
       throw new Error(`Upload gagal: ${response.status} ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('Upload result:', result);
+    console.log('Worker result:', result);
 
-    if (!result.success || !result.images || result.images.length === 0) {
-      throw new Error(result.error || 'No image URL returned from backend');
+    if (!result.success || !result.url) {
+      throw new Error(result.error || 'No image URL returned from worker');
     }
 
-    // Return the WebP URL from backend (Sharp.js processed)
-    // Backend returns webpUrl as `/uploads/filename.webp`
-    const webpUrl = result.images[0].webpUrl;
-    console.log('WebP URL from backend:', webpUrl);
+    // Return the full URL from worker (already includes domain)
+    const imageUrl = result.url;
+    console.log('Image URL from worker:', imageUrl);
 
-    return webpUrl;
-  }, []);
+    return imageUrl;
+  }, [propertyId]);
 
   const onDrop = useCallback(async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
     console.log('onDrop called:', { acceptedFiles: acceptedFiles.length, fileRejections: fileRejections.length });
