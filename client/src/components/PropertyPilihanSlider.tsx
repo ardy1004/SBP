@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLocation } from "wouter";
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Property } from "@shared/schema";
 import { supabase } from "@/lib/supabase";
@@ -10,6 +11,8 @@ interface PropertyPilihanSliderProps {
 
 export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isClicked, setIsClicked] = useState(false);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (properties.length === 0) return;
@@ -47,6 +50,17 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % properties.length);
+  };
+
+  const handleViewDetails = () => {
+    // Set clicked state for green color
+    setIsClicked(true);
+
+    // Navigate to property detail page with property ID
+    setLocation(`/${currentProperty.status}-${currentProperty.jenisProperti}-${currentProperty.kabupaten}?id=${currentProperty.id}`);
+
+    // Reset clicked state after a short delay for visual feedback
+    setTimeout(() => setIsClicked(false), 200);
   };
 
   const currentProperty = properties[currentIndex];
@@ -192,6 +206,28 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
                     <span className="text-xs sm:text-sm font-bold text-white">{currentProperty.legalitas}</span>
                   </div>
                 )}
+
+                {/* 7. Lihat Detail Button */}
+                <div className="mt-4 sm:mt-6">
+                  <Button
+                    onClick={handleViewDetails}
+                    className={`
+                      backdrop-blur-md border font-semibold px-4 py-2 sm:px-6 sm:py-3 rounded-full
+                      shadow-2xl hover:shadow-3xl transition-all duration-300
+                      hover:scale-105 hover:-translate-y-0.5
+                      flex items-center gap-2 text-sm sm:text-base
+                      touch-manipulation text-white
+                      ${isClicked
+                        ? 'bg-green-500 hover:bg-green-600 border-green-400'
+                        : 'bg-blue-500 hover:bg-blue-600 border-blue-400'
+                      }
+                    `}
+                    data-testid="button-lihat-detail"
+                  >
+                    <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Lihat Detail
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

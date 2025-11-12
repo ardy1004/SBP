@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
+import { PropertyCard } from "@/components/PropertyCard";
 import { InquiryForm } from "@/components/InquiryForm";
 import { apiRequest } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
@@ -342,8 +343,236 @@ export default function PropertyDetailPage() {
               <InquiryForm propertyId={property.id} onSubmit={handleInquirySubmit} />
             </div>
           </div>
+
+          {/* Related Properties Section */}
+          <RelatedPropertiesSection currentProperty={property} />
         </div>
       </div>
     </>
+  );
+}
+
+// Related Properties Component
+function RelatedPropertiesSection({ currentProperty }: { currentProperty: Property }) {
+  const { data: relatedProperties = [], isLoading } = useQuery<Property[]>({
+    queryKey: ['related-properties', currentProperty.id],
+    queryFn: async () => {
+      console.log('=== FETCHING RELATED PROPERTIES ===');
+      console.log('Current property:', currentProperty.kodeListing);
+
+      try {
+        // Try server API first
+        const response = await fetch('/api/properties');
+        if (response.ok) {
+          const allProperties = await response.json();
+          console.log('Fetched from server API:', allProperties.length, 'properties');
+
+          // Filter and sort related properties with more inclusive logic
+          let filtered = allProperties
+            .filter((prop: any) => prop.id !== currentProperty.id) // Exclude current property
+            .filter((prop: any) => prop.status !== 'sold') // Exclude sold properties
+            .map((prop: any) => ({
+              ...prop,
+              relevanceScore: calculateRelevanceScore(prop, currentProperty)
+            }))
+            .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
+            .slice(0, 3); // Get top 3 by relevance
+
+          // If we don't have enough high-relevance matches, add some fallback properties
+          if (filtered.length < 2) {
+            const fallbackProperties = allProperties
+              .filter((prop: any) =>
+                prop.id !== currentProperty.id &&
+                prop.status !== 'sold' &&
+                !filtered.some((f: any) => f.id === prop.id) // Not already included
+              )
+              .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .slice(0, 3 - filtered.length);
+
+            filtered = [...filtered, ...fallbackProperties];
+          }
+
+          console.log('Filtered related properties:', filtered.length);
+          return filtered.map(transformSupabaseProperty);
+        }
+      } catch (error) {
+        console.log('Server API failed, trying Supabase:', error);
+      }
+
+      // Fallback to Supabase
+      console.log('Fetching from Supabase...');
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .neq('id', currentProperty.id) // Exclude current property
+        .order('created_at', { ascending: false })
+        .limit(20); // Get more to filter
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        return [];
+      }
+
+      // Filter and sort on client side with more inclusive logic
+      let filtered = data
+        .filter((prop: any) => prop.id !== currentProperty.id && prop.status !== 'sold')
+        .map((prop: any) => ({
+          ...prop,
+          relevanceScore: calculateRelevanceScore(prop, currentProperty)
+        }))
+        .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
+        .slice(0, 3);
+
+      // If we don't have enough high-relevance matches, add recent properties as fallback
+      if (filtered.length < 2) {
+        const fallbackProperties = data
+          .filter((prop: any) =>
+            prop.id !== currentProperty.id &&
+            prop.status !== 'sold' &&
+            !filtered.some((f: any) => f.id === prop.id)
+          )
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 3 - filtered.length);
+
+        filtered = [...filtered, ...fallbackProperties];
+      }
+
+      console.log('Supabase filtered related properties:', filtered.length);
+      return filtered.map(transformSupabaseProperty);
+    },
+    enabled: !!currentProperty.id,
+  });
+
+  // Helper function to check price similarity (within 30% range)
+  const checkPriceSimilarity = (price1: string, price2: string): boolean => {
+    const num1 = parseFloat(price1) || 0;
+    const num2 = parseFloat(price2) || 0;
+    const ratio = Math.min(num1, num2) / Math.max(num1, num2);
+    return ratio >= 0.7; // Within 30% range
+  };
+
+  // Calculate relevance score for sorting (more inclusive)
+  const calculateRelevanceScore = (property: any, current: Property): number => {
+    let score = 10; // Base score for all properties
+
+    // Same location + same type = highest score
+    if (property.kabupaten === current.kabupaten && property.jenis_properti === current.jenisProperti) {
+      score += 100;
+    }
+    // Same location = high score
+    else if (property.kabupaten === current.kabupaten) {
+      score += 50;
+    }
+    // Same type + similar price = medium score
+    else if (property.jenis_properti === current.jenisProperti && checkPriceSimilarity(property.harga_properti, current.hargaProperti)) {
+      score += 30;
+    }
+    // Same type = medium score
+    else if (property.jenis_properti === current.jenisProperti) {
+      score += 20;
+    }
+    // Similar price range = low score
+    else if (checkPriceSimilarity(property.harga_properti, current.hargaProperti)) {
+      score += 15;
+    }
+    // Same province = low score
+    else if (property.provinsi === current.provinsi) {
+      score += 10;
+    }
+
+    // Premium properties get boost
+    if (property.is_premium) score += 8;
+    if (property.is_featured) score += 5;
+    if (property.is_hot) score += 3;
+
+    // Recent properties get slight boost
+    const daysSinceCreated = (new Date().getTime() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceCreated < 7) score += 5; // Less than a week old
+    else if (daysSinceCreated < 30) score += 2; // Less than a month old
+
+    return score;
+  };
+
+  // Transform function (same as in main component)
+  const transformSupabaseProperty = (supabaseProperty: any): Property => {
+    return {
+      id: supabaseProperty.id,
+      kodeListing: supabaseProperty.kode_listing,
+      judulProperti: supabaseProperty.judul_properti,
+      deskripsi: supabaseProperty.deskripsi,
+      jenisProperti: supabaseProperty.jenis_properti,
+      luasTanah: supabaseProperty.luas_tanah,
+      luasBangunan: supabaseProperty.luas_bangunan,
+      kamarTidur: supabaseProperty.kamar_tidur,
+      kamarMandi: supabaseProperty.kamar_mandi,
+      legalitas: supabaseProperty.legalitas,
+      hargaProperti: supabaseProperty.harga_properti,
+      provinsi: supabaseProperty.provinsi,
+      kabupaten: supabaseProperty.kabupaten,
+      alamatLengkap: supabaseProperty.alamat_lengkap,
+      imageUrl: supabaseProperty.image_url,
+      imageUrl1: supabaseProperty.image_url1,
+      imageUrl2: supabaseProperty.image_url2,
+      imageUrl3: supabaseProperty.image_url3,
+      imageUrl4: supabaseProperty.image_url4,
+      imageUrl5: supabaseProperty.image_url5,
+      imageUrl6: supabaseProperty.image_url6,
+      imageUrl7: supabaseProperty.image_url7,
+      imageUrl8: supabaseProperty.image_url8,
+      imageUrl9: supabaseProperty.image_url9,
+      isPremium: supabaseProperty.is_premium,
+      isFeatured: supabaseProperty.is_featured,
+      isHot: supabaseProperty.is_hot,
+      isSold: supabaseProperty.is_sold,
+      priceOld: supabaseProperty.price_old,
+      isPropertyPilihan: supabaseProperty.is_property_pilihan,
+      ownerContact: supabaseProperty.owner_contact,
+      status: supabaseProperty.status,
+      createdAt: new Date(supabaseProperty.created_at),
+      updatedAt: new Date(supabaseProperty.updated_at),
+    };
+  };
+
+  return (
+    <div className="mt-12 md:mt-16">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">Properti Terkait</h2>
+          <p className="text-muted-foreground">
+            Temukan properti lain yang mungkin Anda minati
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="space-y-3">
+                <div className="aspect-[4/3] bg-gray-200 rounded-lg animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : relatedProperties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {relatedProperties.map((relatedProperty) => (
+              <PropertyCard
+                key={relatedProperty.id}
+                property={relatedProperty}
+                onToggleFavorite={() => {}} // Related properties don't need favorite toggle
+                isFavorite={false}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-muted-foreground">
+              <p className="text-lg mb-2">Tidak ada properti terkait ditemukan</p>
+              <p className="text-sm">Coba lihat properti lainnya di halaman utama</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
