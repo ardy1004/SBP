@@ -25,21 +25,21 @@ export default function PortfolioPage() {
     },
     {
       title: "Dokumentasi Proses AJB Notaris : Kost Exclusive dekat UII",
-      location: "Bantul",
+      location: "Yogyakarta",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/957b50e0-5769-481b-9de6-11c02b0822d8_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Dokumentasi lengkap survey lokasi dan proses AJB",
     },
     {
       title: "Dokumentasi Proses AJB Notaris : Kost Exclusive dekat UGM",
-      location: "Kulon Progo",
+      location: "Sleman",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/8800b8fc-fc97-46a0-b7d8-f91cd64027f8_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Verifikasi menyeluruh lokasi dengan dokumentasi foto profesional",
     },
     {
       title: "Dokumentasi Proses AJB Notaris : Kost Exclusive dekat UGM",
-      location: "Gunung Kidul",
+      location: "Sleman",
       year: "2024",
       image: "https://images.salambumi.xyz/portfolio%20gallery/23854ae2-be1f-416f-85ed-15e6d694a66a_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Dokumentasi lengkap untuk keperluan legal dan AJB",
@@ -84,9 +84,6 @@ export default function PortfolioPage() {
                 <h3 className="text-xl font-semibold mb-2" data-testid={`text-portfolio-title-${index}`}>{project.title}</h3>
                 <p className="text-sm text-muted-foreground mb-3 font-body">
                   {project.location} • {project.year}
-                </p>
-                <p className="text-foreground font-body">
-                  {project.description}
                 </p>
               </CardContent>
             </Card>
