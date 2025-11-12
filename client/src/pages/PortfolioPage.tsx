@@ -59,7 +59,6 @@ export default function PortfolioPage() {
         </div>
         <div className="relative z-10 text-center text-white">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Portfolio Gallery</h1>
-          <p className="text-lg md:text-xl font-body">Proyek-Proyek Terbaik Kami</p>
         </div>
       </div>
 
