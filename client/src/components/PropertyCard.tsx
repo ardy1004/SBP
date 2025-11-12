@@ -140,7 +140,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
 
           {/* SOLD Overlay - More compact for mobile */}
           {property.isSold && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+            <div className="absolute inset-0 flex items-center justify-center bg-red-500/50">
               <div className="bg-red-600 text-white px-4 py-2 sm:px-8 sm:py-4 rounded-md sm:rounded-lg font-bold text-sm sm:text-xl shadow-2xl transform -rotate-6 sm:-rotate-12 border-2 sm:border-4 border-white/20">
                 TERJUAL
               </div>
