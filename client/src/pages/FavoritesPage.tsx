@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Property } from "@shared/schema";
+import type { Property } from "@shared/types";
 
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<string[]>(() => {

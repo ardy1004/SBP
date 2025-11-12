@@ -11,7 +11,7 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { InquiryForm } from "@/components/InquiryForm";
 import { apiRequest } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
-import type { Property } from "@shared/schema";
+import type { Property } from "@shared/types";
 
 export default function PropertyDetailPage() {
   const [location, setLocation] = useLocation();

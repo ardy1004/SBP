@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PROPERTY_TYPES, PROPERTY_STATUSES } from "@shared/schema";
+import { PROPERTY_TYPES, PROPERTY_STATUSES } from "@shared/types";
 
 interface HeroSectionProps {
   onSearch: (filters: {

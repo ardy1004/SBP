@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Integration } from "@shared/schema";
+import type { Integration } from "@shared/types";
 
 export default function AdminIntegrationsPage() {
   const { toast } = useToast();

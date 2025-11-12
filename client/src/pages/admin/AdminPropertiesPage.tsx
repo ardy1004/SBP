@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { queryClient } from "@/lib/queryClient";
-import type { Property } from "@shared/schema";
+import type { Property } from "@shared/types";
 import {
   Dialog,
   DialogContent,

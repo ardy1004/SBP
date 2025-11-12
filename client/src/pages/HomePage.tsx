@@ -8,7 +8,7 @@ import { AdvancedFilters, FilterValues } from "@/components/AdvancedFilters";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Property } from "@shared/schema";
+import type { Property } from "@shared/types";
 import { supabase } from "@/lib/supabase";
 
 // VANILLA JAVASCRIPT PAGINATION - Complete replacement for React state issues

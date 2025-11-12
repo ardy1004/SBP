@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { MultiImageDropzone } from "@/components/MultiImageDropzone";
-import { PROPERTY_TYPES, PROPERTY_STATUSES, LEGAL_STATUSES, type Property } from "@shared/schema";
+import { PROPERTY_TYPES, PROPERTY_STATUSES, LEGAL_STATUSES, type Property } from "@shared/types";
 
 interface PropertyFormProps {
   property: Property | null;

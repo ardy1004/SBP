@@ -17,7 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { LEGAL_STATUSES } from "@shared/schema";
+import { LEGAL_STATUSES } from "@shared/types";
 
 export interface FilterValues {
   minPrice?: number;

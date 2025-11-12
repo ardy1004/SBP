@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Property } from "@shared/schema";
+import type { Property } from "@shared/types";
 import { supabase } from "@/lib/supabase";
 
 interface PropertyPilihanSliderProps {

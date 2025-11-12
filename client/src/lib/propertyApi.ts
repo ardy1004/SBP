@@ -2,7 +2,7 @@
 // Includes request URL/params, headers, filter application, and error handling
 
 import { supabase } from "@/lib/supabase";
-import type { Property } from "@shared/schema";
+import type { Property } from "@shared/types";
 
 // Types for filter values
 export interface SearchFilters {

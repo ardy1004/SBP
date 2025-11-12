@@ -3,7 +3,7 @@ import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown, Eye, Calendar } from 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Property } from "@shared/schema";
+import type { Property } from "@shared/types";
 
 interface PropertyCardProps {
   property: Property;
