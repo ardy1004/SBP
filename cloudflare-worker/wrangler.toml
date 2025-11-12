@@ -1,0 +1,10 @@
+name = "sbp-upload-worker"
+main = "src/index.js"
+compatibility_date = "2023-01-01"
+
+[vars]
+ACCOUNT_ID = "f1bac4af6572062bfcf88549ed59c823"
+
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "images"
