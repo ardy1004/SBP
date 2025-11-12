@@ -1,13 +1,19 @@
-name = "sbp-upload-worker"
-main = "worker.js"
+name = "sbp-property-app"
 compatibility_date = "2024-01-01"
 
-[[r2_buckets]]
-binding = "IMAGES_BUCKET"
-bucket_name = "images"
+[pages_build_output_dir]
+# Build output directory for Cloudflare Pages
+# This tells Cloudflare Pages where to find the built files
+pages_build_output_dir = "dist/public"
 
+# Environment variables for the application
 [vars]
-ACCOUNT_ID = "f1bac4af6572062bfcf88549ed59c823"
-R2_TOKEN = "8gHacCXt24DGJoRl8P_DRZNO8dMuA5fU5bqHczh1"
-R2_ACCESS_KEY_ID = "185efb3f4ed58ac0fbe668f4a52a791c"
-R2_SECRET_ACCESS_KEY = "ee988314dd98c5baa850d11e9e12f35149c9cba8cd662617929f4877ddc849b8"
+NODE_ENV = "production"
+
+# Database configuration (will be set in Cloudflare Pages dashboard)
+# DATABASE_URL = "your-database-url-here"
+# SESSION_SECRET = "your-session-secret-here"
+
+# Supabase configuration (will be set in Cloudflare Pages dashboard)
+# VITE_SUPABASE_URL = "your-supabase-url-here"
+# VITE_SUPABASE_ANON_KEY = "your-supabase-anon-key-here"
