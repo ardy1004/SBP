@@ -3,46 +3,46 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function PortfolioPage() {
   const projects = [
     {
-      title: "Perumahan Griya Asri",
-      location: "Jakarta Selatan",
-      year: "2023",
-      image: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop",
-      description: "Proyek perumahan modern dengan 50 unit rumah",
+      title: "Survey Lokasi Properti A",
+      location: "Yogyakarta",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/da94e869-53dc-447c-be01-94b6a31cdbae_imgupscaler.ai_V2(Pro)_2K.webp",
+      description: "Dokumentasi survey lokasi lengkap dengan analisis lingkungan",
     },
     {
-      title: "Apartemen Sky Tower",
-      location: "Jakarta Pusat",
-      year: "2023",
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop",
-      description: "Apartemen mewah 20 lantai di pusat kota",
+      title: "Survey Lokasi Properti B",
+      location: "Sleman",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/e29ea026-1025-4590-97d8-bb6e5fe18713_imgupscaler.ai_V2(Pro)_2K.webp",
+      description: "Survey detail dengan pemetaan aksesibilitas dan fasilitas umum",
     },
     {
-      title: "Ruko Premium Sudirman",
-      location: "Jakarta Pusat",
-      year: "2022",
-      image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop",
-      description: "Ruko strategis untuk bisnis dan investasi",
+      title: "Dokumentasi AJB Properti C",
+      location: "Yogyakarta",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/6e28aee2-087e-4051-99d6-5eead23d2698_imgupscaler.ai_V2(Pro)_2K.webp",
+      description: "Proses dokumentasi Akta Jual Beli dengan verifikasi legalitas",
     },
     {
-      title: "Villa Puncak Paradise",
-      location: "Bogor",
-      year: "2022",
-      image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop",
-      description: "Villa eksklusif dengan pemandangan gunung",
+      title: "Survey & AJB Properti D",
+      location: "Bantul",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/957b50e0-5769-481b-9de6-11c02b0822d8_imgupscaler.ai_V2(Pro)_2K.webp",
+      description: "Dokumentasi lengkap survey lokasi dan proses AJB",
     },
     {
-      title: "Gudang Logistik Modern",
-      location: "Tangerang",
-      year: "2021",
-      image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=600&fit=crop",
-      description: "Fasilitas gudang 5000m² untuk logistik",
+      title: "Verifikasi Lokasi Properti E",
+      location: "Kulon Progo",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/8800b8fc-fc97-46a0-b7d8-f91cd64027f8_imgupscaler.ai_V2(Pro)_2K.webp",
+      description: "Verifikasi menyeluruh lokasi dengan dokumentasi foto profesional",
     },
     {
-      title: "Hotel Bintang 4",
-      location: "Bandung",
-      year: "2021",
-      image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop",
-      description: "Hotel modern dengan 100 kamar",
+      title: "Dokumentasi Legal Properti F",
+      location: "Gunung Kidul",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/23854ae2-be1f-416f-85ed-15e6d694a66a_imgupscaler.ai_V2(Pro)_2K.webp",
+      description: "Dokumentasi lengkap untuk keperluan legal dan AJB",
     },
   ];
 
@@ -66,11 +66,8 @@ export default function PortfolioPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-12 md:py-20 flex-1">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Proyek yang Telah Kami Selesaikan
+            Dokumentasi Survey Lokasi & AJB
           </h2>
-          <p className="text-lg text-muted-foreground font-body max-w-2xl mx-auto">
-            Berikut adalah beberapa proyek properti yang telah kami tangani dengan sukses, dari residensial hingga komersial.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
