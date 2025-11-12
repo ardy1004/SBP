@@ -25,24 +25,24 @@ function Router() {
   return (
     <Switch>
       {/* Public Routes */}
-      <Route path="/" component={HomePage} />
-      <Route path="/:status-:type-:location" component={PropertyDetailPage} />
-      <Route path="/about" component={AboutPage} />
-      <Route path="/portfolio" component={PortfolioPage} />
-      <Route path="/notaris" component={NotarisPage} />
-      <Route path="/faq" component={FAQPage} />
-      <Route path="/favorites" component={FavoritesPage} />
-      <Route path="/contact" component={Contact} />
+      <Route path="/"><HomePage /></Route>
+      <Route path="/about"><AboutPage /></Route>
+      <Route path="/portfolio"><PortfolioPage /></Route>
+      <Route path="/notaris"><NotarisPage /></Route>
+      <Route path="/faq"><FAQPage /></Route>
+      <Route path="/favorites"><FavoritesPage /></Route>
+      <Route path="/contact"><Contact /></Route>
+      <Route path="/:status-:type-:location"><PropertyDetailPage /></Route>
 
       {/* Admin Routes */}
-      <Route path="/admin/login" component={AdminLoginPage} />
-      <Route path="/admin/dashboard" component={AdminDashboardPage} />
-      <Route path="/admin/properties" component={AdminPropertiesPage} />
-      <Route path="/admin/analytics" component={AdminAnalyticsPage} />
-      <Route path="/admin/integrations" component={AdminIntegrationsPage} />
+      <Route path="/admin/login"><AdminLoginPage /></Route>
+      <Route path="/admin/dashboard"><AdminDashboardPage /></Route>
+      <Route path="/admin/properties"><AdminPropertiesPage /></Route>
+      <Route path="/admin/analytics"><AdminAnalyticsPage /></Route>
+      <Route path="/admin/integrations"><AdminIntegrationsPage /></Route>
 
       {/* Fallback to 404 */}
-      <Route component={NotFound} />
+      <Route><NotFound /></Route>
     </Switch>
   );
 }

@@ -29,12 +29,14 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
     const num = parseFloat(price);
     if (num >= 1000000000) {
       const value = num / 1000000000;
-      // Jika bilangan bulat, tampilkan tanpa desimal, jika ada desimal tampilkan 1 digit
-      return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
+      // Use Math.round to handle floating point precision issues
+      const rounded = Math.round(value * 10) / 10;
+      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
     } else if (num >= 1000000) {
       const value = num / 1000000;
-      // Jika bilangan bulat, tampilkan tanpa desimal, jika ada desimal tampilkan 1 digit
-      return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
+      // Use Math.round to handle floating point precision issues
+      const rounded = Math.round(value * 10) / 10;
+      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
     }
     return `Rp ${num.toLocaleString('id-ID')}`;
   };

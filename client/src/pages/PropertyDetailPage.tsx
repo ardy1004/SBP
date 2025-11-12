@@ -175,11 +175,6 @@ export default function PropertyDetailPage() {
 
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
-    if (num >= 1000000000) {
-      return `Rp ${(num / 1000000000).toFixed(1)} Miliar`;
-    } else if (num >= 1000000) {
-      return `Rp ${(num / 1000000).toFixed(1)} Juta`;
-    }
     return `Rp ${num.toLocaleString('id-ID')}`;
   };
 

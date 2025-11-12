@@ -104,8 +104,8 @@ export default function FAQPage() {
                 Jika Anda memiliki pertanyaan lain, jangan ragu untuk menghubungi kami
               </p>
               <p className="text-foreground font-semibold">
-                WhatsApp: +62 812 3456 7890<br />
-                Email: info@salambumiproperty.com
+                WhatsApp: +62 813 9127 8889<br />
+                Email: info@salambumi.xyz
               </p>
             </CardContent>
           </Card>

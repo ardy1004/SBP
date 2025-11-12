@@ -353,4 +353,103 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Premium Property Golden Glow Border Animation */
+  .premium-glow-border {
+    position: relative;
+    animation: premium-pulse 0.8s ease-in-out infinite, premium-blink 1.2s ease-in-out infinite;
+  }
+
+  .premium-glow-border::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700, #FFA500, #FFD700);
+    background-size: 200% 200%;
+    border-radius: inherit;
+    z-index: -1;
+    animation: premium-border-shine 2s ease-in-out infinite, premium-border-scale 1.5s ease-in-out infinite;
+  }
+
+  .premium-glow-border::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.3), transparent, rgba(255, 215, 0, 0.3), transparent);
+    background-size: 300% 300%;
+    border-radius: inherit;
+    z-index: -2;
+    animation: premium-outer-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes premium-pulse {
+    0%, 100% {
+      filter: brightness(1) contrast(1);
+    }
+    50% {
+      filter: brightness(1.1) contrast(1.05);
+    }
+  }
+
+  @keyframes premium-blink {
+    0%, 50%, 100% {
+      opacity: 1;
+    }
+    25%, 75% {
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes premium-border-shine {
+    0% {
+      background-position: 0% 0%;
+      opacity: 0.7;
+    }
+    25% {
+      background-position: 100% 0%;
+      opacity: 1;
+    }
+    50% {
+      background-position: 100% 100%;
+      opacity: 0.9;
+    }
+    75% {
+      background-position: 0% 100%;
+      opacity: 1;
+    }
+    100% {
+      background-position: 0% 0%;
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes premium-border-scale {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.03);
+    }
+  }
+
+  @keyframes premium-outer-glow {
+    0% {
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2), 0 0 20px rgba(255, 215, 0, 0.1), 0 0 30px rgba(255, 215, 0, 0.05);
+      opacity: 0.3;
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.3), 0 0 60px rgba(255, 215, 0, 0.2);
+      opacity: 0.7;
+    }
+    100% {
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2), 0 0 20px rgba(255, 215, 0, 0.1), 0 0 30px rgba(255, 215, 0, 0.05);
+      opacity: 0.3;
+    }
+  }
 }

@@ -42,6 +42,11 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     imageUrl2: "",
     imageUrl3: "",
     imageUrl4: "",
+    imageUrl5: "",
+    imageUrl6: "",
+    imageUrl7: "",
+    imageUrl8: "",
+    imageUrl9: "",
     status: "dijual",
     ownerContact: "",
     isPremium: false,
@@ -85,6 +90,11 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         imageUrl2: "",
         imageUrl3: "",
         imageUrl4: "",
+        imageUrl5: "",
+        imageUrl6: "",
+        imageUrl7: "",
+        imageUrl8: "",
+        imageUrl9: "",
         status: "dijual",
         ownerContact: "",
         isPremium: false,
@@ -116,6 +126,11 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           imageUrl2: property.imageUrl2 || "",
           imageUrl3: property.imageUrl3 || "",
           imageUrl4: property.imageUrl4 || "",
+          imageUrl5: property.imageUrl5 || "",
+          imageUrl6: property.imageUrl6 || "",
+          imageUrl7: property.imageUrl7 || "",
+          imageUrl8: property.imageUrl8 || "",
+          imageUrl9: property.imageUrl9 || "",
           status: property.status || "dijual",
           ownerContact: property.ownerContact || "",
           isPremium: Boolean(property.isPremium),
@@ -151,6 +166,11 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         imageUrl2: "",
         imageUrl3: "",
         imageUrl4: "",
+        imageUrl5: "",
+        imageUrl6: "",
+        imageUrl7: "",
+        imageUrl8: "",
+        imageUrl9: "",
         status: "dijual",
         ownerContact: "",
         isPremium: false,
@@ -168,14 +188,42 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     setIsSubmitting(true);
 
     try {
+      // Clean the data and ensure proper types
       const payload = {
-        ...formData,
-        luasTanah: formData.luasTanah || null,
-        luasBangunan: formData.luasBangunan || null,
-        kamarTidur: formData.kamarTidur ? parseInt(formData.kamarTidur) : null,
-        kamarMandi: formData.kamarMandi ? parseInt(formData.kamarMandi) : null,
-        priceOld: formData.priceOld || null,
+        kode_listing: formData.kodeListing,
+        judul_properti: formData.judulProperti || null,
+        deskripsi: formData.deskripsi || null,
+        jenis_properti: formData.jenisProperti,
+        luas_tanah: formData.luasTanah ? parseFloat(formData.luasTanah) : null,
+        luas_bangunan: formData.luasBangunan ? parseFloat(formData.luasBangunan) : null,
+        kamar_tidur: formData.kamarTidur ? parseInt(formData.kamarTidur) : null,
+        kamar_mandi: formData.kamarMandi ? parseInt(formData.kamarMandi) : null,
+        legalitas: formData.legalitas || null,
+        harga_properti: formData.hargaProperti,
+        provinsi: formData.provinsi,
+        kabupaten: formData.kabupaten,
+        alamat_lengkap: formData.alamatLengkap || null,
+        image_url: formData.imageUrl || null,
+        image_url1: formData.imageUrl1 || null,
+        image_url2: formData.imageUrl2 || null,
+        image_url3: formData.imageUrl3 || null,
+        image_url4: formData.imageUrl4 || null,
+        image_url5: formData.imageUrl5 || null,
+        image_url6: formData.imageUrl6 || null,
+        image_url7: formData.imageUrl7 || null,
+        image_url8: formData.imageUrl8 || null,
+        image_url9: formData.imageUrl9 || null,
+        is_premium: formData.isPremium,
+        is_featured: formData.isFeatured,
+        is_hot: formData.isHot,
+        is_sold: formData.isSold,
+        price_old: formData.priceOld ? formData.priceOld : null,
+        is_property_pilihan: formData.isPropertyPilihan,
+        owner_contact: formData.ownerContact || null,
+        status: formData.status,
       };
+
+      console.log('Submitting payload:', payload);
 
       if (property) {
         const { error } = await supabase
@@ -183,22 +231,29 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           .update(payload)
           .eq('id', property.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
         toast({ title: "Properti berhasil diupdate" });
       } else {
         const { error } = await supabase
           .from('properties')
           .insert(payload);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
         toast({ title: "Properti berhasil ditambahkan" });
       }
 
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Submit error:', error);
       toast({
         title: "Error",
-        description: "Gagal menyimpan properti",
+        description: error?.message || "Gagal menyimpan properti",
         variant: "destructive",
       });
     } finally {

@@ -11,7 +11,7 @@ export default function AboutPage() {
             backgroundImage: "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&h=1080&fit=crop')",
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-black/80" />
         </div>
         <div className="relative z-10 text-center text-white">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">About Us</h1>
@@ -164,15 +164,15 @@ export default function AboutPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <div className="text-center">
                   <p className="font-semibold">📞 Telepon/WhatsApp</p>
-                  <p className="text-sm">+62 812-3456-7890</p>
+                  <p className="text-sm">+62 813 9127 8889</p>
                 </div>
                 <div className="text-center">
                   <p className="font-semibold">📧 Email</p>
-                  <p className="text-sm">info@salambumiproperty.com</p>
+                  <p className="text-sm">info@salambumi.xyz</p>
                 </div>
                 <div className="text-center">
                   <p className="font-semibold">📍 Kantor</p>
-                  <p className="text-sm">Jl. Malioboro No. 123, Yogyakarta</p>
+                  <p className="text-sm">Virtual Office</p>
                 </div>
               </div>
             </CardContent>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { MapPin, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,9 +60,7 @@ const Contact: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Alamat Kantor</h3>
                       <p className="text-muted-foreground font-body">
-                        Jl. Sudirman No. 123<br />
-                        Jakarta Selatan, DKI Jakarta 12345<br />
-                        Indonesia
+                        Virtual Office
                       </p>
                     </div>
                   </div>
@@ -78,8 +76,7 @@ const Contact: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Telepon</h3>
                       <p className="text-muted-foreground font-body">
-                        +62 21 1234 5678<br />
-                        +62 812 3456 7890 (WhatsApp)
+                        +62 813 9127 8889 (WhatsApp)
                       </p>
                     </div>
                   </div>
@@ -95,31 +92,13 @@ const Contact: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Email</h3>
                       <p className="text-muted-foreground font-body">
-                        info@salambumiproperty.com<br />
-                        support@salambumiproperty.com
+                        info@salambumi.xyz
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-full">
-                      <Clock className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">Jam Operasional</h3>
-                      <p className="text-muted-foreground font-body">
-                        Senin - Jumat: 08:00 - 17:00<br />
-                        Sabtu: 08:00 - 15:00<br />
-                        Minggu: Tutup
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
 

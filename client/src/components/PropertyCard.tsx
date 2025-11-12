@@ -16,10 +16,14 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
     const num = parseFloat(price);
     if (num >= 1000000000) {
       const value = num / 1000000000;
-      return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
+      // Use Math.round to handle floating point precision issues
+      const rounded = Math.round(value * 10) / 10;
+      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
     } else if (num >= 1000000) {
       const value = num / 1000000;
-      return `Rp ${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
+      // Use Math.round to handle floating point precision issues
+      const rounded = Math.round(value * 10) / 10;
+      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
     }
     return `Rp ${num.toLocaleString('id-ID')}`;
   };
@@ -47,7 +51,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
 
   const getLabel = () => {
     if (property.isHot) return { type: 'hot', text: 'HOT LISTING', color: 'bg-orange-500', icon: '🔥' };
-    if (property.isPremium) return { type: 'premium', text: 'PREMIUM', color: 'bg-purple-500', icon: '👑' };
+    if (property.isPremium) return { type: 'premium', text: 'PREMIUM', color: 'bg-gradient-to-r from-yellow-400 to-yellow-600', icon: '👑' };
     if (property.isFeatured) return { type: 'featured', text: 'FEATURED', color: 'bg-cyan-500', icon: '💎' };
     return null;
   };
@@ -65,10 +69,11 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
   return (
     <Card
       className={`
-        group relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-xl
-        transition-all duration-300 ease-out hover:-translate-y-1 hover:border-gray-300
+        group relative overflow-hidden bg-white border-2 border-blue-500 shadow-sm hover:shadow-xl
+        transition-all duration-300 ease-out hover:-translate-y-1 hover:border-blue-600
         rounded-lg
         ${property.isSold ? 'opacity-75' : 'hover:shadow-2xl'}
+        ${property.isPremium ? 'premium-glow-border' : ''}
       `}
       data-testid={`card-property-${property.id}`}
     >
