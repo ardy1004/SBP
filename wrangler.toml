@@ -1,0 +1,9 @@
+name = "sbp-upload-worker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# TODO: Add R2 bucket binding when bucket is created
+# [[r2_buckets]]
+# binding = "IMAGES_BUCKET"
+# bucket_name = "salambumi-images"
+# preview_bucket_name = "salambumi-images"

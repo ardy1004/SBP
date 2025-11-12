@@ -48,9 +48,11 @@ export default {
 		// --- SIMPAN FILE ASLI KE R2 ---
 		const timestamp = Date.now();
 		const originalKey = `images/${propertyId}/${timestamp}-original.${ext}`;
-		await env.IMAGES_BUCKET.put(originalKey, file, {
-		  httpMetadata: { contentType: file.type || `image/${ext}` },
-		});
+
+		// TODO: Uncomment when R2 bucket is available
+		// await env.IMAGES_BUCKET.put(originalKey, file, {
+		//   httpMetadata: { contentType: file.type || `image/${ext}` },
+		// });
 
 		// --- RETURN URL (Konversi WebP dilakukan di backend) ---
 		const publicDomain = 'https://images.salambumi.xyz';
