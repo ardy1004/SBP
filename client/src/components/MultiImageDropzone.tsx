@@ -181,41 +181,87 @@ export function MultiImageDropzone({
     toast({ title: 'Gambar berhasil dihapus dari form' });
   }, [images, toast, onImagesChange]);
 
-  const uploadFile = useCallback(async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('image', file); // Worker expects 'image' (singular)
-    formData.append('propertyId', propertyId || 'temp'); // Use propertyId or temp
+  // Function to convert image to WebP
+  const convertToWebP = useCallback(async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
 
-    console.log('Uploading file:', file.name, 'to Cloudflare Worker');
+      img.onload = () => {
+        // Set canvas size to image size
+        canvas.width = img.width;
+        canvas.height = img.height;
 
-    // Upload directly to Cloudflare Worker
-    const workerUrl = 'https://sbp-upload-worker.salambumiproperty-f1b.workers.dev';
-    const response = await fetch(workerUrl, {
-      method: 'POST',
-      body: formData,
+        // Draw image to canvas
+        ctx?.drawImage(img, 0, 0);
+
+        // Convert to WebP blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            // Create new File from blob with WebP extension
+            const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+              type: 'image/webp',
+              lastModified: Date.now(),
+            });
+            resolve(webpFile);
+          } else {
+            reject(new Error('Failed to convert to WebP'));
+          }
+        }, 'image/webp', 0.8); // 80% quality
+      };
+
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
     });
+  }, []);
 
-    console.log('Worker response status:', response.status);
+  const uploadFile = useCallback(async (file: File): Promise<string> => {
+    try {
+      console.log('Converting image to WebP:', file.name);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.log('Worker error response:', errorText);
-      throw new Error(`Upload gagal: ${response.status} ${errorText}`);
+      // Convert to WebP first
+      const webpFile = await convertToWebP(file);
+      console.log('WebP conversion successful, new file:', webpFile.name, 'size:', webpFile.size);
+
+      const formData = new FormData();
+      formData.append('image', webpFile); // Upload WebP file
+      formData.append('propertyId', propertyId || 'temp');
+
+      console.log('Uploading WebP file:', webpFile.name, 'to Cloudflare Worker');
+
+      // Upload WebP file to Cloudflare Worker
+      const workerUrl = 'https://sbp-upload-worker.salambumiproperty-f1b.workers.dev';
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('Worker response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Worker error response:', errorText);
+        throw new Error(`Upload gagal: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Worker result:', result);
+
+      if (!result.success || !result.url) {
+        throw new Error(result.error || 'No image URL returned from worker');
+      }
+
+      // Return the full URL from worker
+      const imageUrl = result.url;
+      console.log('WebP Image URL from worker:', imageUrl);
+
+      return imageUrl;
+    } catch (error) {
+      console.error('Upload/WebP conversion error:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    console.log('Worker result:', result);
-
-    if (!result.success || !result.url) {
-      throw new Error(result.error || 'No image URL returned from worker');
-    }
-
-    // Return the full URL from worker (already includes domain)
-    const imageUrl = result.url;
-    console.log('Image URL from worker:', imageUrl);
-
-    return imageUrl;
-  }, [propertyId]);
+  }, [propertyId, convertToWebP]);
 
   const onDrop = useCallback(async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
     console.log('onDrop called:', { acceptedFiles: acceptedFiles.length, fileRejections: fileRejections.length });
@@ -322,7 +368,7 @@ export function MultiImageDropzone({
     if (successCount > 0) {
       toast({
         title: 'Upload Berhasil!',
-        description: `${successCount} gambar berhasil diupload dan dikonversi ke WebP.`,
+        description: `${successCount} gambar berhasil dikonversi ke WebP dan diupload.`,
       });
     }
 
