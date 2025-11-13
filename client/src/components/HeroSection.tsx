@@ -38,7 +38,7 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1920&h=1080&fit=crop')",
+          backgroundImage: "url('https://images.unsplash.com/photo-QJKEa9n3yN8?w=1920&h=1080&fit=crop')",
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/50" />
