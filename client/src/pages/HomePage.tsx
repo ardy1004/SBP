@@ -310,7 +310,7 @@ export default function HomePage() {
     console.log('forceRender:', forceRender);
   }, [visibleCount, forceRender]);
 
-  const handleSearch = (filters: { status?: string; type?: string; location?: string }) => {
+  const handleSearch = (filters: { status?: string; type?: string }) => {
     setSearchFilters(filters);
     // Reset to first page when hero search changes
     setVisibleCount(8);

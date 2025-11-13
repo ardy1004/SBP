@@ -15,20 +15,17 @@ interface HeroSectionProps {
   onSearch: (filters: {
     status?: string;
     type?: string;
-    location?: string;
   }) => void;
 }
 
 export function HeroSection({ onSearch }: HeroSectionProps) {
   const [status, setStatus] = useState<string>("");
   const [type, setType] = useState<string>("");
-  const [location, setLocation] = useState<string>("");
 
   const handleSearch = () => {
     onSearch({
       status: status || undefined,
       type: type || undefined,
-      location: location || undefined,
     });
   };
 
@@ -55,7 +52,7 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
 
         {/* Search Bar */}
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger data-testid="select-status" className="bg-background">
                 <SelectValue placeholder="Jual / Sewa" />
@@ -82,17 +79,9 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
               </SelectContent>
             </Select>
 
-            <Input
-              placeholder="Lokasi (kota)"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              data-testid="input-location"
-              className="bg-background"
-            />
-
-            <Button 
-              onClick={handleSearch} 
-              className="w-full" 
+            <Button
+              onClick={handleSearch}
+              className="w-full"
               size="lg"
               data-testid="button-search"
             >
