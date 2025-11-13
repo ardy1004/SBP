@@ -132,6 +132,7 @@ export const PROPERTY_TYPES = [
   "ruko",
   "tanah",
   "bangunan_komersial",
+  "homestay_guesthouse",
 ] as const;
 
 export const PROPERTY_STATUSES = ["dijual", "disewakan"] as const;
