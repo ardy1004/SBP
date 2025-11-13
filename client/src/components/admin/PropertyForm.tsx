@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { MultiImageDropzone } from "@/components/MultiImageDropzone";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, LEGAL_STATUSES, type Property } from "@shared/types";
+import { MessageCircle } from "lucide-react";
 
 interface PropertyFormProps {
   property: Property | null;
@@ -48,7 +49,9 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     imageUrl8: "",
     imageUrl9: "",
     status: "dijual",
-    ownerContact: "",
+    ownerContact1: "",
+    ownerContact2: "",
+    ownerContact3: "",
     isPremium: false,
     isFeatured: false,
     isHot: false,
@@ -96,7 +99,9 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         imageUrl8: "",
         imageUrl9: "",
         status: "dijual",
-        ownerContact: "",
+        ownerContact1: "",
+        ownerContact2: "",
+        ownerContact3: "",
         isPremium: false,
         isFeatured: false,
         isHot: false,
@@ -107,6 +112,21 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
 
       // Then set with property data - use camelCase properties from transformed data
       setTimeout(() => {
+        let ownerContact1 = "";
+        let ownerContact2 = "";
+        let ownerContact3 = "";
+        if (property.ownerContact) {
+          try {
+            const parsed = JSON.parse(property.ownerContact);
+            ownerContact1 = parsed.contact1 || "";
+            ownerContact2 = parsed.contact2 || "";
+            ownerContact3 = parsed.contact3 || "";
+          } catch {
+            // If not JSON, treat as single contact
+            ownerContact1 = property.ownerContact;
+          }
+        }
+
         const newFormData = {
           kodeListing: property.kodeListing || "",
           judulProperti: property.judulProperti || "",
@@ -132,7 +152,9 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           imageUrl8: property.imageUrl8 || "",
           imageUrl9: property.imageUrl9 || "",
           status: property.status || "dijual",
-          ownerContact: property.ownerContact || "",
+          ownerContact1,
+          ownerContact2,
+          ownerContact3,
           isPremium: Boolean(property.isPremium),
           isFeatured: Boolean(property.isFeatured),
           isHot: Boolean(property.isHot),
@@ -172,7 +194,9 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         imageUrl8: "",
         imageUrl9: "",
         status: "dijual",
-        ownerContact: "",
+        ownerContact1: "",
+        ownerContact2: "",
+        ownerContact3: "",
         isPremium: false,
         isFeatured: false,
         isHot: false,
@@ -219,7 +243,11 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         is_sold: formData.isSold,
         price_old: formData.priceOld ? formData.priceOld : null,
         is_property_pilihan: formData.isPropertyPilihan,
-        owner_contact: formData.ownerContact || null,
+        owner_contact: (formData.ownerContact1 || formData.ownerContact2 || formData.ownerContact3) ? JSON.stringify({
+          contact1: formData.ownerContact1 || null,
+          contact2: formData.ownerContact2 || null,
+          contact3: formData.ownerContact3 || null,
+        }) : null,
         status: formData.status,
       };
 
@@ -318,6 +346,27 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     }
   }, []);
 
+  const cleanPhoneNumber = (phone: string) => {
+    // Remove spaces, dashes, and other non-numeric characters except +
+    return phone.replace(/[^\d+]/g, '');
+  };
+
+  const openWhatsApp = (phone: string) => {
+    const cleaned = cleanPhoneNumber(phone);
+    // Ensure it starts with +62 for Indonesian numbers
+    let whatsappNumber = cleaned;
+    if (cleaned.startsWith('0')) {
+      whatsappNumber = '+62' + cleaned.substring(1);
+    } else if (cleaned.startsWith('62')) {
+      whatsappNumber = '+' + cleaned;
+    } else if (!cleaned.startsWith('+')) {
+      whatsappNumber = '+62' + cleaned;
+    }
+
+    const whatsappUrl = `https://wa.me/${whatsappNumber}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -394,6 +443,17 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             onChange={(e) => setFormData({ ...formData, hargaProperti: e.target.value })}
             required
             data-testid="input-harga"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="priceOld">Harga Lama</Label>
+          <Input
+            id="priceOld"
+            type="text"
+            value={formData.priceOld}
+            onChange={(e) => setFormData({ ...formData, priceOld: e.target.value })}
+            data-testid="input-price-old"
           />
         </div>
 
@@ -478,15 +538,68 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             data-testid="input-kabupaten"
           />
         </div>
+      </div>
 
-        <div>
-          <Label htmlFor="ownerContact">Kontak Pemilik</Label>
-          <Input
-            id="ownerContact"
-            value={formData.ownerContact}
-            onChange={(e) => setFormData({ ...formData, ownerContact: e.target.value })}
-            data-testid="input-owner-contact"
-          />
+      <div>
+        <Label className="text-base font-semibold">Kontak Pemilik</Label>
+        <div className="grid grid-cols-1 gap-4 mt-2">
+          <div>
+            <Label htmlFor="ownerContact1">Nama Pemilik</Label>
+            <Input
+              id="ownerContact1"
+              value={formData.ownerContact1}
+              onChange={(e) => setFormData({ ...formData, ownerContact1: e.target.value })}
+              data-testid="input-owner-contact-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="ownerContact2">Kontak 1</Label>
+            <div className="flex gap-2">
+              <Input
+                id="ownerContact2"
+                value={formData.ownerContact2}
+                onChange={(e) => setFormData({ ...formData, ownerContact2: e.target.value })}
+                data-testid="input-owner-contact-2"
+              />
+              {formData.ownerContact2 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openWhatsApp(formData.ownerContact2)}
+                  className="flex items-center gap-1"
+                  title="Chat WhatsApp"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WA
+                </Button>
+              )}
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="ownerContact3">Kontak 2</Label>
+            <div className="flex gap-2">
+              <Input
+                id="ownerContact3"
+                value={formData.ownerContact3}
+                onChange={(e) => setFormData({ ...formData, ownerContact3: e.target.value })}
+                data-testid="input-owner-contact-3"
+              />
+              {formData.ownerContact3 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openWhatsApp(formData.ownerContact3)}
+                  className="flex items-center gap-1"
+                  title="Chat WhatsApp"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WA
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -562,18 +675,6 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             />
             <label htmlFor="isHot" className="text-sm font-medium">Hot Listing</label>
           </div>
-          {formData.isHot && (
-            <div className="ml-6">
-              <Label htmlFor="priceOld">Harga Lama (untuk Hot Listing)</Label>
-              <Input
-                id="priceOld"
-                type="text"
-                value={formData.priceOld}
-                onChange={(e) => setFormData({ ...formData, priceOld: e.target.value })}
-                data-testid="input-price-old"
-              />
-            </div>
-          )}
           <div className="flex items-center gap-2">
             <Checkbox
               id="isSold"

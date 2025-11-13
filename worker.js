@@ -45,16 +45,18 @@ export default {
 		  });
 		}
 
-		// --- SIMPAN FILE KE R2 ---
+		// --- SETUP ---
+		const publicDomain = 'https://images.salambumi.xyz';
 		const timestamp = Date.now();
-		const fileKey = `images/${propertyId}/${timestamp}-original.${ext}`;
-		await env.IMAGES_BUCKET.put(fileKey, file, {
+
+		// --- SIMPAN FILE ASLI KE R2 ---
+		const originalKey = `images/${propertyId}/${timestamp}-original.${ext}`;
+		await env.IMAGES_BUCKET.put(originalKey, file, {
 		  httpMetadata: { contentType: file.type || `image/${ext}` },
 		});
 
-		// --- RETURN URL ---
-		const publicDomain = 'https://images.salambumi.xyz';
-		const imageUrl = `${publicDomain}/${fileKey}`;
+		// --- RETURN URL ORIGINAL (Konversi WebP akan dilakukan di backend) ---
+		const imageUrl = `${publicDomain}/${originalKey}`;
 
 		return new Response(JSON.stringify({
 		  success: true,

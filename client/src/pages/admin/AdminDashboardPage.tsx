@@ -1,9 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { Home, FileText, Eye, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminDashboardPage() {
+  const [, setLocation] = useLocation();
+  const { isAdmin, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      setLocation('/admin/login');
+    }
+  }, [isAdmin, loading, setLocation]);
+
   const { data: stats } = useQuery<any>({
     queryKey: ['/api/admin/stats'],
   });

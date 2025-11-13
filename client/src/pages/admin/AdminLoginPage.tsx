@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { authService } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const [, setLocation] = useLocation();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -19,22 +20,11 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const user = await authService.signIn(email, password);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+      if (!user || !authService.isAdmin()) {
+        throw new Error('Akses ditolak. Hanya admin yang dapat login.');
       }
-
-      // Store the JWT token
-      localStorage.setItem('adminToken', data.token);
 
       toast({
         title: "Login Berhasil",
@@ -44,7 +34,7 @@ export default function AdminLoginPage() {
     } catch (error) {
       toast({
         title: "Login Gagal",
-        description: error instanceof Error ? error.message : "Username atau password salah",
+        description: error instanceof Error ? error.message : "Email atau password salah",
         variant: "destructive",
       });
     } finally {
@@ -67,14 +57,14 @@ export default function AdminLoginPage() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                data-testid="input-username"
+                data-testid="input-email"
               />
             </div>
 
