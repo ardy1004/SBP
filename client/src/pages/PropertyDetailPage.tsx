@@ -354,7 +354,7 @@ export default function PropertyDetailPage() {
 
             {/* Sidebar - Inquiry Form */}
             <div className="lg:col-span-1">
-              <InquiryForm propertyId={property.id} onSubmit={handleInquirySubmit} />
+              <InquiryForm propertyId={property.id} property={property} onSubmit={handleInquirySubmit} />
             </div>
           </div>
 

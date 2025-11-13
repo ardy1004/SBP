@@ -1,18 +1,33 @@
 import { User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Property } from "@shared/types";
 
 interface InquiryFormProps {
   propertyId: string;
+  property?: Property;
   onSubmit?: (data: { name: string; whatsapp: string; message: string }) => Promise<void>;
 }
 
-export function InquiryForm({ propertyId }: InquiryFormProps) {
-  // Create WhatsApp link with greeting message
+export function InquiryForm({ propertyId, property }: InquiryFormProps) {
+  // Create WhatsApp link with greeting message, property link, and image
   const whatsappNumber = "+6281391278889";
-  const greetingMessage = encodeURIComponent(
-    "Halo, saya tertarik dengan properti yang saya lihat di website Salam Bumi Property. Bisakah saya mendapatkan informasi lebih detail?"
-  );
+
+  // Generate property URL
+  const propertyUrl = property ? `${window.location.origin}/${property.status}-${property.jenisProperti}-${property.kabupaten}?id=${property.id}` : window.location.origin;
+
+  // Create message with property details and image
+  let message = "Halo, saya tertarik dengan properti yang saya lihat di website Salam Bumi Property. Bisakah saya mendapatkan informasi lebih detail?";
+
+  if (property) {
+    message += `\n\nDetail Properti:\n${property.judulProperti || `${property.jenisProperti} di ${property.kabupaten}`}\n${propertyUrl}`;
+
+    if (property.imageUrl) {
+      message += `\n\nGambar: ${property.imageUrl}`;
+    }
+  }
+
+  const greetingMessage = encodeURIComponent(message);
   const whatsappUrl = `https://wa.me/${whatsappNumber.replace('+', '')}?text=${greetingMessage}`;
 
   return (
