@@ -205,10 +205,11 @@ export default function PropertyDetailPage() {
 
         {/* Open Graph */}
         <meta property="og:title" content={getTitle()} />
-        <meta property="og:description" content={property.deskripsi || `Properti ${property.status} di ${property.kabupaten}`} />
+        <meta property="og:description" content={property.deskripsi || `${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')} ${property.status} di ${property.kabupaten}, ${property.provinsi}. Harga: ${formatPrice(property.hargaProperti)}`} />
         <meta property="og:image" content={property.imageUrl} />
         <meta property="og:url" content={window.location.href} />
         <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Salam Bumi Property" />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />

@@ -10,22 +10,13 @@ interface InquiryFormProps {
 }
 
 export function InquiryForm({ propertyId, property }: InquiryFormProps) {
-  // Create WhatsApp link with greeting message, property link, and image
+  // Create WhatsApp link with greeting message and current page URL
   const whatsappNumber = "+6281391278889";
 
-  // Generate property URL
-  const propertyUrl = property ? `${window.location.origin}/${property.status}-${property.jenisProperti}-${property.kabupaten}?id=${property.id}` : window.location.origin;
+  // Use current page URL for Open Graph preview
+  const currentUrl = window.location.href;
 
-  // Create message with property details and image
-  let message = "Halo, saya tertarik dengan properti yang saya lihat di website Salam Bumi Property. Bisakah saya mendapatkan informasi lebih detail?";
-
-  if (property) {
-    message += `\n\nDetail Properti:\n${property.judulProperti || `${property.jenisProperti} di ${property.kabupaten}`}\n${propertyUrl}`;
-
-    if (property.imageUrl) {
-      message += `\n\nGambar: ${property.imageUrl}`;
-    }
-  }
+  const message = `Halo, saya tertarik dengan properti yang saya lihat di website Salam Bumi Property. Bisakah saya mendapatkan informasi lebih detail?\n\n${currentUrl}`;
 
   const greetingMessage = encodeURIComponent(message);
   const whatsappUrl = `https://wa.me/${whatsappNumber.replace('+', '')}?text=${greetingMessage}`;
