@@ -367,6 +367,14 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     window.open(whatsappUrl, '_blank');
   };
 
+  const formatPropertyType = (type: string) => {
+    return type
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+      .replace('Guesthouse', '& Guesthouse');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -411,7 +419,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             <SelectContent>
               {PROPERTY_TYPES.map((type) => (
                 <SelectItem key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')}
+                  {formatPropertyType(type)}
                 </SelectItem>
               ))}
             </SelectContent>
