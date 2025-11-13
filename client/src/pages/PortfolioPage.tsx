@@ -44,6 +44,62 @@ export default function PortfolioPage() {
       image: "https://images.salambumi.xyz/portfolio%20gallery/23854ae2-be1f-416f-85ed-15e6d694a66a_imgupscaler.ai_V2(Pro)_2K.webp",
       description: "Dokumentasi lengkap untuk keperluan legal dan AJB",
     },
+    {
+      title: "Dampingi Klien Survey Lokasi Rumah Perum Elite",
+      location: "Yogyakarta",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/41.webp",
+      description: "Dokumentasi survey lokasi rumah perumahan elite dengan analisis lingkungan",
+    },
+    {
+      title: "Dampingi Klien Survey Lokasi Rumah Villa Mewah",
+      location: "Sleman",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/60.webp",
+      description: "Survey detail villa mewah dengan pemetaan aksesibilitas premium",
+    },
+    {
+      title: "Dampingi Klien Survey Lokasi Hotel Bintang",
+      location: "Yogyakarta",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/65.webp",
+      description: "Dokumentasi lengkap survey lokasi hotel bintang dengan verifikasi legalitas",
+    },
+    {
+      title: "Dampingi Klien Survey Lokasi Kost Exclusive",
+      location: "Yogyakarta",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/IMAGE%20(11).webp",
+      description: "Survey kost exclusive dengan analisis fasilitas dan lingkungan",
+    },
+    {
+      title: "Dampingi Klien Survey Lokasi Hotel Budget",
+      location: "Sleman",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/IMAGE%20(14).webp",
+      description: "Dokumentasi survey hotel budget dengan pemetaan aksesibilitas strategis",
+    },
+    {
+      title: "Dampingi Klien Survey Lokasi Kost Exclusive",
+      location: "Yogyakarta",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/IMAGE%20(19).webp",
+      description: "Survey detail kost exclusive dengan verifikasi kualitas dan fasilitas",
+    },
+    {
+      title: "Dampingi Klien Survey Lokasi Kost Exclusive",
+      location: "Yogyakarta",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/IMAGE%20(20).webp",
+      description: "Dokumentasi lengkap survey kost exclusive dengan analisis lingkungan",
+    },
+    {
+      title: "Dampingi Klien Survey Lokasi Rumah Mewah Private Pool",
+      location: "Sleman",
+      year: "2024",
+      image: "https://images.salambumi.xyz/portfolio%20gallery/survey%20lokasi/IMAGE%20(25).webp",
+      description: "Survey rumah mewah dengan private pool dan pemetaan premium amenities",
+    },
   ];
 
   return (
