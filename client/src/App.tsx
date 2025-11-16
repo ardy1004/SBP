@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -22,6 +23,18 @@ import AdminAnalyticsPage from "@/pages/admin/AdminAnalyticsPage";
 import AdminIntegrationsPage from "@/pages/admin/AdminIntegrationsPage";
 
 function Router() {
+  const [location, setLocation] = useLocation();
+
+  // Handle hash-based routing from worker redirects
+  useEffect(() => {
+    const hash = window.location.hash.substring(1); // Remove the '#'
+    if (hash && hash !== location.substring(1)) {
+      // Redirect from hash to proper route
+      window.history.replaceState(null, '', `/${hash}`);
+      setLocation(`/${hash}`);
+    }
+  }, [location, setLocation]);
+
   return (
     <Switch>
       {/* Public Routes */}

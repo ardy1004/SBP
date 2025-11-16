@@ -128,17 +128,11 @@ async function handleSlugRedirect(request, env, url) {
 				},
 			});
 		} else {
-			// For regular users, generate the correct slug URL and redirect if needed
-			const correctSlug = generatePropertySlug(property);
-
-			// If the slug doesn't match the correct one, redirect to the correct slug
-			if (slug !== correctSlug) {
-				console.log('Redirecting from', slug, 'to correct slug', correctSlug);
-				return Response.redirect(`${url.origin}/${correctSlug}`, 301);
-			}
-
-			// If slug is correct, let the request pass through to the SPA
-			return null;
+			// For regular users, redirect to SPA with slug as hash
+			// This ensures the SPA loads and can handle client-side routing
+			console.log('Redirecting user to SPA with slug as hash:', slug);
+			const spaUrl = `https://salambumi.xyz/#${slug}`;
+			return Response.redirect(spaUrl, 302);
 		}
 
 	} catch (error) {
@@ -162,48 +156,60 @@ function parseSlugForKodeListing(slug) {
 	return null;
 }
 
-// Generate SEO-friendly slug (simplified version for worker)
+// Generate SEO-friendly slug (optimized version)
 function generatePropertySlug(property) {
-	// Clean province name
+	// Clean province name (remove "DI." prefix and standardize)
 	const cleanProvince = (provinsi) => {
 		return provinsi
-			.replace(/^DI\./i, '')
-			.replace(/^DAERAH\s+ISTIMEWA\s+/i, '')
+			.replace(/^DI\./i, '') // Remove "DI." prefix
+			.replace(/^DAERAH\s+ISTIMEWA\s+/i, '') // Remove "Daerah Istimewa" prefix
 			.toLowerCase()
 			.trim();
 	};
 
+	// Extract key words from title (first 3-4 meaningful words)
+	const extractKeyWords = (title) => {
+		if (!title) return '';
+
+		// Split by spaces and filter out common words
+		const words = title.toLowerCase()
+			.replace(/[^\w\s-]/g, '') // Remove punctuation
+			.split(/\s+/)
+			.filter(word => word.length > 2) // Remove very short words
+			.filter(word => !['dan', 'atau', 'dengan', 'yang', 'di', 'ke', 'dari', 'untuk', 'oleh', 'pada', 'dalam'].includes(word)) // Remove common words
+			.slice(0, 3); // Take only first 3 words
+
+		return words.join('-');
+	};
+
 	const parts = [
-		property.status || 'dijual',
-		property.jenis_properti || 'properti',
-		cleanProvince(property.provinsi || ''),
-		property.kabupaten?.toLowerCase() || '',
-		property.judul_properti || '',
-		property.kode_listing || ''
+		property.status || 'dijual', // Status (dijual/disewakan)
+		property.jenis_properti || 'properti', // Property type (kost, rumah, etc)
+		cleanProvince(property.provinsi || ''), // Province (yogyakarta, jakarta, etc)
+		property.kabupaten?.toLowerCase() || '', // Regency/City
+		extractKeyWords(property.judul_properti || ''), // Key words from title (max 3 words)
+		property.kode_listing || '' // Property code (K2.60, R1.25, etc)
 	];
 
+	// Clean and format each part
 	const cleanedParts = parts.map((part, index) => {
 		if (!part) return '';
 
-		if (index === 4) { // judul_properti
-			return part
-				.trim()
-				.replace(/\s+/g, '-')
-				.replace(/[^a-zA-Z0-9\s\-.,()]/g, '')
-				.replace(/-+/g, '-')
-				.replace(/^-|-$/g, '');
-		} else if (index === 5) { // kode_listing
+		// For kode_listing, keep original format
+		if (index === 5) {
 			return part.trim();
-		} else {
-			return part
-				.toLowerCase()
-				.trim()
-				.replace(/[^a-z0-9\s-]/g, '')
-				.replace(/\s+/g, '-')
-				.replace(/-+/g, '-')
-				.replace(/^-|-$/g, '');
 		}
-	}).filter(part => part.length > 0);
+
+		// For other parts, make lowercase and clean
+		return part
+			.toLowerCase()
+			.trim()
+			// Replace spaces and special characters with hyphens
+			.replace(/[^a-z0-9\s-]/g, '') // Remove special chars except spaces and hyphens
+			.replace(/\s+/g, '-') // Replace spaces with hyphens
+			.replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+			.replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+	}).filter(part => part.length > 0); // Remove empty parts
 
 	return cleanedParts.join('-');
 }
