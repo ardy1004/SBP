@@ -33,7 +33,7 @@ function Router() {
       <Route path="/favorites"><FavoritesPage /></Route>
       <Route path="/contact"><Contact /></Route>
       <Route path="/properti/:id"><PropertyDetailPage /></Route>
-      <Route path="/:status-:type-:location"><PropertyDetailPage /></Route>
+      <Route path="/:slug*"><PropertyDetailPage /></Route>
 
       {/* Admin Routes */}
       <Route path="/admin/login"><AdminLoginPage /></Route>

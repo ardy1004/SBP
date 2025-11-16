@@ -8,6 +8,12 @@ export default {
 			return handlePropertyShare(request, env, url);
 		}
 
+		// Handle SEO-friendly slug URLs (redirect to property detail page)
+		if (url.pathname.length > 1 && !url.pathname.includes('/admin') && !url.pathname.includes('/api')) {
+			const slugResult = await handleSlugRedirect(request, env, url);
+			if (slugResult) return slugResult;
+		}
+
 		// Handle image upload (existing functionality)
 		if (request.method === 'POST' && url.pathname === '/upload') {
 			return handleImageUpload(request, env);
@@ -22,7 +28,10 @@ export default {
 async function handlePropertyShare(request, env, url) {
 	const kodeListing = url.pathname.split('/p/')[1];
 
+	console.log('Property share request for kode_listing:', kodeListing);
+
 	if (!kodeListing) {
+		console.log('No kode_listing provided');
 		return new Response('Kode listing required', { status: 400 });
 	}
 
@@ -31,11 +40,27 @@ async function handlePropertyShare(request, env, url) {
 		const property = await fetchPropertyFromSupabase(kodeListing, env);
 
 		if (!property) {
+			console.log('Property not found for kode_listing:', kodeListing);
 			return new Response('Property not found', { status: 404 });
 		}
 
+		console.log('Property found:', property.kode_listing, 'with images:', property.image_url, property.image_url1);
+
+		// Build image array and get main image
+		const images = [
+			property.image_url,
+			property.image_url1,
+			property.image_url2,
+			property.image_url3,
+			property.image_url4,
+		].filter(Boolean);
+
+		const mainImageUrl = images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
+		console.log('Main image URL for share:', mainImageUrl);
+		console.log('All available images:', images);
+
 		// Generate HTML with OG meta tags
-		const html = generateShareCardHTML(property, kodeListing);
+		const html = generateShareCardHTML(property, kodeListing, mainImageUrl);
 
 		return new Response(html, {
 			headers: {
@@ -47,6 +72,140 @@ async function handlePropertyShare(request, env, url) {
 		console.error('Property share error:', error);
 		return new Response('Internal Server Error', { status: 500 });
 	}
+}
+
+// Handle SEO-friendly slug URLs (serve OG meta tags for crawlers, redirect for users)
+async function handleSlugRedirect(request, env, url) {
+	const slug = url.pathname.substring(1); // Remove leading slash
+	const userAgent = request.headers.get('User-Agent') || '';
+
+	console.log('Slug request for:', slug, 'User-Agent:', userAgent);
+
+	try {
+		// Parse slug to extract kode_listing
+		const kodeListing = parseSlugForKodeListing(slug);
+
+		if (!kodeListing) {
+			console.log('No kode_listing found in slug:', slug);
+			return null; // Let it fall through to 404
+		}
+
+		// Fetch property data
+		const property = await fetchPropertyFromSupabase(kodeListing, env);
+
+		if (!property) {
+			console.log('Property not found for kode_listing from slug:', kodeListing);
+			return null;
+		}
+
+		console.log('Property found for slug:', property.kode_listing);
+
+		// Check if this is a social media crawler or bot
+		const isCrawler = /facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|slackbot/i.test(userAgent);
+
+		if (isCrawler) {
+			console.log('Serving OG meta tags for crawler');
+
+			// Build image array and get main image
+			const images = [
+				property.image_url,
+				property.image_url1,
+				property.image_url2,
+				property.image_url3,
+				property.image_url4,
+			].filter(Boolean);
+
+			const mainImageUrl = images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
+			console.log('Main image URL for crawler:', mainImageUrl);
+			console.log('All available images:', images);
+
+			// Generate HTML with OG meta tags for crawler
+			const html = generateShareCardHTML(property, kodeListing, mainImageUrl);
+			return new Response(html, {
+				headers: {
+					'Content-Type': 'text/html; charset=utf-8',
+					'Cache-Control': 'public, max-age=3600',
+				},
+			});
+		} else {
+			// For regular users, generate the correct slug URL and redirect if needed
+			const correctSlug = generatePropertySlug(property);
+
+			// If the slug doesn't match the correct one, redirect to the correct slug
+			if (slug !== correctSlug) {
+				console.log('Redirecting from', slug, 'to correct slug', correctSlug);
+				return Response.redirect(`${url.origin}/${correctSlug}`, 301);
+			}
+
+			// If slug is correct, let the request pass through to the SPA
+			return null;
+		}
+
+	} catch (error) {
+		console.error('Slug redirect error:', error);
+		return null;
+	}
+}
+
+// Parse slug to extract kode_listing (simple implementation)
+function parseSlugForKodeListing(slug) {
+	const parts = slug.split('-');
+
+	// Look for kode_listing pattern (e.g., K2.60, R1.25)
+	for (let i = parts.length - 1; i >= 0; i--) {
+		const part = parts[i].toUpperCase();
+		if (/^[A-Z]\d+\.\d+$/.test(part)) {
+			return part;
+		}
+	}
+
+	return null;
+}
+
+// Generate SEO-friendly slug (simplified version for worker)
+function generatePropertySlug(property) {
+	// Clean province name
+	const cleanProvince = (provinsi) => {
+		return provinsi
+			.replace(/^DI\./i, '')
+			.replace(/^DAERAH\s+ISTIMEWA\s+/i, '')
+			.toLowerCase()
+			.trim();
+	};
+
+	const parts = [
+		property.status || 'dijual',
+		property.jenis_properti || 'properti',
+		cleanProvince(property.provinsi || ''),
+		property.kabupaten?.toLowerCase() || '',
+		property.judul_properti || '',
+		property.kode_listing || ''
+	];
+
+	const cleanedParts = parts.map((part, index) => {
+		if (!part) return '';
+
+		if (index === 4) { // judul_properti
+			return part
+				.trim()
+				.replace(/\s+/g, '-')
+				.replace(/[^a-zA-Z0-9\s\-.,()]/g, '')
+				.replace(/-+/g, '-')
+				.replace(/^-|-$/g, '');
+		} else if (index === 5) { // kode_listing
+			return part.trim();
+		} else {
+			return part
+				.toLowerCase()
+				.trim()
+				.replace(/[^a-z0-9\s-]/g, '')
+				.replace(/\s+/g, '-')
+				.replace(/-+/g, '-')
+				.replace(/^-|-$/g, '');
+		}
+	}).filter(part => part.length > 0);
+
+	return cleanedParts.join('-');
 }
 
 // Fetch property data from Supabase
@@ -75,17 +234,7 @@ async function fetchPropertyFromSupabase(kodeListing, env) {
 }
 
 // Generate HTML template with OG meta tags
-function generateShareCardHTML(property, propertyId) {
-	// Build image array and get main image
-	const images = [
-		property.image_url,
-		property.image_url1,
-		property.image_url2,
-		property.image_url3,
-		property.image_url4,
-	].filter(Boolean);
-
-	const mainImageUrl = images[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
+function generateShareCardHTML(property, propertyId, mainImageUrl) {
 
 	// Format price
 	const formatPrice = (price) => {

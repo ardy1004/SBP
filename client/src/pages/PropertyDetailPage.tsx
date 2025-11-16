@@ -11,12 +11,20 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { InquiryForm } from "@/components/InquiryForm";
 import { apiRequest } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
+import { parsePropertySlug } from "@/lib/utils";
 import type { Property } from "@shared/types";
 
 export default function PropertyDetailPage() {
   const [location, setLocation] = useLocation();
   const params = useParams();
-  const propertyId = params.id;
+
+  // Get slug from URL path (remove leading slash)
+  const slug = location.substring(1);
+  const parsedSlug = parsePropertySlug(slug);
+  const kodeListing = parsedSlug.kode_listing;
+
+  // For backward compatibility, also check for direct ID parameter
+  const propertyId = params.id || kodeListing;
   const [favorites, setFavorites] = useState<string[]>(() => {
     const saved = localStorage.getItem('favorites');
     return saved ? JSON.parse(saved) : [];
@@ -25,18 +33,25 @@ export default function PropertyDetailPage() {
   const { data: property, isLoading } = useQuery<Property>({
     queryKey: ['property-detail', propertyId],
     queryFn: async () => {
-      if (!propertyId) throw new Error('No property ID provided');
+      if (!propertyId) throw new Error('No property identifier provided');
 
       console.log('=== PROPERTY DETAIL QUERY ===');
-      console.log('Property ID:', propertyId);
+      console.log('Property ID/Kode Listing:', propertyId);
+      console.log('Slug:', slug);
+      console.log('Parsed slug:', parsedSlug);
 
       // Fetch from Supabase directly
       console.log('Fetching from Supabase...');
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', propertyId)
-        .single();
+      let query = supabase.from('properties').select('*');
+
+      // If we have a kode_listing from slug parsing, use kode_listing field; otherwise use ID field
+      if (kodeListing) {
+        query = query.eq('kode_listing', kodeListing);
+      } else {
+        query = query.eq('id', propertyId);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) {
         console.error('Supabase query error:', error);
@@ -145,7 +160,19 @@ export default function PropertyDetailPage() {
 
   const handleShare = async () => {
     if (!property) return;
-    const shareUrl = `${window.location.origin}/p/${property.kodeListing}`;
+
+    // Use SEO-friendly slug URL for sharing
+    const { generatePropertySlug } = await import('@/lib/utils');
+    const slug = generatePropertySlug({
+      status: property.status,
+      jenis_properti: property.jenisProperti,
+      provinsi: property.provinsi,
+      kabupaten: property.kabupaten,
+      judul_properti: property.judulProperti || undefined,
+      kode_listing: property.kodeListing
+    });
+    const shareUrl = `${window.location.origin}/${slug}`;
+
     if (navigator.share) {
       await navigator.share({
         title: `${property.judulProperti || property.jenisProperti} - ${property.kabupaten}`,

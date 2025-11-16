@@ -3,6 +3,7 @@ import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown, Eye, Calendar } from 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { generatePropertySlug } from "@/lib/utils";
 import type { Property } from "@shared/types";
 
 interface PropertyCardProps {
@@ -64,8 +65,15 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
   };
 
   const label = getLabel();
-  const slug = `/properti/${property.id}`;
-  const shareSlug = `/p/${property.id}`;
+  const slug = `/${generatePropertySlug({
+    status: property.status,
+    jenis_properti: property.jenisProperti,
+    provinsi: property.provinsi,
+    kabupaten: property.kabupaten,
+    judul_properti: property.judulProperti || undefined,
+    kode_listing: property.kodeListing
+  })}`;
+  const shareSlug = `/p/${property.kodeListing}`;
 
   return (
     <Card
