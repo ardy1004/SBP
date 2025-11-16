@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { Helmet } from "react-helmet";
 import { MapPin, Bed, Bath, Maximize, FileText, Share2, Heart, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,8 @@ import type { Property } from "@shared/types";
 
 export default function PropertyDetailPage() {
   const [location, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(window.location.search);
-  const propertyId = searchParams.get('id');
+  const params = useParams();
+  const propertyId = params.id;
   const [favorites, setFavorites] = useState<string[]>(() => {
     const saved = localStorage.getItem('favorites');
     return saved ? JSON.parse(saved) : [];
