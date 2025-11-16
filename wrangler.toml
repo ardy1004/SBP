@@ -7,6 +7,14 @@ compatibility_date = "2024-01-01"
 pattern = "salambumi.xyz/p/*"
 zone_name = "salambumi.xyz"
 
+[[routes]]
+pattern = "salambumi.xyz/dijual-*"
+zone_name = "salambumi.xyz"
+
+[[routes]]
+pattern = "salambumi.xyz/disewakan-*"
+zone_name = "salambumi.xyz"
+
 # Environment variables
 [vars]
 SUPABASE_URL = "https://ljnqmfwbphlrlslfwjbr.supabase.co"
