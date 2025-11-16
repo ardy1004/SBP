@@ -78,11 +78,12 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.31.7",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "typescript": "5.6.3",
     "vite": "^7.1.12",
-    "wrangler": "^3.0.0"
+    "wrangler": "^4.47.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

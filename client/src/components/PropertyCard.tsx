@@ -64,7 +64,8 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
   };
 
   const label = getLabel();
-  const slug = `/${property.status || 'dijual'}-${property.jenisProperti || 'rumah'}-${property.kabupaten || 'jakarta'}?id=${property.id}`;
+  const slug = `/properti/${property.id}`;
+  const shareSlug = `/p/${property.id}`;
 
   return (
     <Card
