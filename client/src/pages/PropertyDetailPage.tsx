@@ -145,7 +145,7 @@ export default function PropertyDetailPage() {
 
   const handleShare = async () => {
     if (!property) return;
-    const shareUrl = `${window.location.origin}/p/${property.id}`;
+    const shareUrl = `${window.location.origin}/p/${property.kodeListing}`;
     if (navigator.share) {
       await navigator.share({
         title: `${property.judulProperti || property.jenisProperti} - ${property.kabupaten}`,

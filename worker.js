@@ -18,24 +18,24 @@ export default {
 	},
 };
 
-// Handle property share cards (/p/[PROPERTY_ID])
+// Handle property share cards (/p/[KODE_LISTING])
 async function handlePropertyShare(request, env, url) {
-	const propertyId = url.pathname.split('/p/')[1];
+	const kodeListing = url.pathname.split('/p/')[1];
 
-	if (!propertyId) {
-		return new Response('Property ID required', { status: 400 });
+	if (!kodeListing) {
+		return new Response('Kode listing required', { status: 400 });
 	}
 
 	try {
 		// Fetch property data from Supabase
-		const property = await fetchPropertyFromSupabase(propertyId, env);
+		const property = await fetchPropertyFromSupabase(kodeListing, env);
 
 		if (!property) {
 			return new Response('Property not found', { status: 404 });
 		}
 
 		// Generate HTML with OG meta tags
-		const html = generateShareCardHTML(property, propertyId);
+		const html = generateShareCardHTML(property, kodeListing);
 
 		return new Response(html, {
 			headers: {
@@ -50,7 +50,7 @@ async function handlePropertyShare(request, env, url) {
 }
 
 // Fetch property data from Supabase
-async function fetchPropertyFromSupabase(propertyId, env) {
+async function fetchPropertyFromSupabase(kodeListing, env) {
 	const supabaseUrl = env.SUPABASE_URL;
 	const supabaseKey = env.SUPABASE_ANON_KEY;
 
@@ -58,7 +58,7 @@ async function fetchPropertyFromSupabase(propertyId, env) {
 		throw new Error('Supabase configuration missing');
 	}
 
-	const response = await fetch(`${supabaseUrl}/rest/v1/properties?id=eq.${propertyId}&select=*`, {
+	const response = await fetch(`${supabaseUrl}/rest/v1/properties?kode_listing=eq.${encodeURIComponent(kodeListing)}&select=*`, {
 		headers: {
 			'Authorization': `Bearer ${supabaseKey}`,
 			'apikey': supabaseKey,
@@ -110,7 +110,7 @@ function generateShareCardHTML(property, propertyId) {
 
 	const baseUrl = 'https://salambumi.xyz';
 	const shareUrl = `${baseUrl}/p/${propertyId}`;
-	const detailUrl = `${baseUrl}/properti/${propertyId}`;
+	const detailUrl = `${baseUrl}/properti/${property.id}`;
 
 	return `<!DOCTYPE html>
 <html lang="id">
