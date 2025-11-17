@@ -396,7 +396,7 @@ export default function PropertyDetailPage() {
                 <Card>
                   <CardContent className="p-6">
                     <h3 className="font-semibold text-lg mb-4">Video Properti</h3>
-                    <div className="aspect-video w-full max-w-2xl mx-auto">
+                    <div className="aspect-[9/16] w-full max-w-sm mx-auto">
                       <iframe
                         src={`https://www.youtube.com/embed/${getYouTubeVideoId(property.youtubeUrl)}`}
                         title="Video Properti"
