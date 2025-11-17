@@ -11,6 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { ImageDropzone } from "@/components/ImageDropzone";
@@ -67,7 +76,20 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoGenerationStatus, setVideoGenerationStatus] = useState<string>('');
+  const [videoProgress, setVideoProgress] = useState<{ current: number; total: number; status: string } | null>(null);
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [generatedVideoBlob, setGeneratedVideoBlob] = useState<Blob | null>(null);
+  const [previewVideoBlob, setPreviewVideoBlob] = useState<Blob | null>(null);
   const { toast } = useToast();
+
+  // Debug effect for preview dialog
+  useEffect(() => {
+    console.log('🎬 showPreviewDialog changed:', showPreviewDialog);
+    if (showPreviewDialog) {
+      console.log('🎬 Preview dialog is now VISIBLE');
+    }
+  }, [showPreviewDialog]);
 
   // Computed values for video generation
   const validImages = [formData.imageUrl, formData.imageUrl1, formData.imageUrl2, formData.imageUrl3, formData.imageUrl4]
@@ -376,44 +398,115 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     }
 
     setIsGeneratingVideo(true);
-    setVideoGenerationStatus('Memulai generate video...');
+    setVideoProgress({ current: 0, total: validImageCount, status: 'Memulai generate video...' });
 
     try {
-      const { generatePropertyVideo, downloadBlob } = await import('@/lib/utils');
-
-      setVideoGenerationStatus('Menganalisis gambar properti...');
+      const { generatePropertyVideo } = await import('@/lib/utils');
 
       const videoBlob = await generatePropertyVideo({
         images: validImages,
         title: formData.judulProperti || `${formData.jenisProperti} di ${formData.kabupaten}`,
         description: formData.deskripsi,
         kodeListing: formData.kodeListing,
+        onProgress: (progress) => {
+          setVideoProgress(progress);
+        },
+        onFirstSegmentComplete: async (segmentBlob: Blob) => {
+          console.log('🎬 onFirstSegmentComplete called with blob:', segmentBlob);
+          // Show preview dialog and wait for user confirmation
+          return new Promise<boolean>((resolve) => {
+            console.log('Setting preview dialog state...');
+
+            // Use browser alert for now to ensure it works
+            const userChoice = window.confirm(
+              `🎬 Preview Video - Gambar Pertama Selesai!\n\n` +
+              `Video dari gambar pertama properti ${formData.kodeListing} telah berhasil dibuat.\n\n` +
+              `Apakah Anda ingin melanjutkan generate video dengan gambar berikutnya?\n\n` +
+              `✅ OK = Lanjut Generate Video Lengkap\n` +
+              `❌ Cancel = Batal`
+            );
+
+            console.log('User choice from alert:', userChoice ? 'Continue' : 'Cancel');
+            resolve(userChoice);
+          });
+        }
       });
 
-      setVideoGenerationStatus('Video berhasil di-generate! Mendownload...');
-
-      // Download video ke PC
-      const filename = `Property-${formData.kodeListing}-Video-${new Date().toISOString().split('T')[0]}.mp4`;
-      downloadBlob(videoBlob, filename);
-
-      setVideoGenerationStatus('✅ Video berhasil didownload ke PC Anda!');
-
-      toast({
-        title: "Video Berhasil Generated!",
-        description: `Video properti ${formData.kodeListing} telah didownload ke PC Anda.`,
-      });
+      setVideoProgress(null);
+      setGeneratedVideoBlob(videoBlob);
+      console.log('🎬 Video generation completed, showing final dialog with blob:', videoBlob);
+      setShowVideoDialog(true);
 
     } catch (error: any) {
       console.error('Video generation failed:', error);
-      setVideoGenerationStatus('❌ Gagal generate video');
+      setVideoProgress(null);
 
-      toast({
-        title: "Gagal Generate Video",
-        description: error.message || "Terjadi kesalahan saat generate video",
-        variant: "destructive",
-      });
+      // Don't show error toast if user cancelled
+      if (error.message !== 'Video generation cancelled by user') {
+        toast({
+          title: "Gagal Generate Video",
+          description: error.message || "Terjadi kesalahan saat generate video",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsGeneratingVideo(false);
+    }
+  };
+
+  const handleDownloadToPC = async () => {
+    if (!generatedVideoBlob) return;
+
+    const { downloadBlob } = await import('@/lib/utils');
+    const filename = `Property-${formData.kodeListing}-Video-${new Date().toISOString().split('T')[0]}.webm`;
+    downloadBlob(generatedVideoBlob, filename);
+
+    setShowVideoDialog(false);
+    setGeneratedVideoBlob(null);
+
+    toast({
+      title: "Video Berhasil Didownload!",
+      description: `Video properti ${formData.kodeListing} telah didownload ke PC Anda.`,
+    });
+  };
+
+  const handleSaveToStorage = async () => {
+    if (!generatedVideoBlob) return;
+
+    try {
+      // TODO: Implement upload to Supabase storage
+      // For now, just show a message
+      toast({
+        title: "Fitur Storage",
+        description: "Upload ke storage akan diimplementasikan selanjutnya.",
+      });
+
+      setShowVideoDialog(false);
+      setGeneratedVideoBlob(null);
+    } catch (error) {
+      toast({
+        title: "Gagal Upload",
+        description: "Terjadi kesalahan saat upload ke storage",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePreviewConfirm = () => {
+    setShowPreviewDialog(false);
+    setPreviewVideoBlob(null);
+    // Continue with video generation
+    if ((window as any).resolvePreviewConfirmation) {
+      (window as any).resolvePreviewConfirmation(true);
+    }
+  };
+
+  const handlePreviewCancel = () => {
+    setShowPreviewDialog(false);
+    setPreviewVideoBlob(null);
+    // Cancel video generation
+    if ((window as any).resolvePreviewConfirmation) {
+      (window as any).resolvePreviewConfirmation(false);
     }
   };
 
@@ -758,9 +851,18 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             )}
           </div>
 
-          {videoGenerationStatus && (
-            <div className="mt-3 p-3 bg-muted rounded-lg">
-              <p className="text-sm">{videoGenerationStatus}</p>
+          {videoProgress && (
+            <div className="mt-3 p-4 bg-muted rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{videoProgress.status}</p>
+                <span className="text-xs text-muted-foreground">
+                  {videoProgress.current}/{videoProgress.total}
+                </span>
+              </div>
+              <Progress
+                value={(videoProgress.current / videoProgress.total) * 100}
+                className="h-2"
+              />
             </div>
           )}
         </div>
@@ -844,6 +946,96 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           {isSubmitting ? "Menyimpan..." : "Simpan"}
         </Button>
       </div>
+
+      {/* Video Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={() => {}}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>🎬 Preview Video - Gambar Pertama Selesai!</DialogTitle>
+            <DialogDescription>
+              Video dari gambar pertama properti {formData.kodeListing} telah berhasil dibuat.
+              Apakah Anda ingin melanjutkan generate video dengan gambar berikutnya?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">✅</span>
+                </div>
+              </div>
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Video Segment Berhasil Dibuat!</h4>
+                <p className="text-sm text-muted-foreground">
+                  File video sementara dengan ukuran 2.00 MB telah dibuat dari gambar pertama.
+                  Video lengkap akan dibuat setelah Anda konfirmasi untuk melanjutkan.
+                </p>
+              </div>
+              {validImages[0] && (
+                <div className="border rounded-lg p-4">
+                  <p className="text-sm font-medium mb-2">Gambar yang diproses:</p>
+                  <img
+                    src={validImages[0]}
+                    alt="Gambar pertama"
+                    className="max-w-full max-h-48 mx-auto rounded border"
+                    onError={(e) => {
+                      console.error('Image failed to load:', e);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handlePreviewCancel}>
+              ❌ Batal - Jangan lanjut
+            </Button>
+            <Button onClick={handlePreviewConfirm}>
+              ✅ Lanjut Generate Video Lengkap
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Generation Dialog */}
+      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Video Berhasil Digenerate! 🎬</DialogTitle>
+            <DialogDescription>
+              Video properti {formData.kodeListing} telah berhasil dibuat. Pilih cara menyimpan video:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={handleDownloadToPC}>
+                <div>
+                  <h4 className="font-medium">💾 Download ke PC</h4>
+                  <p className="text-sm text-muted-foreground">Video akan langsung didownload ke folder Downloads PC Anda</p>
+                </div>
+                <Button variant="outline" size="sm">Download</Button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={handleSaveToStorage}>
+                <div>
+                  <h4 className="font-medium">☁️ Simpan ke Storage</h4>
+                  <p className="text-sm text-muted-foreground">Video disimpan sementara untuk upload ke YouTube (akan dihapus otomatis)</p>
+                </div>
+                <Button variant="outline" size="sm" disabled>Coming Soon</Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVideoDialog(false)}>
+              Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

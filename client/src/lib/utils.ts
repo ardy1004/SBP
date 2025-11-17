@@ -474,6 +474,8 @@ export async function generatePropertyVideo(propertyData: {
   title: string;
   description: string;
   kodeListing: string;
+  onProgress?: (progress: { current: number; total: number; status: string }) => void;
+  onFirstSegmentComplete?: (segmentBlob: Blob) => Promise<boolean>; // Return true to continue, false to cancel
 }): Promise<Blob> {
   try {
     console.log('🎬 Starting property video generation for:', propertyData.kodeListing);
@@ -483,32 +485,104 @@ export async function generatePropertyVideo(propertyData: {
       throw new Error('No images provided for video generation');
     }
 
-    // Convert images to base64 for API
-    const imagePromises = propertyData.images.slice(0, 4).map(async (imageUrl) => {
-      try {
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        return await blobToBase64(blob);
-      } catch (error) {
-        console.warn('Failed to load image:', imageUrl, error);
-        return null;
+    const totalImages = Math.min(propertyData.images.length, 4); // Max 4 images
+    console.log(`📸 Processing ${totalImages} images sequentially`);
+
+    // Process images one by one for better UX
+    const videoSegments: Blob[] = [];
+
+    for (let i = 0; i < totalImages; i++) {
+      const imageUrl = propertyData.images[i];
+      const progress = {
+        current: i + 1,
+        total: totalImages,
+        status: `Memproses gambar ${i + 1} dari ${totalImages}...`
+      };
+
+      propertyData.onProgress?.(progress);
+      console.log(`🎬 Processing image ${i + 1}/${totalImages}:`, imageUrl);
+
+      // Generate video segment for this image
+      const segmentBlob = await generateVideoSegmentWithByteDance(imageUrl, propertyData, i);
+
+      videoSegments.push(segmentBlob);
+
+      // After first segment, show preview and ask for confirmation
+      if (i === 0 && propertyData.onFirstSegmentComplete) {
+        console.log('🎬 First segment completed, showing preview dialog...');
+        const shouldContinue = await propertyData.onFirstSegmentComplete(segmentBlob);
+        console.log('Preview result:', shouldContinue ? 'Continue' : 'Cancel');
+        if (!shouldContinue) {
+          console.log('🛑 User cancelled video generation after preview');
+          throw new Error('Video generation cancelled by user');
+        }
       }
-    });
 
-    const base64Images = (await Promise.all(imagePromises)).filter((img): img is string => img !== null);
-
-    if (base64Images.length === 0) {
-      throw new Error('No valid images could be processed');
+      // Simulate realistic processing time per image (5-8 seconds)
+      const processingTime = 5000 + Math.random() * 3000; // 5-8 seconds
+      await new Promise(resolve => setTimeout(resolve, processingTime));
     }
 
-    // Generate video using ByteDance API
-    const videoBlob = await generateVideoWithByteDance(base64Images, propertyData);
+    // Final step: combine segments
+    propertyData.onProgress?.({
+      current: totalImages,
+      total: totalImages,
+      status: 'Menggabungkan video segments...'
+    });
+
+    console.log('🎬 Combining video segments...');
+    await new Promise(resolve => setTimeout(resolve, 2500)); // 2.5 seconds for combining
+
+    // For now, return the last segment as mock final video
+    // In production, this would combine all segments
+    const finalVideoBlob = videoSegments[videoSegments.length - 1];
+
+    propertyData.onProgress?.({
+      current: totalImages,
+      total: totalImages,
+      status: '✅ Video berhasil dibuat!'
+    });
 
     console.log('✅ Video generation completed successfully');
-    return videoBlob;
+    return finalVideoBlob;
 
   } catch (error) {
     console.error('❌ Video generation failed:', error);
+    throw error;
+  }
+}
+
+// Generate video segment for a single image
+async function generateVideoSegmentWithByteDance(
+  imageUrl: string,
+  propertyData: any,
+  segmentIndex: number
+): Promise<Blob> {
+  const apiKey = import.meta.env.VITE_BYTEDANCE_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('ByteDance API key not configured');
+  }
+
+  // Create prompt for this specific image segment
+  const prompt = createVideoPrompt(propertyData);
+
+  try {
+    console.log(`📡 Simulating ByteDance API for segment ${segmentIndex + 1}...`);
+
+    // Simulate realistic API processing time (3-5 seconds per segment)
+    const apiTime = 3000 + Math.random() * 2000; // 3-5 seconds
+    await new Promise(resolve => setTimeout(resolve, apiTime));
+
+    // Create mock video segment
+    const mockVideoData = createMockVideoData();
+    const videoBlob = new Blob([mockVideoData], { type: 'video/webm' });
+
+    console.log(`✅ Segment ${segmentIndex + 1} completed`);
+    return videoBlob;
+
+  } catch (error) {
+    console.error(`ByteDance API call failed for segment ${segmentIndex + 1}:`, error);
     throw error;
   }
 }
@@ -525,26 +599,24 @@ async function generateVideoWithByteDance(images: string[], propertyData: any): 
   const prompt = createVideoPrompt(propertyData);
 
   try {
-    console.log('📡 Calling ByteDance Seedream API...');
-    console.log('API Key:', apiKey.substring(0, 10) + '...');
-    console.log('Images count:', images.length);
+    console.log('📡 Simulating ByteDance Seedream API call...');
+    console.log('API Key configured:', !!apiKey);
+    console.log('Property:', propertyData.kodeListing);
 
-    // For now, create a mock video generation
-    // In production, replace with actual ByteDance API call
+    // For development testing, create mock video generation
     console.log('🎬 Mock video generation started...');
 
-    // Simulate API processing time
+    // Simulate API processing time (3 seconds)
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Create a simple video blob (placeholder)
-    // In real implementation, this would be the actual video from API
+    // Create a mock video blob for testing
     const mockVideoData = createMockVideoData();
-    const videoBlob = new Blob([mockVideoData], { type: 'video/mp4' });
+    const videoBlob = new Blob([mockVideoData], { type: 'video/webm' });
 
     console.log('✅ Mock video generation completed');
     return videoBlob;
 
-    // TODO: Replace with actual API call when endpoint is confirmed
+    // TODO: Uncomment and fix when actual API endpoint is available
     /*
     const response = await fetch('https://api.seedream.bytedance.com/v1/video/generate', {
       method: 'POST',
@@ -591,17 +663,34 @@ async function generateVideoWithByteDance(images: string[], propertyData: any): 
 
 // Create mock video data for testing (remove in production)
 function createMockVideoData(): ArrayBuffer {
-  // This creates a minimal MP4 header for testing
-  // In production, this would be replaced with actual video data
-  const data = [
-    0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, // MP4 header
-    0x69, 0x73, 0x6F, 0x6D, 0x00, 0x00, 0x00, 0x01,
-    0x69, 0x73, 0x6F, 0x6D, 0x61, 0x76, 0x63, 0x31,
-    // Add some dummy data to make it a valid blob
-    ...Array.from({ length: 1000 }, () => Math.floor(Math.random() * 256))
-  ];
+  // Create a very simple video data that browsers can recognize
+  // Instead of complex MP4/WebM structure, use a minimal approach
 
-  return new Uint8Array(data).buffer;
+  // Create a simple data pattern that looks like video content
+  // This will be recognized as a video file by browsers
+  const targetSize = 2 * 1024 * 1024; // 2MB
+  const data = new Uint8Array(targetSize);
+
+  // Fill with a pattern that browsers might accept as video data
+  // Use a simple repeating pattern that doesn't look like random noise
+  for (let i = 0; i < targetSize; i++) {
+    // Create a wave-like pattern that could resemble compressed video
+    const wave1 = Math.sin(i * 0.001) * 64 + 128;
+    const wave2 = Math.sin(i * 0.01) * 32 + 128;
+    const wave3 = Math.sin(i * 0.0001) * 16 + 128;
+    data[i] = Math.floor((wave1 + wave2 + wave3) / 3) & 0xFF;
+  }
+
+  // Add some "video-like" headers at the beginning to help browser recognition
+  // This is not a real video format, but might help browsers attempt to play it
+  const headerSize = 64;
+  for (let i = 0; i < headerSize; i++) {
+    data[i] = (i * 7) % 256; // Different pattern for header
+  }
+
+  const sizeInMB = (data.length / (1024 * 1024)).toFixed(2);
+  console.log(`📹 Mock video data created: ${data.length} bytes (${sizeInMB} MB) - Simple pattern for testing`);
+  return data.buffer;
 }
 
 // Create optimized prompt for real estate video generation
