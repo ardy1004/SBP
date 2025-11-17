@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { MultiImageDropzone } from "@/components/MultiImageDropzone";
+import { AIDescriptionGenerator } from "@/components/admin/AIDescriptionGenerator";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, LEGAL_STATUSES, type Property } from "@shared/types";
 import { MessageCircle } from "lucide-react";
 
@@ -621,13 +622,34 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         />
       </div>
 
-      <div>
-        <Label htmlFor="deskripsi">Deskripsi</Label>
-        <Textarea
-          id="deskripsi"
-          value={formData.deskripsi}
-          onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
-          data-testid="textarea-deskripsi"
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="deskripsi">Deskripsi</Label>
+          <Textarea
+            id="deskripsi"
+            value={formData.deskripsi}
+            onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
+            data-testid="textarea-deskripsi"
+            rows={6}
+          />
+        </div>
+
+        {/* AI Description Generator */}
+        <AIDescriptionGenerator
+          propertyData={{
+            jenis_properti: formData.jenisProperti,
+            kabupaten: formData.kabupaten,
+            provinsi: formData.provinsi,
+            harga_properti: formData.hargaProperti,
+            kamar_tidur: formData.kamarTidur ? parseInt(formData.kamarTidur) : undefined,
+            kamar_mandi: formData.kamarMandi ? parseInt(formData.kamarMandi) : undefined,
+            luas_tanah: formData.luasTanah ? parseFloat(formData.luasTanah) : undefined,
+            luas_bangunan: formData.luasBangunan ? parseFloat(formData.luasBangunan) : undefined,
+            kode_listing: formData.kodeListing,
+            judul_properti: formData.judulProperti,
+          }}
+          currentDescription={formData.deskripsi}
+          onDescriptionChange={(description) => setFormData({ ...formData, deskripsi: description })}
         />
       </div>
 

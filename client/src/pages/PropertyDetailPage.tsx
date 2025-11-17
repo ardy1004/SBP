@@ -364,9 +364,9 @@ export default function PropertyDetailPage() {
                 <Card>
                   <CardContent className="p-6">
                     <h3 className="font-semibold text-lg mb-4">Deskripsi</h3>
-                    <p className="text-foreground leading-relaxed font-body max-w-prose" data-testid="text-description">
+                    <div className="text-foreground leading-relaxed font-body max-w-prose whitespace-pre-line" data-testid="text-description">
                       {property.deskripsi}
-                    </p>
+                    </div>
                   </CardContent>
                 </Card>
               )}
