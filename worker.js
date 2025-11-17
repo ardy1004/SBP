@@ -14,6 +14,11 @@ export default {
 			if (slugResult) return slugResult;
 		}
 
+		// Handle AI chat requests
+		if (request.method === 'POST' && url.pathname === '/api/chat') {
+			return handleChatRequest(request, env);
+		}
+
 		// Handle image upload (existing functionality)
 		if (request.method === 'POST' && url.pathname === '/upload') {
 			return handleImageUpload(request, env);
@@ -360,6 +365,146 @@ function generateShareCardHTML(property, propertyId, mainImageUrl) {
 	</div>
 </body>
 </html>`;
+}
+
+// Handle AI chat requests
+async function handleChatRequest(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type',
+			},
+		});
+	}
+
+	if (request.method !== 'POST') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		const { messages } = await request.json();
+
+		if (!messages || !Array.isArray(messages)) {
+			return new Response(JSON.stringify({ error: 'Messages array required' }), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Get API key from environment
+		const geminiApiKey = env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY;
+		if (!geminiApiKey) {
+			console.error('Gemini API key not configured');
+			return new Response(JSON.stringify({ error: 'AI service unavailable' }), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// System prompt for property chatbot
+		const systemPrompt = `You are a friendly and helpful property agent chatbot for SalamBumiProperty, a real estate company in Indonesia.
+
+Your role:
+- Help users find properties (kost, rumah, apartemen, tanah, ruko, villa, gudang)
+- Answer questions about real estate, locations, pricing, and property features
+- Provide information about property listings, market trends, and investment opportunities
+- Guide users through the property search process
+- Be conversational, professional, and enthusiastic
+- Always respond in Indonesian (Bahasa Indonesia)
+- If users ask about specific properties, mention that they can browse our website or contact our agents
+- For pricing questions, give general ranges and suggest checking current listings
+- Be knowledgeable about Indonesian property market, especially Yogyakarta and surrounding areas
+- End conversations helpfully by offering more assistance or directing to contact information
+
+Guidelines:
+- Keep responses concise but informative (2-4 sentences typically)
+- Use friendly, approachable language
+- Include relevant property keywords naturally for SEO
+- If unsure about specific details, suggest contacting human agents
+- Always maintain a positive, helpful tone`;
+
+		// Prepare messages for Gemini API
+		const geminiMessages = [
+			{
+				role: 'user',
+				parts: [{ text: systemPrompt }]
+			},
+			...messages.map(msg => ({
+				role: msg.role === 'assistant' ? 'model' : 'user',
+				parts: [{ text: msg.content }]
+			}))
+		];
+
+		// Call Gemini API
+		const response = await fetch(
+			`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					contents: geminiMessages,
+					generationConfig: {
+						temperature: 0.7,
+						topK: 40,
+						topP: 0.9,
+						maxOutputTokens: 800,
+					}
+				}),
+			}
+		);
+
+		if (!response.ok) {
+			console.error('Gemini API error:', response.status, await response.text());
+			return new Response(JSON.stringify({ error: 'AI service temporarily unavailable' }), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const result = await response.json();
+		const chatResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+		if (!chatResponse) {
+			return new Response(JSON.stringify({ error: 'No response generated' }), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		return new Response(JSON.stringify({ response: chatResponse.trim() }), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+
+	} catch (error) {
+		console.error('Chat API error:', error);
+		return new Response(JSON.stringify({ error: 'Internal server error' }), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
 }
 
 // Handle image upload (existing functionality)

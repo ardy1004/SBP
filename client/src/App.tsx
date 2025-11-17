@@ -4,9 +4,11 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+// import { ChatWidget } from "@/components/ChatWidget"; // Temporarily disabled
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import PropertyDetailPage from "@/pages/PropertyDetailPage";
@@ -38,15 +40,51 @@ function Router() {
   return (
     <Switch>
       {/* Public Routes */}
-      <Route path="/"><HomePage /></Route>
-      <Route path="/about"><AboutPage /></Route>
-      <Route path="/portfolio"><PortfolioPage /></Route>
-      <Route path="/notaris"><NotarisPage /></Route>
-      <Route path="/faq"><FAQPage /></Route>
-      <Route path="/favorites"><FavoritesPage /></Route>
-      <Route path="/contact"><Contact /></Route>
-      <Route path="/properti/:id"><PropertyDetailPage /></Route>
-      <Route path="/:slug*"><PropertyDetailPage /></Route>
+      <Route path="/">
+        <ErrorBoundary>
+          <HomePage />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/about">
+        <ErrorBoundary>
+          <AboutPage />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/portfolio">
+        <ErrorBoundary>
+          <PortfolioPage />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/notaris">
+        <ErrorBoundary>
+          <NotarisPage />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/faq">
+        <ErrorBoundary>
+          <FAQPage />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/favorites">
+        <ErrorBoundary>
+          <FavoritesPage />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/contact">
+        <ErrorBoundary>
+          <Contact />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/properti/:id">
+        <ErrorBoundary>
+          <PropertyDetailPage />
+        </ErrorBoundary>
+      </Route>
+      <Route path="/:slug*">
+        <ErrorBoundary>
+          <PropertyDetailPage />
+        </ErrorBoundary>
+      </Route>
 
       {/* Admin Routes */}
       <Route path="/admin/login"><AdminLoginPage /></Route>
@@ -65,16 +103,27 @@ function App() {
   const isAdminRoute = window.location.pathname.startsWith('/admin');
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          {!isAdminRoute && <Navigation />}
-          <Router />
-          {!isAdminRoute && <Footer />}
-          <Toaster />
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        // Log to console in development
+        console.error('App Error:', error, errorInfo);
+
+        // In production, you could send to error reporting service
+        // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            {!isAdminRoute && <Navigation />}
+            <Router />
+            {!isAdminRoute && <Footer />}
+            {/* {!isAdminRoute && <ChatWidget />} // Temporarily disabled */}
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

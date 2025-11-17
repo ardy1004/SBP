@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useCallback, useEffect } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { HeroSection } from "@/components/HeroSection";
 import { PropertyPilihanSlider } from "@/components/PropertyPilihanSlider";
@@ -11,82 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Property } from "@shared/types";
 import { supabase } from "@/lib/supabase";
 
-// VANILLA JAVASCRIPT PAGINATION - Complete replacement for React state issues
-function VanillaPagination({
-  properties,
-  onToggleFavorite,
-  favorites,
-  initialVisibleCount = 8
-}: {
-  properties: Property[];
-  onToggleFavorite: (id: string) => void;
-  favorites: string[];
-  initialVisibleCount?: number;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [internalVisibleCount, setInternalVisibleCount] = useState(initialVisibleCount);
-
-  // Direct DOM manipulation for pagination
-  const loadMoreVanilla = () => {
-    console.log('=== VANILLA LOAD MORE ===');
-    console.log('Current visible:', internalVisibleCount);
-    console.log('Total properties:', properties.length);
-
-    const newCount = internalVisibleCount + 8;
-    console.log('Setting to:', newCount);
-
-    setInternalVisibleCount(newCount);
-
-    // Force DOM update
-    setTimeout(() => {
-      if (containerRef.current) {
-        const event = new Event('vanilla-load-more', { bubbles: true });
-        containerRef.current.dispatchEvent(event);
-      }
-    }, 0);
-  };
-
-  const displayedProperties = properties.slice(0, internalVisibleCount);
-
-  return (
-    <div ref={containerRef}>
-      <div
-        data-testid="vanilla-property-grid"
-        key={`vanilla-grid-${Date.now()}-${internalVisibleCount}`}
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6"
-      >
-        {displayedProperties.map((property, index) => {
-          console.log(`VANILLA: Rendering property ${index + 1}/${displayedProperties.length}:`, property?.kodeListing || 'undefined');
-          console.log(`VANILLA: Property object:`, property);
-          return (
-            <PropertyCard
-              key={`vanilla-${property?.id || index}-${Date.now()}-${internalVisibleCount}-${index}`}
-              property={property}
-              onToggleFavorite={onToggleFavorite}
-              isFavorite={favorites.includes(property?.id || '')}
-            />
-          );
-        })}
-      </div>
-
-      {properties.length > internalVisibleCount && (
-        <div className="text-center mt-8">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={loadMoreVanilla}
-            data-testid="vanilla-load-more"
-          >
-            Lihat Lebih Banyak ({properties.length - internalVisibleCount} tersisa)
-          </Button>
-        </div>
-      )}
-
-      {/* Counter removed for cleaner UI */}
-    </div>
-  );
-}
-
 export default function HomePage() {
   const [, setLocation] = useLocation();
   const [searchFilters, setSearchFilters] = useState<any>({});
@@ -96,11 +20,6 @@ export default function HomePage() {
     const saved = localStorage.getItem('favorites');
     return saved ? JSON.parse(saved) : [];
   });
-
-  // Use ref for direct DOM manipulation as last resort
-  const gridRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState(8);
-  const [forceRender, setForceRender] = useState(0);
 
   // Transform function to convert Supabase snake_case to camelCase
   const transformSupabaseProperty = (supabaseProperty: any): Property => {
@@ -169,37 +88,26 @@ export default function HomePage() {
   // Transform the raw Supabase pilihan data
   const propertyPilihan = rawPropertyPilihan.map(transformSupabaseProperty);
 
-  // Build query params from all filters
-  const buildQueryParams = () => {
-    const params = new URLSearchParams();
-    if (searchFilters.status) params.set('status', searchFilters.status);
-    if (searchFilters.type) params.set('type', searchFilters.type);
-    if (searchFilters.location) params.set('location', searchFilters.location);
-    if (advancedFilters.minPrice) params.set('minPrice', advancedFilters.minPrice.toString());
-    if (advancedFilters.maxPrice) params.set('maxPrice', advancedFilters.maxPrice.toString());
-    if (advancedFilters.bedrooms) params.set('bedrooms', advancedFilters.bedrooms.toString());
-    if (advancedFilters.bathrooms) params.set('bathrooms', advancedFilters.bathrooms.toString());
-    if (advancedFilters.minLandArea) params.set('minLandArea', advancedFilters.minLandArea.toString());
-    if (advancedFilters.maxLandArea) params.set('maxLandArea', advancedFilters.maxLandArea.toString());
-    if (advancedFilters.minBuildingArea) params.set('minBuildingArea', advancedFilters.minBuildingArea.toString());
-    if (advancedFilters.maxBuildingArea) params.set('maxBuildingArea', advancedFilters.maxBuildingArea.toString());
-    if (advancedFilters.legalStatus) params.set('legalStatus', advancedFilters.legalStatus);
-    if (keyword.trim()) params.set('keyword', keyword.trim());
-    return params.toString();
-  };
+  // Fetch filtered properties with infinite scroll using React Query
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+    isLoading
+  } = useInfiniteQuery({
+    queryKey: ['properties-infinite', searchFilters, advancedFilters, keyword],
+    queryFn: async ({ pageParam = 0 }) => {
+      console.log('🏠 HomePage: Fetching properties from Supabase...', { pageParam });
 
-
-  // Fetch filtered properties directly from Supabase
-  const queryString = buildQueryParams();
-  const { data: rawProperties = [], isLoading, error } = useQuery<any[]>({
-    queryKey: [`properties-${queryString}`],
-    queryFn: async () => {
-      console.log('🏠 HomePage: Fetching properties from Supabase...');
-
+      const PAGE_SIZE = 8;
       let query = supabase
         .from('properties')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
 
       // Apply filters
       if (searchFilters.status) {
@@ -252,8 +160,8 @@ export default function HomePage() {
         console.error('❌ HomePage: Supabase query error:', error);
         // Fallback to seed data if Supabase fails
         console.log('🔄 Fallback: Using seed data...');
-        return [
-          {
+        return {
+          properties: [{
             id: "fallback-1",
             kode_listing: "DEMO001",
             judul_properti: "Rumah Demo Minimalis Jakarta",
@@ -277,43 +185,28 @@ export default function HomePage() {
             is_property_pilihan: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          }
-        ];
+          }],
+          nextCursor: null
+        };
       }
 
       console.log(`✅ HomePage: Fetched ${data?.length || 0} raw properties from Supabase`);
       console.log('Raw first property:', data?.[0]);
-      return data || [];
+
+      return {
+        properties: data || [],
+        nextCursor: data && data.length === PAGE_SIZE ? pageParam + PAGE_SIZE : null
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: 0,
   });
 
-  // Transform the raw Supabase data to match our Property interface
-  const allProperties = rawProperties.map(transformSupabaseProperty);
-  // Simple approach: just use slice directly in render
-  const displayedProperties = allProperties.slice(0, visibleCount);
-
-  console.log('=== HOMEPAGE DEBUG ===');
-  console.log('allProperties length:', allProperties.length);
-  console.log('visibleCount:', visibleCount);
-  console.log('displayedProperties length:', displayedProperties.length);
-  console.log('isLoading:', isLoading);
-  console.log('error:', error);
-  console.log('First property sample:', allProperties[0]?.kodeListing || 'No properties');
-  console.log('First property object keys:', allProperties[0] ? Object.keys(allProperties[0]) : 'No properties');
-  console.log('First property object:', allProperties[0]);
-
-  // Force re-render when visibleCount changes
-  useEffect(() => {
-    console.log('=== FORCE RE-RENDER ===');
-    console.log('visibleCount changed to:', visibleCount);
-    console.log('displayedProperties length:', displayedProperties.length);
-    console.log('forceRender:', forceRender);
-  }, [visibleCount, forceRender]);
+  // Flatten the infinite query data
+  const allProperties = data?.pages.flatMap(page => page.properties).map(transformSupabaseProperty) || [];
 
   const handleSearch = (filters: { status?: string; type?: string }) => {
     setSearchFilters(filters);
-    // Reset to first page when hero search changes
-    setVisibleCount(8);
     window.scrollTo({ top: 800, behavior: 'smooth' });
   };
 
@@ -323,14 +216,10 @@ export default function HomePage() {
 
   const handleKeywordSearch = (searchKeyword: string) => {
     setKeyword(searchKeyword);
-    // Reset to first page when searching
-    setVisibleCount(8);
   };
 
   const handleAdvancedFiltersChange = (filters: FilterValues) => {
     setAdvancedFilters(filters);
-    // Reset to first page when filters change
-    setVisibleCount(8);
   };
 
   const toggleFavorite = (id: string) => {
@@ -341,44 +230,8 @@ export default function HomePage() {
     localStorage.setItem('favorites', JSON.stringify(newFavorites));
   };
 
-  const handleLoadMore = () => {
-    console.log('=== LOAD MORE CLICKED ===');
-    console.log('Current visibleCount:', visibleCount);
-    console.log('Total allProperties:', allProperties.length);
-
-    // Calculate new count
-    const newCount = visibleCount + 8;
-    const newForceRender = forceRender + 1;
-
-    console.log('Setting visibleCount to:', newCount);
-    console.log('Setting forceRender to:', newForceRender);
-
-    // Batch state updates
-    setVisibleCount(newCount);
-    setForceRender(newForceRender);
-
-    // Force immediate re-render with multiple techniques
-    setTimeout(() => {
-      console.log('=== FORCED RE-RENDER ATTEMPT ===');
-      // Force React to re-render by dispatching custom event
-      window.dispatchEvent(new CustomEvent('force-rerender', {
-        detail: { visibleCount: newCount, forceRender: newForceRender }
-      }));
-
-      // Direct DOM manipulation
-      const gridElement = document.querySelector('[data-testid="property-grid"]') as HTMLElement;
-      if (gridElement) {
-        console.log('Found grid element, forcing update');
-        // Force style recalculation
-        gridElement.style.display = 'none';
-        gridElement.offsetHeight; // Trigger reflow
-        gridElement.style.display = '';
-      }
-    }, 0);
-  };
-
   return (
-    <div key={`home-${visibleCount}`} className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <HeroSection onSearch={handleSearch} />
 
       {propertyPilihan.length > 0 && (
@@ -406,13 +259,22 @@ export default function HomePage() {
 
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-3">
                 <Skeleton className="aspect-[4/3] w-full rounded-xl" />
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
               </div>
             ))}
+          </div>
+        ) : status === 'error' ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">
+              Terjadi kesalahan saat memuat properti
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Silakan coba lagi atau hubungi tim kami
+            </p>
           </div>
         ) : allProperties.length === 0 ? (
           <div className="text-center py-12">
@@ -427,17 +289,35 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            <VanillaPagination
-              properties={allProperties}
-              onToggleFavorite={toggleFavorite}
-              favorites={favorites}
-              initialVisibleCount={8}
-            />
-            {/* Counter removed for cleaner UI */}
+            <div
+              data-testid="property-grid"
+              className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6"
+            >
+              {allProperties.map((property, index) => (
+                <PropertyCard
+                  key={`${property.id}-${index}`}
+                  property={property}
+                  onToggleFavorite={toggleFavorite}
+                  isFavorite={favorites.includes(property.id)}
+                />
+              ))}
+            </div>
+
+            {hasNextPage && (
+              <div className="text-center mt-8">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  data-testid="load-more"
+                >
+                  {isFetchingNextPage ? 'Memuat...' : `Lihat Lebih Banyak`}
+                </Button>
+              </div>
+            )}
           </>
         )}
-
-        {/* Load more button removed - now handled by VanillaPagination */}
       </div>
     </div>
   );
