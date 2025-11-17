@@ -1,13 +1,20 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface PropertyImageGalleryProps {
   images: string[];
   propertyTitle: string;
+  propertyLabels?: {
+    isPremium: boolean;
+    isFeatured: boolean;
+    isHot: boolean;
+    isSold: boolean;
+  };
 }
 
-export function PropertyImageGallery({ images, propertyTitle }: PropertyImageGalleryProps) {
+export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: PropertyImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
@@ -42,6 +49,32 @@ export function PropertyImageGallery({ images, propertyTitle }: PropertyImageGal
             }}
             data-testid="image-main"
           />
+
+          {/* Property Labels Overlay */}
+          {propertyLabels && (
+            <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+              {propertyLabels.isPremium && (
+                <Badge variant="secondary" className="bg-white/90 text-black border-0 shadow-lg">
+                  Premium
+                </Badge>
+              )}
+              {propertyLabels.isFeatured && (
+                <Badge className="bg-amber-500/90 text-white border-0 shadow-lg">
+                  Featured
+                </Badge>
+              )}
+              {propertyLabels.isHot && (
+                <Badge variant="destructive" className="bg-red-500/90 border-0 shadow-lg">
+                  Hot Listing
+                </Badge>
+              )}
+              {propertyLabels.isSold && (
+                <Badge variant="destructive" className="bg-red-600/90 border-0 shadow-lg">
+                  SOLD
+                </Badge>
+              )}
+            </div>
+          )}
 
           {/* Navigation Buttons */}
           {images.length > 1 && (

@@ -280,12 +280,25 @@ export default function PropertyDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              <PropertyImageGallery images={images} propertyTitle={property.kodeListing} />
+              <PropertyImageGallery
+                images={images}
+                propertyTitle={property.kodeListing}
+                propertyLabels={{
+                  isPremium: property.isPremium,
+                  isFeatured: property.isFeatured,
+                  isHot: property.isHot,
+                  isSold: property.isSold,
+                }}
+              />
 
               {/* Price and Title */}
               <div>
                 <div className="flex items-start justify-between mb-4">
                   <div>
+                    {/* Kode Listing */}
+                    <div className="text-sm font-medium text-muted-foreground mb-1">
+                      Kode: {property.kodeListing}
+                    </div>
                     <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-property-title">
                       {getTitle()}
                     </h1>
@@ -408,14 +421,6 @@ export default function PropertyDetailPage() {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Property Labels */}
-              <div className="flex flex-wrap gap-2">
-                {property.isPremium && <Badge variant="secondary">Premium</Badge>}
-                {property.isFeatured && <Badge className="bg-amber-500 text-white">Featured</Badge>}
-                {property.isHot && <Badge variant="destructive">Hot Listing</Badge>}
-                {property.isSold && <Badge variant="destructive">SOLD</Badge>}
-              </div>
             </div>
 
             {/* Sidebar - Inquiry Form */}
