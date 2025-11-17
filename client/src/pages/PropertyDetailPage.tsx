@@ -14,6 +14,24 @@ import { supabase } from "@/lib/supabase";
 import { parsePropertySlug } from "@/lib/utils";
 import type { Property } from "@shared/types";
 
+// Helper function to extract YouTube video ID from URL
+function getYouTubeVideoId(url: string): string {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/v\/([^&\n?#]+)/
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  // If no pattern matches, return the URL as-is (might already be an ID)
+  return url;
+}
+
 export default function PropertyDetailPage() {
   const [location, setLocation] = useLocation();
   const params = useParams();
@@ -86,6 +104,7 @@ export default function PropertyDetailPage() {
         imageUrl7: data.image_url7,
         imageUrl8: data.image_url8,
         imageUrl9: data.image_url9,
+        youtubeUrl: data.youtube_url,
         isPremium: data.is_premium,
         isFeatured: data.is_featured,
         isHot: data.is_hot,
@@ -371,6 +390,24 @@ export default function PropertyDetailPage() {
                 </Card>
               )}
 
+              {/* YouTube Video */}
+              {property.youtubeUrl && (
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg mb-4">Video Properti</h3>
+                    <div className="aspect-video w-full max-w-2xl mx-auto">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(property.youtubeUrl)}`}
+                        title="Video Properti"
+                        className="w-full h-full rounded-lg"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Property Labels */}
               <div className="flex flex-wrap gap-2">
                 {property.isPremium && <Badge variant="secondary">Premium</Badge>}
@@ -524,6 +561,7 @@ function RelatedPropertiesSection({ currentProperty }: { currentProperty: Proper
       imageUrl7: supabaseProperty.image_url7,
       imageUrl8: supabaseProperty.image_url8,
       imageUrl9: supabaseProperty.image_url9,
+      youtubeUrl: supabaseProperty.youtube_url,
       isPremium: supabaseProperty.is_premium,
       isFeatured: supabaseProperty.is_featured,
       isHot: supabaseProperty.is_hot,

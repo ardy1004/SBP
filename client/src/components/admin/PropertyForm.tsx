@@ -49,6 +49,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     imageUrl7: "",
     imageUrl8: "",
     imageUrl9: "",
+    youtubeUrl: "",
     status: "dijual",
     ownerContact1: "",
     ownerContact2: "",
@@ -99,6 +100,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         imageUrl7: "",
         imageUrl8: "",
         imageUrl9: "",
+        youtubeUrl: "",
         status: "dijual",
         ownerContact1: "",
         ownerContact2: "",
@@ -152,6 +154,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           imageUrl7: property.imageUrl7 || "",
           imageUrl8: property.imageUrl8 || "",
           imageUrl9: property.imageUrl9 || "",
+          youtubeUrl: property.youtubeUrl || "",
           status: property.status || "dijual",
           ownerContact1,
           ownerContact2,
@@ -194,6 +197,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         imageUrl7: "",
         imageUrl8: "",
         imageUrl9: "",
+        youtubeUrl: "",
         status: "dijual",
         ownerContact1: "",
         ownerContact2: "",
@@ -238,6 +242,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         image_url7: formData.imageUrl7 || null,
         image_url8: formData.imageUrl8 || null,
         image_url9: formData.imageUrl9 || null,
+        youtube_url: formData.youtubeUrl || null,
         is_premium: formData.isPremium,
         is_featured: formData.isFeatured,
         is_hot: formData.isHot,
@@ -620,6 +625,21 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           onChange={(e) => setFormData({ ...formData, alamatLengkap: e.target.value })}
           data-testid="textarea-alamat"
         />
+      </div>
+
+      <div>
+        <Label htmlFor="youtubeUrl">URL Video YouTube</Label>
+        <Input
+          id="youtubeUrl"
+          type="url"
+          value={formData.youtubeUrl}
+          onChange={(e) => setFormData({ ...formData, youtubeUrl: e.target.value })}
+          placeholder="https://www.youtube.com/watch?v=..."
+          data-testid="input-youtube-url"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Masukkan URL lengkap video YouTube untuk ditampilkan di halaman detail properti
+        </p>
       </div>
 
       <div className="space-y-4">

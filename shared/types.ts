@@ -57,6 +57,7 @@ export interface Property {
   priceOld?: string | null;
   isPropertyPilihan: boolean;
   ownerContact?: string | null;
+  youtubeUrl?: string | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;
