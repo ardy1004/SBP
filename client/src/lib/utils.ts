@@ -364,7 +364,8 @@ function generateFallbackDescription(data: any): string {
     apartemen: 'Apartemen',
     ruko: 'Ruko',
     villa: 'Villa',
-    gudang: 'Gudang'
+    gudang: 'Gudang',
+    tanah: 'Tanah'
   };
 
   const displayType = propertyLabels[propertyType as string] || (propertyType as string)?.charAt(0).toUpperCase() + (propertyType as string)?.slice(1);
@@ -377,24 +378,36 @@ function generateFallbackDescription(data: any): string {
     hook = `🏡 TEMUKAN ${displayType.toUpperCase()} IDAMAN ANDA DI ${location.toUpperCase()}!`;
   } else if (propertyType === 'apartemen') {
     hook = `🏢 TEMUKAN ${displayType.toUpperCase()} PREMIUM DI ${location.toUpperCase()}!`;
+  } else if (propertyType === 'tanah') {
+    hook = `🌱 TEMUKAN ${displayType.toUpperCase()} INVESTASI TERBAIK DI ${location.toUpperCase()}!`;
   } else {
     hook = `🏠 TEMUKAN ${displayType.toUpperCase()} EKSKLUSIF DI ${location.toUpperCase()}!`;
   }
 
   // Paragraph 1: Hook + Specifications + Price
-  let paragraph1 = `${hook}\n\n${displayType} premium dengan bangunan berkualitas ini menawarkan hunian modern yang sangat nyaman`;
+  let paragraph1 = '';
 
-  if (data.kamar_tidur && data.kamar_mandi) {
-    paragraph1 += ` dengan ${data.kamar_tidur} kamar tidur dan ${data.kamar_mandi} kamar mandi yang bersih`;
-  } else if (data.kamar_tidur) {
-    paragraph1 += ` dengan ${data.kamar_tidur} kamar tidur yang luas`;
+  if (propertyType === 'tanah') {
+    paragraph1 = `${hook}\n\n${displayType} kavling strategis ini menawarkan peluang investasi terbaik dengan luas ${data.luas_tanah || 'strategis'}m² yang sangat potensial untuk pengembangan`;
+    if (data.luas_tanah) {
+      paragraph1 += ` di area ${data.luas_tanah}m² yang siap bangun`;
+    }
+    paragraph1 += `. Harga investasi mulai ${price}!`;
+  } else {
+    paragraph1 = `${hook}\n\n${displayType} premium dengan bangunan berkualitas ini menawarkan hunian modern yang sangat nyaman`;
+
+    if (data.kamar_tidur && data.kamar_mandi) {
+      paragraph1 += ` dengan ${data.kamar_tidur} kamar tidur dan ${data.kamar_mandi} kamar mandi yang bersih`;
+    } else if (data.kamar_tidur) {
+      paragraph1 += ` dengan ${data.kamar_tidur} kamar tidur yang luas`;
+    }
+
+    if (data.luas_bangunan) {
+      paragraph1 += ` dalam area ${data.luas_bangunan}m² yang efisien`;
+    }
+
+    paragraph1 += `. Harga terjangkau mulai ${price}!`;
   }
-
-  if (data.luas_bangunan) {
-    paragraph1 += ` dalam area ${data.luas_bangunan}m² yang efisien`;
-  }
-
-  paragraph1 += `. Harga terjangkau mulai ${price}!`;
 
   // Paragraph 2: Location & Accessibility
   let paragraph2 = `Lokasi sangat strategis di ${data.kabupaten || 'area strategis'} yang berkembang pesat`;
@@ -411,16 +424,22 @@ function generateFallbackDescription(data: any): string {
   }
 
   // Paragraph 3: Facilities & Target Audience
-  let paragraph3 = 'Fasilitas lengkap termasuk area parkir yang aman';
+  let paragraph3 = '';
 
-  if (propertyType === 'kost') {
-    paragraph3 += ', WiFi unlimited, dan sistem keamanan 24 jam. Cocok untuk mahasiswa yang mencari hunian nyaman dekat kampus atau pekerja profesional yang membutuhkan lokasi strategis.';
-  } else if (propertyType === 'rumah') {
-    paragraph3 += ', taman yang asri, dan lingkungan yang tenang. Cocok untuk hunian keluarga yang menginginkan kenyamanan dan ketenangan.';
-  } else if (propertyType === 'apartemen') {
-    paragraph3 += ', gym, kolam renang, dan fasilitas modern lainnya. Cocok untuk urban lifestyle yang modern dan praktis.';
+  if (propertyType === 'tanah') {
+    paragraph3 = 'Lokasi sangat potensial untuk berbagai pengembangan properti dengan aksesibilitas yang prima dan infrastruktur yang terus berkembang. Cocok untuk investor yang mencari lahan strategis untuk pengembangan perumahan, komersial, atau investasi jangka panjang.';
   } else {
-    paragraph3 += ' dan lingkungan yang kondusif. Cocok untuk berbagai kebutuhan hunian dan investasi properti.';
+    paragraph3 = 'Fasilitas lengkap termasuk area parkir yang aman';
+
+    if (propertyType === 'kost') {
+      paragraph3 += ', WiFi unlimited, dan sistem keamanan 24 jam. Cocok untuk mahasiswa yang mencari hunian nyaman dekat kampus atau pekerja profesional yang membutuhkan lokasi strategis.';
+    } else if (propertyType === 'rumah') {
+      paragraph3 += ', taman yang asri, dan lingkungan yang tenang. Cocok untuk hunian keluarga yang menginginkan kenyamanan dan ketenangan.';
+    } else if (propertyType === 'apartemen') {
+      paragraph3 += ', gym, kolam renang, dan fasilitas modern lainnya. Cocok untuk urban lifestyle yang modern dan praktis.';
+    } else {
+      paragraph3 += ' dan lingkungan yang kondusif. Cocok untuk berbagai kebutuhan hunian dan investasi properti.';
+    }
   }
 
   // Paragraph 4: SEO & Call-to-action
