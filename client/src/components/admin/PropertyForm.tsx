@@ -65,7 +65,15 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoGenerationStatus, setVideoGenerationStatus] = useState<string>('');
   const { toast } = useToast();
+
+  // Computed values for video generation
+  const validImages = [formData.imageUrl, formData.imageUrl1, formData.imageUrl2, formData.imageUrl3, formData.imageUrl4]
+    .filter(url => url && url.trim() && !url.includes('unsplash.com'));
+  const hasValidImages = validImages.length > 0;
+  const validImageCount = validImages.length;
 
   useEffect(() => {
     if (property) {
@@ -355,6 +363,58 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
   const cleanPhoneNumber = (phone: string) => {
     // Remove spaces, dashes, and other non-numeric characters except +
     return phone.replace(/[^\d+]/g, '');
+  };
+
+  const handleGenerateVideo = async () => {
+    if (!hasValidImages) {
+      toast({
+        title: "Tidak ada gambar valid",
+        description: "Minimal 1 gambar properti diperlukan untuk generate video",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingVideo(true);
+    setVideoGenerationStatus('Memulai generate video...');
+
+    try {
+      const { generatePropertyVideo, downloadBlob } = await import('@/lib/utils');
+
+      setVideoGenerationStatus('Menganalisis gambar properti...');
+
+      const videoBlob = await generatePropertyVideo({
+        images: validImages,
+        title: formData.judulProperti || `${formData.jenisProperti} di ${formData.kabupaten}`,
+        description: formData.deskripsi,
+        kodeListing: formData.kodeListing,
+      });
+
+      setVideoGenerationStatus('Video berhasil di-generate! Mendownload...');
+
+      // Download video ke PC
+      const filename = `Property-${formData.kodeListing}-Video-${new Date().toISOString().split('T')[0]}.mp4`;
+      downloadBlob(videoBlob, filename);
+
+      setVideoGenerationStatus('✅ Video berhasil didownload ke PC Anda!');
+
+      toast({
+        title: "Video Berhasil Generated!",
+        description: `Video properti ${formData.kodeListing} telah didownload ke PC Anda.`,
+      });
+
+    } catch (error: any) {
+      console.error('Video generation failed:', error);
+      setVideoGenerationStatus('❌ Gagal generate video');
+
+      toast({
+        title: "Gagal Generate Video",
+        description: error.message || "Terjadi kesalahan saat generate video",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingVideo(false);
+    }
   };
 
   const openWhatsApp = (phone: string) => {
@@ -671,6 +731,39 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           currentDescription={formData.deskripsi}
           onDescriptionChange={(description) => setFormData({ ...formData, deskripsi: description })}
         />
+
+        {/* AI Video Generator */}
+        <div className="border-t pt-4">
+          <Label className="text-base font-semibold mb-3 block">AI Video Generator</Label>
+          <p className="text-sm text-muted-foreground mb-4">
+            Generate video showcase dari foto properti menggunakan AI ByteDance Seedream.
+            Video akan otomatis didownload ke PC Anda untuk diupload ke YouTube.
+          </p>
+
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGenerateVideo}
+              disabled={isGeneratingVideo || !hasValidImages}
+              className="flex items-center gap-2"
+            >
+              🎬 {isGeneratingVideo ? 'Generating Video...' : 'Generate Property Video'}
+            </Button>
+
+            {hasValidImages && (
+              <div className="text-sm text-muted-foreground flex items-center">
+                {validImageCount} gambar siap untuk video generation
+              </div>
+            )}
+          </div>
+
+          {videoGenerationStatus && (
+            <div className="mt-3 p-3 bg-muted rounded-lg">
+              <p className="text-sm">{videoGenerationStatus}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">

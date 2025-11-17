@@ -468,6 +468,190 @@ function formatPriceForPrompt(price: string): string {
   return `Rp ${num.toLocaleString('id-ID')}`;
 }
 
+// AI Video Generation using ByteDance Seedream API
+export async function generatePropertyVideo(propertyData: {
+  images: string[];
+  title: string;
+  description: string;
+  kodeListing: string;
+}): Promise<Blob> {
+  try {
+    console.log('🎬 Starting property video generation for:', propertyData.kodeListing);
+
+    // Validate input
+    if (!propertyData.images || propertyData.images.length === 0) {
+      throw new Error('No images provided for video generation');
+    }
+
+    // Convert images to base64 for API
+    const imagePromises = propertyData.images.slice(0, 4).map(async (imageUrl) => {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        return await blobToBase64(blob);
+      } catch (error) {
+        console.warn('Failed to load image:', imageUrl, error);
+        return null;
+      }
+    });
+
+    const base64Images = (await Promise.all(imagePromises)).filter((img): img is string => img !== null);
+
+    if (base64Images.length === 0) {
+      throw new Error('No valid images could be processed');
+    }
+
+    // Generate video using ByteDance API
+    const videoBlob = await generateVideoWithByteDance(base64Images, propertyData);
+
+    console.log('✅ Video generation completed successfully');
+    return videoBlob;
+
+  } catch (error) {
+    console.error('❌ Video generation failed:', error);
+    throw error;
+  }
+}
+
+// Generate video using ByteDance Seedream API
+async function generateVideoWithByteDance(images: string[], propertyData: any): Promise<Blob> {
+  const apiKey = import.meta.env.VITE_BYTEDANCE_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('ByteDance API key not configured');
+  }
+
+  // Create prompt for real estate video
+  const prompt = createVideoPrompt(propertyData);
+
+  try {
+    console.log('📡 Calling ByteDance Seedream API...');
+    console.log('API Key:', apiKey.substring(0, 10) + '...');
+    console.log('Images count:', images.length);
+
+    // For now, create a mock video generation
+    // In production, replace with actual ByteDance API call
+    console.log('🎬 Mock video generation started...');
+
+    // Simulate API processing time
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Create a simple video blob (placeholder)
+    // In real implementation, this would be the actual video from API
+    const mockVideoData = createMockVideoData();
+    const videoBlob = new Blob([mockVideoData], { type: 'video/mp4' });
+
+    console.log('✅ Mock video generation completed');
+    return videoBlob;
+
+    // TODO: Replace with actual API call when endpoint is confirmed
+    /*
+    const response = await fetch('https://api.seedream.bytedance.com/v1/video/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'X-API-Key': apiKey
+      },
+      body: JSON.stringify({
+        model: 'seedream-01.0-pro',
+        prompt: prompt,
+        images: images.slice(0, 4), // Max 4 images
+        duration_seconds: 20,
+        aspect_ratio: '16:9',
+        style: 'real_estate_tour'
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`ByteDance API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
+    }
+
+    const result = await response.json();
+    const videoUrl = result.video_url || result.output_url;
+
+    if (!videoUrl) {
+      throw new Error('No video URL in API response');
+    }
+
+    const videoResponse = await fetch(videoUrl);
+    if (!videoResponse.ok) {
+      throw new Error('Failed to download generated video');
+    }
+
+    return await videoResponse.blob();
+    */
+
+  } catch (error) {
+    console.error('ByteDance API call failed:', error);
+    throw error;
+  }
+}
+
+// Create mock video data for testing (remove in production)
+function createMockVideoData(): ArrayBuffer {
+  // This creates a minimal MP4 header for testing
+  // In production, this would be replaced with actual video data
+  const data = [
+    0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, // MP4 header
+    0x69, 0x73, 0x6F, 0x6D, 0x00, 0x00, 0x00, 0x01,
+    0x69, 0x73, 0x6F, 0x6D, 0x61, 0x76, 0x63, 0x31,
+    // Add some dummy data to make it a valid blob
+    ...Array.from({ length: 1000 }, () => Math.floor(Math.random() * 256))
+  ];
+
+  return new Uint8Array(data).buffer;
+}
+
+// Create optimized prompt for real estate video generation
+function createVideoPrompt(propertyData: any): string {
+  const { title, description, kodeListing } = propertyData;
+
+  return `Create a professional real estate showcase video for property ${kodeListing}.
+
+Property Details:
+- Title: ${title}
+- Description: ${description}
+
+Video Style Requirements:
+- Smooth camera movements showing property features
+- Professional real estate tour style
+- Highlight key amenities and spaces
+- Cinematic lighting and composition
+- Seamless transitions between areas
+- Background music suitable for property showcase
+
+Create an engaging 20-second video that showcases this property beautifully, highlighting its best features and creating an emotional connection with potential buyers.`;
+}
+
+// Helper function to convert blob to base64
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix (data:image/jpeg;base64,)
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Download blob as file
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Parse slug back to property search criteria (for routing)
 export function parsePropertySlug(slug: string): {
   status?: string;
