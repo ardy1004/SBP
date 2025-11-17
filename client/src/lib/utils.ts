@@ -758,7 +758,8 @@ function generateFallbackDescription(data: any): string {
     tanah: isForSale ? generateTanahForSaleDescription : generateTanahForRentDescription,
     ruko: isForSale ? generateRukoForSaleDescription : generateRukoForRentDescription,
     villa: isForSale ? generateVillaForSaleDescription : generateVillaForRentDescription,
-    gudang: isForSale ? generateGudangForSaleDescription : generateGudangForRentDescription
+    gudang: isForSale ? generateGudangForSaleDescription : generateGudangForRentDescription,
+    hotel: isForSale ? generateHotelForSaleDescription : generateHotelForRentDescription
   };
 
   const generateDescription = paragraphGenerators[propertyType as keyof typeof paragraphGenerators] || (isForSale ? generateRumahForSaleDescription : generateRumahForRentDescription);
@@ -1056,6 +1057,44 @@ function generateGudangForRentDescription(data: any, displayType: string, locati
       `Terletak di ${data.kabupaten || 'pusat distribusi'}, lokasi strategis dengan akses mudah ke jalan tol. Infrastruktur yang memadai untuk operasional harian.`,
       `Fasilitas modern termasuk loading dock, area parkir truk, dan sistem keamanan 24 jam. Sewa fleksibel untuk kebutuhan bisnis jangka pendek atau panjang.`,
       `Mulai dari ${price} per bulan - solusi gudang praktis untuk bisnis Anda!`
+    ]
+  ];
+
+  return variations[Math.floor(Math.random() * variations.length)];
+}
+
+function generateHotelForSaleDescription(data: any, displayType: string, location: string, price: string, hook: string) {
+  const variations = [
+    [
+      `${hook}\n\n${displayType} premium ini menawarkan peluang investasi hospitality yang sangat menjanjikan dengan lokasi strategis dan fasilitas lengkap. Dengan luas bangunan ${data.luas_bangunan || 'optimal'}m² dan kapasitas yang dapat dikembangkan, properti ini siap memberikan pengembalian investasi tinggi dari sektor perhotelan.`,
+      `Terletak di ${location}, area dengan demand wisatawan tinggi dan pertumbuhan ekonomi yang positif. Dekat dengan atraksi wisata, bandara, dan pusat bisnis - lokasi ideal untuk bisnis hotel.`,
+      `Fasilitas hotel modern termasuk lobi elegan, restoran, spa, kolam renang, dan ruang pertemuan. Konsep hospitality yang dapat menghasilkan pendapatan dari room rental, F&B, dan event.`,
+      `Harga ${price} - investasi hotel premium dengan potensi keuntungan tinggi!`
+    ],
+    [
+      `${hook}\n\n${displayType} bisnis ini adalah properti hospitality dengan nilai investasi jangka panjang. Dirancang untuk memaksimalkan occupancy rate dengan layout yang efisien dan fasilitas yang menarik bagi wisatawan dan pebisnis.`,
+      `Lokasi premium di ${data.kabupaten || 'pusat wisata'}, area dengan traffic wisatawan yang tinggi. Dekat dengan destinasi wisata terkenal dan pusat perbelanjaan modern.`,
+      `Fasilitas lengkap termasuk restaurant, lounge, fitness center, dan business center. ROI menjanjikan dengan pendapatan dari berbagai sumber (akomodasi, kuliner, event).`,
+      `Mulai dari ${price} - properti hotel strategis untuk investasi hospitality!`
+    ]
+  ];
+
+  return variations[Math.floor(Math.random() * variations.length)];
+}
+
+function generateHotelForRentDescription(data: any, displayType: string, location: string, price: string, hook: string) {
+  const variations = [
+    [
+      `${hook}\n\n${displayType} premium ini tersedia untuk disewa dengan fasilitas hospitality lengkap. Penginapan yang nyaman dan modern untuk wisatawan dan pebisnis dengan pelayanan bintang hotel.`,
+      `Terletak di ${location}, lokasi strategis dengan akses mudah ke atraksi wisata dan pusat bisnis. Dekat dengan bandara, stasiun, dan pusat perbelanjaan.`,
+      `Fasilitas lengkap termasuk restoran, spa, kolam renang, gym, dan ruang pertemuan. Pelayanan 24 jam dengan housekeeping, room service, dan concierge.`,
+      `Harga sewa mulai ${price} per malam - pengalaman menginap bintang hotel!`
+    ],
+    [
+      `${hook}\n\n${displayType} bisnis ini tersedia untuk disewa dengan konsep hospitality modern. Hunian sementara yang terasa seperti hotel bintang dengan fasilitas lengkap untuk kenyamanan maksimal.`,
+      `Lokasi premium di ${data.kabupaten || 'pusat kota'}, area dengan aktivitas bisnis dan wisata yang tinggi. Mudah diakses dari berbagai penjuru kota.`,
+      `Fasilitas hotel meliputi restaurant, lounge, business center, dan layanan housekeeping harian. Cocok untuk business travel, liburan keluarga, atau staycation.`,
+      `Mulai dari ${price} per malam - hotel modern untuk pengalaman menginap premium!`
     ]
   ];
 
