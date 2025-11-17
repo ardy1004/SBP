@@ -126,6 +126,9 @@ export default function PropertyDetailPage() {
 
   useEffect(() => {
     if (property) {
+      // Scroll to top when property loads
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
       // Track property view in Supabase
       const trackAnalytics = async () => {
         try {
