@@ -238,6 +238,15 @@ export default function PropertyDetailPage() {
     property.imageUrl4,
   ].filter(Boolean) as string[];
 
+  // Get the primary image for social sharing (with fallback)
+  const getPrimaryImage = () => {
+    if (images.length > 0 && images[0]) {
+      return images[0];
+    }
+    // Fallback to a reliable placeholder image when no property images are available
+    return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
+  };
+
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
     return `Rp ${num.toLocaleString('id-ID')}`;
@@ -256,7 +265,7 @@ export default function PropertyDetailPage() {
         {/* Open Graph */}
         <meta property="og:title" content={getTitle()} />
         <meta property="og:description" content={property.deskripsi || `${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')} ${property.status} di ${property.kabupaten}, ${property.provinsi}. Harga: ${formatPrice(property.hargaProperti)}`} />
-        <meta property="og:image" content={`${window.location.origin}${images[0]}`} />
+        <meta property="og:image" content={`${window.location.origin}${getPrimaryImage()}`} />
         <meta property="og:url" content={window.location.href} />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Salam Bumi Property" />
@@ -265,7 +274,7 @@ export default function PropertyDetailPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={getTitle()} />
         <meta name="twitter:description" content={property.deskripsi || `Properti ${property.status} di ${property.kabupaten}`} />
-        <meta name="twitter:image" content={`${window.location.origin}${images[0]}`} />
+        <meta name="twitter:image" content={`${window.location.origin}${getPrimaryImage()}`} />
       </Helmet>
 
       <div className="min-h-screen flex flex-col">
