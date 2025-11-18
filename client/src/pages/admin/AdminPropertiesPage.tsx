@@ -668,7 +668,7 @@ export default function AdminPropertiesPage() {
                                         {formatPrice(property.priceOld)}
                                       </span>
                                       <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
-                                        DISKON
+                                        DROP PRICE
                                       </span>
                                     </div>
                                   )}

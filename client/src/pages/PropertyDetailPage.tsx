@@ -349,7 +349,7 @@ export default function PropertyDetailPage() {
                         {formatPrice(property.priceOld)}
                       </span>
                       <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
-                        DISKON
+                        DROP PRICE
                       </span>
                     </div>
                   )}
