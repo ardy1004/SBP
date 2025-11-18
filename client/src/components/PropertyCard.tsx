@@ -45,6 +45,37 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
     return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
   };
 
+  const getPropertyImage = () => {
+    // Check primary image first
+    if (property.imageUrl && property.imageUrl.trim() !== '') {
+      try {
+        new URL(property.imageUrl);
+        return property.imageUrl;
+      } catch {
+        // Invalid URL, continue to fallback
+      }
+    }
+
+    // Return property-type specific placeholder
+    return getPropertyTypePlaceholder();
+  };
+
+  const getPropertyTypePlaceholder = () => {
+    const propertyTypePlaceholders: Record<string, string> = {
+      rumah: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop',
+      kost: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=600&fit=crop',
+      apartment: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+      villa: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
+      ruko: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop',
+      tanah: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=600&fit=crop',
+      gudang: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&h=600&fit=crop',
+      hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop',
+    };
+
+    return propertyTypePlaceholders[property.jenisProperti] ||
+           'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
+  };
+
   const getStatusColor = (status: string) => {
     if (!status) return 'bg-gray-500';
     return status === 'dijual' ? 'bg-emerald-500' : 'bg-blue-500';
@@ -91,7 +122,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
         {/* Image Container - Adjusted padding for mobile */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 p-1 sm:p-2">
           <img
-            src={property.imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop'}
+            src={getPropertyImage()}
             alt={getTitle()}
             className={`
               w-full h-full object-cover transition-all duration-500
@@ -99,7 +130,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
               ${property.isSold ? 'opacity-50 grayscale' : ''}
             `}
             onError={(e) => {
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
+              e.currentTarget.src = getPropertyTypePlaceholder();
             }}
           />
 

@@ -236,15 +236,46 @@ export default function PropertyDetailPage() {
     property.imageUrl2,
     property.imageUrl3,
     property.imageUrl4,
-  ].filter(Boolean) as string[];
+  ].filter((img): img is string => img != null && img.trim() !== '') as string[];
 
-  // Get the primary image for social sharing (with fallback)
+  // Get the primary image for social sharing (with comprehensive fallback)
   const getPrimaryImage = () => {
-    if (images.length > 0 && images[0]) {
-      return images[0];
+    // Check if we have valid images
+    if (images.length > 0 && images[0] && images[0].trim() !== '') {
+      // Validate URL format (basic check)
+      try {
+        new URL(images[0]);
+        return images[0];
+      } catch {
+        // Invalid URL, try next image
+        for (const img of images.slice(1)) {
+          if (img && img.trim() !== '') {
+            try {
+              new URL(img);
+              return img;
+            } catch {
+              continue;
+            }
+          }
+        }
+      }
     }
-    // Fallback to a reliable placeholder image when no property images are available
-    return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
+
+    // Fallback to property-type specific placeholder images
+    const propertyTypePlaceholders: Record<string, string> = {
+      rumah: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop',
+      kost: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=600&fit=crop',
+      apartment: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+      villa: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
+      ruko: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop',
+      tanah: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=600&fit=crop',
+      gudang: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&h=600&fit=crop',
+      hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop',
+    };
+
+    // Return property-type specific placeholder or generic one
+    return propertyTypePlaceholders[property.jenisProperti] ||
+           'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
   };
 
   const formatPrice = (price: string) => {

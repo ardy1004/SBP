@@ -316,6 +316,45 @@ export default function AdminPropertiesPage() {
     return `Rp ${num.toLocaleString('id-ID')}`;
   };
 
+  // Helper function to get property image with fallbacks
+  const getPropertyImage = (property: any) => {
+    // Check all available images in order
+    const imageFields = [
+      property.imageUrl,
+      property.imageUrl1,
+      property.imageUrl2,
+      property.imageUrl3,
+      property.imageUrl4,
+      property.imageUrl5,
+    ];
+
+    for (const img of imageFields) {
+      if (img && img.trim() !== '') {
+        try {
+          new URL(img);
+          return img;
+        } catch {
+          continue;
+        }
+      }
+    }
+
+    // Return property-type specific placeholder
+    const propertyTypePlaceholders: Record<string, string> = {
+      rumah: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop',
+      kost: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop',
+      apartment: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop',
+      villa: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=400&h=300&fit=crop',
+      ruko: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
+      tanah: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop',
+      gudang: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=400&h=300&fit=crop',
+      hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop',
+    };
+
+    return propertyTypePlaceholders[property.jenisProperti] ||
+           'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop';
+  };
+
   return (
     <div className="flex h-screen">
       <AdminSidebar />
@@ -613,41 +652,15 @@ export default function AdminPropertiesPage() {
                           </div>
                         )}
                         <div className="w-24 h-24 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-                           {property.imageUrl ? (
-                             <img
-                               src={property.imageUrl}
-                               alt={property.kodeListing}
-                               className="w-full h-full object-cover"
-                               onError={(e) => {
-                                 // Try fallback images
-                                 const img = e.currentTarget as HTMLImageElement;
-                                 const currentSrc = img.src;
-                                 const fallbackImages = [
-                                   property.imageUrl1,
-                                   property.imageUrl2,
-                                   property.imageUrl3,
-                                   property.imageUrl4,
-                                   property.imageUrl5,
-                                 ].filter(Boolean);
-
-                                 // Find next fallback image
-                                 const currentIndex = fallbackImages.indexOf(currentSrc);
-                                 const nextImage = fallbackImages[currentIndex + 1];
-
-                                 if (nextImage) {
-                                   img.src = nextImage;
-                                 } else {
-                                   // No more fallbacks, show "No Image"
-                                   img.style.display = 'none';
-                                   img.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400 text-xs">No Image</div>';
-                                 }
-                               }}
-                             />
-                           ) : (
-                             <div className="flex items-center justify-center w-full h-full text-gray-400 text-xs">
-                               No Image
-                             </div>
-                           )}
+                           <img
+                             src={getPropertyImage(property)}
+                             alt={property.kodeListing}
+                             className="w-full h-full object-cover"
+                             onError={(e) => {
+                               // Fallback to generic placeholder if all images fail
+                               e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop';
+                             }}
+                           />
                          </div>
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
