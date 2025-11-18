@@ -661,9 +661,21 @@ export default function AdminPropertiesPage() {
                                 <p className="text-xs text-muted-foreground mt-1">
                                   ID: {property.kodeListing}
                                 </p>
-                                <p className="text-sm font-medium text-primary mt-1">
-                                  {formatPrice(property.hargaProperti)}
-                                </p>
+                                <div className="mt-1">
+                                  {property.isHot && property.priceOld && (
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-sm text-muted-foreground line-through">
+                                        {formatPrice(property.priceOld)}
+                                      </span>
+                                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                                        DISKON
+                                      </span>
+                                    </div>
+                                  )}
+                                  <p className="text-sm font-medium text-primary">
+                                    {formatPrice(property.hargaProperti)}
+                                  </p>
+                                </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Legalitas: {property.legalitas || 'N/A'}
                                 </p>

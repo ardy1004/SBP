@@ -342,12 +342,24 @@ export default function PropertyDetailPage() {
                   </div>
                 </div>
 
-                <p className="text-3xl md:text-4xl font-bold text-primary" data-testid="text-price">
-                  {formatPrice(property.hargaProperti)}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
-                </p>
+                <div className="space-y-1">
+                  {property.isHot && property.priceOld && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg text-muted-foreground line-through">
+                        {formatPrice(property.priceOld)}
+                      </span>
+                      <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                        DISKON
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-3xl md:text-4xl font-bold text-primary" data-testid="text-price">
+                    {formatPrice(property.hargaProperti)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
+                  </p>
+                </div>
               </div>
 
               {/* Property Specs */}
