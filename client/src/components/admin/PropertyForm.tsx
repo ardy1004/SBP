@@ -679,9 +679,11 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             luas_bangunan: formData.luasBangunan ? parseFloat(formData.luasBangunan) : undefined,
             kode_listing: formData.kodeListing,
             judul_properti: formData.judulProperti,
+            legalitas: formData.legalitas,
           }}
           currentDescription={formData.deskripsi}
           onDescriptionChange={(description) => setFormData({ ...formData, deskripsi: description })}
+          onTitleChange={(title) => setFormData({ ...formData, judulProperti: title })}
         />
 
       </div>

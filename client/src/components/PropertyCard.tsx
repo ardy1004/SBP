@@ -118,7 +118,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
       data-testid={`card-property-${property.id}`}
     >
       {/* Main Link Area */}
-      <Link href={slug} className="block">
+      <div onClick={() => window.location.href = slug} className="block cursor-pointer">
         {/* Image Container - Adjusted padding for mobile */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 p-1 sm:p-2">
           <img
@@ -214,7 +214,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             </Button>
           )}
         </div>
-      </Link>
+      </div>
 
       {/* Content - Adjusted padding for mobile */}
       <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">

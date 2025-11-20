@@ -81,14 +81,57 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Newsletter */}
+          {/* Lokasi Populer */}
           <div>
-            <h4 className="font-semibold mb-4">Newsletter</h4>
-            <p className="text-sm text-muted-foreground mb-4 font-body">
-              Dapatkan update properti terbaru langsung ke email Anda
-            </p>
-            <div className="text-sm text-muted-foreground">
-              Coming soon...
+            <h4 className="font-semibold mb-4">Lokasi Populer</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <h5 className="text-sm font-medium mb-2">Sleman</h5>
+                <ul className="space-y-1">
+                  <li>
+                    <Link href="/rumah-dijual/sleman">
+                      <span className="text-xs text-muted-foreground hover:text-foreground hover-elevate inline-block px-1 py-0.5 -ml-1 rounded">Rumah Dijual</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/kost/sleman">
+                      <span className="text-xs text-muted-foreground hover:text-foreground hover-elevate inline-block px-1 py-0.5 -ml-1 rounded">Kost</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/apartemen/sleman">
+                      <span className="text-xs text-muted-foreground hover:text-foreground hover-elevate inline-block px-1 py-0.5 -ml-1 rounded">Apartemen</span>
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="text-sm font-medium mb-2">Bantul</h5>
+                <ul className="space-y-1">
+                  <li>
+                    <Link href="/rumah-dijual/bantul">
+                      <span className="text-xs text-muted-foreground hover:text-foreground hover-elevate inline-block px-1 py-0.5 -ml-1 rounded">Rumah Dijual</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/kost/bantul">
+                      <span className="text-xs text-muted-foreground hover:text-foreground hover-elevate inline-block px-1 py-0.5 -ml-1 rounded">Kost</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/apartemen/bantul">
+                      <span className="text-xs text-muted-foreground hover:text-foreground hover-elevate inline-block px-1 py-0.5 -ml-1 rounded">Apartemen</span>
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Link href="/portfolio">
+                <span className="text-sm text-primary hover:text-primary/80 hover-elevate inline-block px-2 py-1 -ml-2 rounded">
+                  Lihat Semua Properti →
+                </span>
+              </Link>
             </div>
           </div>
         </div>

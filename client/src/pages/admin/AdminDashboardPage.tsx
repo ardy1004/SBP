@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Home, FileText, Eye, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminDashboardPage() {
@@ -79,6 +80,11 @@ export default function AdminDashboardPage() {
                 </Card>
               );
             })}
+          </div>
+
+          {/* Analytics Dashboard */}
+          <div className="mt-8">
+            <AnalyticsDashboard />
           </div>
 
           <div className="mt-8">

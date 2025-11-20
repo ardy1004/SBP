@@ -1,6 +1,12 @@
 name = "sbp-upload-worker"
 main = "worker.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages configuration
+[pages]
+name = "salam-bumi-property"
+pages_build_output_dir = "dist/public"
 
 # Route configuration for custom domain
 [[routes]]
@@ -21,8 +27,15 @@ SUPABASE_URL = "https://ljnqmfwbphlrlslfwjbr.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqbnFtZndicGhscmxzbGZ3amJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0MjMxMTAsImV4cCI6MjA3Nzk5OTExMH0.b8rwq4qIU_9_qOWnNrjETcW2eEPwjL5zktBnGQsbm3s"
 
 # AI API Keys for client-side
-VITE_GEMINI_API_KEY = "AIzaSyAnYY29VTC6qWN_Ikn7EzwK92DquUCvbnw"
+VITE_GEMINI_API_KEY = "AIzaSyBRSqmBhMAuw85XZ4Ils60w9GjU6xP63hw"
 VITE_BYTEDANCE_API_KEY = "2ab3ea71-cec2-4de8-9121-b2004523ea01"
+
+# AI API Keys for worker
+GEMINI_API_KEY = "AIzaSyBRSqmBhMAuw85XZ4Ils60w9GjU6xP63hw"
+
+# GA4 Analytics credentials (set via environment variables in production)
+GA_PROPERTY_ID = "513948591"
+GA_SERVICE_ACCOUNT_KEY = "REPLACE_WITH_ACTUAL_SERVICE_ACCOUNT_JSON"
 
 # R2 Bucket binding for image storage
 [[r2_buckets]]

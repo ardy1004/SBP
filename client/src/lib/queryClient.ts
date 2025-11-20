@@ -17,6 +17,10 @@ export async function apiRequest(
   const supabaseToken = session?.access_token;
   const adminToken = localStorage.getItem('adminToken');
 
+  // Use absolute URL for production, relative for development
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+
   const headers: HeadersInit = data instanceof FormData ? {} : (data ? { "Content-Type": "application/json" } : {});
 
   // Use admin token for admin endpoints, supabase token for others
@@ -28,10 +32,10 @@ export async function apiRequest(
 
   console.log('=== API REQUEST ===');
   console.log('Method:', method);
-  console.log('URL:', url);
+  console.log('URL:', fullUrl);
   console.log('Data:', data);
 
-  const res = await fetch(url, {
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
@@ -94,6 +98,10 @@ export const getQueryFn: <T>(options: {
     // Otherwise join with "/" for hierarchical paths
     const url = queryKey.length === 1 ? queryKey[0] as string : queryKey.join("/") as string;
 
+    // Use absolute URL for production, relative for development
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+
     // Use admin token for admin endpoints, supabase token for others
     if (url.includes('/api/admin/') && adminToken) {
       headers["Authorization"] = `Bearer ${adminToken}`;
@@ -101,7 +109,7 @@ export const getQueryFn: <T>(options: {
       headers["Authorization"] = `Bearer ${supabaseToken}`;
     }
 
-    const res = await fetch(url, {
+    const res = await fetch(fullUrl, {
       credentials: "same-origin",
       headers,
     });

@@ -319,6 +319,26 @@ export default function HomePage() {
           </>
         )}
       </div>
+
+      {/* Temporary Debug Section */}
+      <div className="bg-yellow-50 border-t border-yellow-200 p-8">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-yellow-800 mb-4">🔧 Debug: Test Property Detail Routing</h2>
+          <p className="text-yellow-700 mb-6">
+            Klik link di bawah untuk test routing ke PropertyDetailPage:
+          </p>
+          <div className="grid grid-cols-1 gap-4">
+            <a
+              href="/test-property"
+              className="block p-4 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+            >
+              <div className="font-semibold text-red-800">🧪 TEST ROUTE - Simple Property Detail</div>
+              <div className="text-sm text-red-600">/test-property</div>
+              <div className="text-xs text-red-500 mt-1">Klik ini untuk test routing dasar</div>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

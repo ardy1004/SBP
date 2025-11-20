@@ -26,15 +26,20 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:5173',
+        target: 'http://localhost:8787',
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:5173',
+        target: 'http://localhost:8787',
         changeOrigin: true,
         secure: false,
       },
     },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./client/src/test/setup.ts'],
   },
 });

@@ -70,7 +70,7 @@ export function generatePropertySlug(property: {
   return cleanedParts.join('-');
 }
 
-// AI Description Generator using Google Gemini API (Free tier available)
+// AI Description Generator using Google Gemini API with model selection and fallback
 export async function generatePropertyDescription(propertyData: {
   jenis_properti?: string;
   kabupaten?: string;
@@ -82,21 +82,53 @@ export async function generatePropertyDescription(propertyData: {
   luas_bangunan?: number;
   kode_listing?: string;
   judul_properti?: string;
-}): Promise<string> {
+}, selectedModel?: string): Promise<string> {
   try {
     const prompt = createSEODescriptionPrompt(propertyData);
 
-    // Try Google Gemini API first (free tier available)
-    try {
-      const geminiResponse = await fetchGeminiDescription(prompt, propertyData);
-      if (geminiResponse) {
-        return geminiResponse;
+    // Define model priority with fallback logic
+    const modelPriority = selectedModel
+      ? [selectedModel] // Use selected model first
+      : [
+          'gemini-1.5-flash',      // Primary: Free tier, good balance
+          'gemini-2.0-flash-exp',  // Secondary: Experimental, fast
+          'gemini-1.5-pro'         // Tertiary: Paid, high quality
+        ];
+
+    // Try each model in priority order
+    for (const model of modelPriority) {
+      try {
+        console.log(`Trying Gemini model: ${model}`);
+        const geminiResponse = await fetchGeminiDescription(prompt, propertyData, model);
+        if (geminiResponse) {
+          console.log(`✅ Success with model: ${model}`);
+          return geminiResponse;
+        }
+      } catch (error: any) {
+        console.log(`❌ Model ${model} failed:`, error?.message || error);
+
+        // Check if it's a quota/rate limit error
+        const isQuotaError = error?.status === 429 ||
+                           error?.status === 403 ||
+                           (error?.message && (
+                             error.message.includes('quota') ||
+                             error.message.includes('rate limit') ||
+                             error.message.includes('exceeded')
+                           ));
+
+        if (isQuotaError) {
+          console.log(`🚫 Quota exceeded for ${model}, trying next model...`);
+          continue; // Try next model
+        }
+
+        // For other errors, still try next model as fallback
+        continue;
       }
-    } catch (error) {
-      console.log('Gemini API failed, trying OpenAI:', error);
     }
 
-    // Fallback to OpenAI API if Gemini fails
+    console.log('All Gemini models failed, trying OpenAI fallback...');
+
+    // Fallback to OpenAI API if all Gemini models fail
     try {
       const openAIResponse = await fetchOpenAIDescription(prompt, propertyData);
       if (openAIResponse) {
@@ -117,11 +149,12 @@ export async function generatePropertyDescription(propertyData: {
   }
 }
 
-// Generate description using Google Gemini API
-async function fetchGeminiDescription(prompt: string, propertyData: any): Promise<string | null> {
-  // Using Gemini 2.5 Flash with higher creativity settings
+// Generate description using Google Gemini API with model selection
+async function fetchGeminiDescription(prompt: string, propertyData: any, model: string = 'gemini-1.5-flash'): Promise<string | null> {
+  console.log(`Calling Gemini API with model: ${model}`);
+
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: {
@@ -212,6 +245,52 @@ async function fetchOpenAIDescription(prompt: string, propertyData: any): Promis
   }
 }
 
+// Get local keywords based on location
+function getLocalKeywords(kabupaten: string, jenisProperti: string): string[] {
+  const localMap: Record<string, string[]> = {
+    'sleman': [
+      'dekat ugm', 'kampus ugm', 'mahasiswa ugm', 'stasiun maguwo',
+      'terminal giwangan', 'dekat malioboro', 'akses tol', 'universitas gadjah mada',
+      'dekat bulaksumur', 'area kampus', 'stasiun tugu', 'dekat plaza ambarrukmo'
+    ],
+    'bantul': [
+      'dekat bandara', 'kuliner bantul', 'pantai parangtritis', 'desa wisata',
+      'dekat stasiun', 'akses tol', 'dekat bandara adi sucipto', 'wisata kuliner',
+      'pantai baron', 'desa wisata candi', 'dekat malioboro', 'akses mudah ke kota'
+    ],
+    'yogyakarta kota': [
+      'malioboro', 'kraton yogyakarta', 'tugu yogyakarta', 'pasar bringharjo',
+      'dekat universitas', 'pusat kota', 'akses transportasi', 'dekat stasiun tugu',
+      'area wisata', 'pusat kuliner', 'dekat monas', 'lokasi strategis kota'
+    ],
+    'kulonprogo': [
+      'dekat bandara', 'pantai glagah', 'desa wisata', 'borobudur',
+      'dekat pantai', 'akses tol', 'wisata alam', 'desa wisata kalibawang',
+      'pantai trisik', 'dekat bandara adi sucipto', 'area berkembang', 'lokasi premium'
+    ],
+    'gunungkidul': [
+      'pantai', 'desa wisata', 'pegunungan', 'air terjun',
+      'wisata alam', 'pantai baron', 'desa wisata nglanggeran', 'pantai kukup',
+      'air terjun kedung pedut', 'wisata gunung', 'desa wisata', 'lokasi alami'
+    ]
+  };
+
+  const propertyTypeKeywords: Record<string, string[]> = {
+    'kost': ['kost mahasiswa', 'kos kosan', 'hunian mahasiswa', 'kost modern', 'kost strategis'],
+    'rumah': ['rumah minimalis', 'rumah modern', 'perumahan', 'rumah premium', 'rumah strategis'],
+    'apartemen': ['apartemen furnished', 'apartemen modern', 'tower apartemen', 'apartemen premium', 'apartemen strategis'],
+    'tanah': ['tanah kavling', 'lahan strategis', 'tanah premium', 'lahan investasi', 'tanah berkembang'],
+    'ruko': ['ruko strategis', 'ruko bisnis', 'ruko premium', 'lokasi bisnis', 'ruko modern'],
+    'villa': ['villa mewah', 'villa premium', 'villa strategis', 'villa modern', 'hunian mewah'],
+    'gudang': ['gudang strategis', 'gudang premium', 'lokasi logistik', 'gudang modern', 'area industri']
+  };
+
+  const locationKeywords = localMap[kabupaten.toLowerCase()] || [];
+  const typeKeywords = propertyTypeKeywords[jenisProperti.toLowerCase()] || [];
+
+  return [...locationKeywords, ...typeKeywords];
+}
+
 // Create dynamic SEO-optimized prompt for property description with multiple templates
 function createSEODescriptionPrompt(data: any): string {
   const propertyType = data.jenis_properti || 'properti';
@@ -222,6 +301,9 @@ function createSEODescriptionPrompt(data: any): string {
   const landArea = data.luas_tanah ? `${data.luas_tanah}m² tanah` : '';
   const buildingArea = data.luas_bangunan ? `${data.luas_bangunan}m² bangunan` : '';
   const status = data.status || 'dijual'; // dijual or disewakan
+
+  // Get local keywords for this location and property type
+  const localKeywords = getLocalKeywords(data.kabupaten || '', propertyType);
 
   // Get status-specific context
   const statusContext = getStatusContext(status, propertyType);
@@ -260,6 +342,11 @@ INFORMASI PROPERTI DETAIL:
 - Kode Listing: ${data.kode_listing || 'N/A'}
 - Judul Properti: ${data.judul_properti || 'N/A'}
 
+LOKASI SPESIFIK & KEYWORDS LOKAL:
+- Kabupaten: ${data.kabupaten || 'N/A'}
+- Keywords Lokal: ${localKeywords.slice(0, 8).join(', ')}
+- Fokus Area: ${localKeywords.slice(0, 3).join(', ')}
+
 KETENTUAN PEMBUATAN DESKRIPSI:
 1. GAYA PENULISAN: ${selectedStyle}
 2. TARGET MARKET: ${statusContext.targetMarket}
@@ -269,7 +356,7 @@ KETENTUAN PEMBUATAN DESKRIPSI:
 6. UNSUR CLICK-BAIT: ${selectedTemplate.clickbait}
 7. PANJANG IDEAL: ${selectedTemplate.length}
 8. BAHASA: Indonesia modern, natural, persuasive, hindari bahasa formal kaku
-9. SEO OPTIMIZATION: sertakan naturally keywords seperti "${propertyType} ${data.kabupaten}", "${propertyType} ${status}", "${propertyType} premium", "${propertyType} strategis"
+9. SEO OPTIMIZATION: sertakan naturally keywords lokal seperti ${localKeywords.slice(0, 5).join(', ')}, ditambah keywords umum "${propertyType} ${data.kabupaten}", "${propertyType} ${status}", "${propertyType} premium", "${propertyType} strategis"
 10. CLOSING: ${selectedClosing}
 
 ${statusContext.guidelines}
@@ -280,7 +367,7 @@ ${getHookExamples(propertyType, status).join('\n')}
 CONTOH VARIASI CLOSING UNTUK ${status.toUpperCase()}:
 ${getClosingExamples(propertyType, status).join('\n')}
 
-PENTING: BUAT DESKRIPSI YANG SAMA SEKALI BERBEDA DARI CONTOH DI ATAS. JANGAN MENYALIN STRUKTUR ATAU KALIMAT SAMA. GUNAKAN KREATIVITAS MAKSIMAL DAN SESUAIKAN DENGAN KONTEKS ${status.toUpperCase()}!`;
+PENTING: BUAT DESKRIPSI YANG SAMA SEKALI BERBEDA DARI CONTOH DI ATAS. JANGAN MENYALIN STRUKTUR ATAU KALIMAT SAMA. GUNAKAN KREATIVITAS MAKSIMAL DAN SESUAIKAN DENGAN KONTEKS LOKAL ${data.kabupaten?.toUpperCase() || 'AREA'}!`;
 }
 
 // Get status-specific context for property descriptions
@@ -1128,10 +1215,12 @@ export function parsePropertySlug(slug: string): {
 } {
   const parts = slug.split('-');
 
-  // Try to identify kode_listing (usually ends with pattern like K2.60, R1.25, etc)
+  // Try to identify kode_listing (more flexible patterns: K2.60, R1.25, A123, etc)
   let kodeListingIndex = -1;
   for (let i = parts.length - 1; i >= 0; i--) {
-    if (/^[A-Z]\d+\.\d+$/.test(parts[i].toUpperCase())) {
+    const part = parts[i].toUpperCase();
+    // More flexible regex to match various kode_listing patterns
+    if (/^[A-Z]+\d+[\.\d]*$/.test(part) || /^\d+[A-Z]+\d*$/.test(part)) {
       kodeListingIndex = i;
       break;
     }
@@ -1157,8 +1246,8 @@ export function parsePropertySlug(slug: string): {
     // Try to identify location parts
     const locationParts = parts.slice(2, kodeListingIndex);
 
-    // Common province names in Indonesia
-    const provinces = ['diyogyakarta', 'jakarta', 'jabar', 'jateng', 'jatim', 'bali', 'sumatera', 'sulawesi', 'kalimantan', 'papua'];
+    // Common province names in Indonesia (more comprehensive)
+    const provinces = ['diyogyakarta', 'jakarta', 'jabar', 'jateng', 'jatim', 'bali', 'sumatera', 'sulawesi', 'kalimantan', 'papua', 'banten', 'lampung', 'riau', 'jambi'];
 
     for (let i = 0; i < locationParts.length; i++) {
       if (provinces.some(p => locationParts[i].includes(p))) {

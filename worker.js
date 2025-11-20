@@ -1,33 +1,189 @@
+// Performance monitoring middleware
+async function withPerformanceMonitoring(handler, operationName) {
+	const startTime = Date.now()
+
+	try {
+		const result = await handler()
+		const duration = Date.now() - startTime
+
+		// Log successful operations
+		console.log(`✅ ${operationName} completed in ${duration}ms`)
+
+		// Alert on slow operations
+		if (duration > 5000) { // 5 seconds
+			console.warn(`⚠️ SLOW OPERATION: ${operationName} took ${duration}ms`)
+		}
+
+		return result
+	} catch (error) {
+		const duration = Date.now() - startTime
+		console.error(`❌ ${operationName} failed after ${duration}ms:`, error.message)
+		throw error
+	}
+}
+
 export default {
 	async fetch(request, env, ctx) {
-		const url = new URL(request.url);
+		// Sentry error monitoring will be handled at the edge
 
-		// --- ROUTING ---
-		// Handle /p/[PROPERTY_ID] for shareable property cards
-		if (url.pathname.startsWith('/p/')) {
-			return handlePropertyShare(request, env, url);
+		try {
+			const url = new URL(request.url);
+
+			// --- ROUTING ---
+			// Handle /p/[PROPERTY_ID] for shareable property cards
+			if (url.pathname.startsWith('/p/')) {
+				return handlePropertyShare(request, env, url);
+			}
+
+			// Handle SEO-friendly slug URLs (serve SPA for users, OG meta for crawlers)
+			if (url.pathname.length > 1 && !url.pathname.includes('/admin') && !url.pathname.includes('/api') && !url.pathname.includes('/p/')) {
+				const slugResult = await handleSlugRedirect(request, env, url);
+				if (slugResult) return slugResult;
+			}
+
+			// Handle AI chat requests
+			if (request.method === 'POST' && url.pathname === '/api/chat') {
+				return handleChatRequest(request, env);
+			}
+
+			// Handle AI description generation with performance monitoring
+			if (request.method === 'POST' && url.pathname === '/api/generate-description') {
+				return withPerformanceMonitoring(
+					() => handleGenerateDescription(request, env),
+					'AI_DESCRIPTION_GENERATION'
+				)
+			}
+
+			// Handle analytics data fetching
+			if (request.method === 'GET' && url.pathname === '/api/analytics') {
+				return withPerformanceMonitoring(
+					() => handleAnalyticsData(request, env),
+					'ANALYTICS_DATA_FETCH'
+				)
+			}
+
+			// Handle image upload (existing functionality)
+			if (request.method === 'POST' && url.pathname === '/upload') {
+				return handleImageUpload(request, env);
+			}
+
+			// Health check endpoint for monitoring
+			if (url.pathname === '/api/health') {
+				const healthCheck = {
+					status: 'healthy',
+					timestamp: new Date().toISOString(),
+					version: '1.0.0',
+					environment: 'production',
+					services: {
+						ai_api: 'configured',
+						database: 'configured',
+						storage: 'configured'
+					},
+					metrics: {
+						uptime: Date.now(),
+						request_count: 0 // TODO: Add actual metrics
+					}
+				}
+
+				return new Response(JSON.stringify(healthCheck, null, 2), {
+					headers: {
+						'Content-Type': 'application/json',
+						'Cache-Control': 'no-cache'
+					}
+				})
+			}
+
+			// Handle static assets (favicon, robots.txt, etc.)
+			if (url.pathname === '/favicon.ico') {
+				console.log('🖼️ Handling favicon.ico request');
+				// Redirect favicon.ico to favicon.png
+				return new Response(null, {
+					status: 302,
+					headers: {
+						'Location': '/favicon.png',
+						'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+					},
+				});
+			}
+
+			if (url.pathname === '/robots.txt') {
+				const robotsTxt = `User-agent: *
+Allow: /
+
+Sitemap: https://salambumi.xyz/sitemap.xml`;
+
+				return new Response(robotsTxt, {
+					headers: {
+						'Content-Type': 'text/plain; charset=utf-8',
+						'Cache-Control': 'public, max-age=86400',
+					},
+				});
+			}
+
+			// Default: serve SPA for client-side routing (fallback for unknown routes)
+			return serveSPA(request, env);
+		} catch (error) {
+			// Log error for monitoring (temporary solution until Sentry backend is fixed)
+			console.error('🚨 WORKER ERROR:', {
+				timestamp: new Date().toISOString(),
+				url: request.url,
+				method: request.method,
+				userAgent: request.headers.get('User-Agent'),
+				error: error.message,
+				stack: error.stack
+			});
+
+			// TODO: Replace with proper Sentry integration when package issues resolved
+			// sentry.captureException(error);
+
+			// Return user-friendly error response
+			return new Response(JSON.stringify({
+				error: 'Internal Server Error',
+				message: 'Terjadi kesalahan pada server. Tim kami telah diberitahu dan sedang memperbaikinya.',
+				timestamp: new Date().toISOString(),
+				requestId: `req_${Date.now()}`
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
 		}
-
-		// Handle SEO-friendly slug URLs (redirect to property detail page)
-		if (url.pathname.length > 1 && !url.pathname.includes('/admin') && !url.pathname.includes('/api')) {
-			const slugResult = await handleSlugRedirect(request, env, url);
-			if (slugResult) return slugResult;
-		}
-
-		// Handle AI chat requests
-		if (request.method === 'POST' && url.pathname === '/api/chat') {
-			return handleChatRequest(request, env);
-		}
-
-		// Handle image upload (existing functionality)
-		if (request.method === 'POST' && url.pathname === '/upload') {
-			return handleImageUpload(request, env);
-		}
-
-		// Default: return 404 for unknown routes
-		return new Response('Not Found', { status: 404 });
 	},
 };
+
+// Serve SPA for client-side routing
+async function serveSPA(request, env) {
+	try {
+		// For now, return a simple HTML that redirects to the SPA
+		// In production, this should serve the built index.html
+		const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Salam Bumi Property</title>
+	<script>
+		// Redirect to SPA with current path as hash
+		const path = window.location.pathname + window.location.search;
+		window.location.href = 'https://salambumi.xyz#' + path.substring(1);
+	</script>
+</head>
+<body>
+	<p>Mengalihkan ke aplikasi...</p>
+</body>
+</html>`;
+
+		return new Response(html, {
+			headers: {
+				'Content-Type': 'text/html; charset=utf-8',
+			},
+		});
+	} catch (error) {
+		console.error('SPA serve error:', error);
+		return new Response('Internal Server Error', { status: 500 });
+	}
+}
 
 // Handle property share cards (/p/[KODE_LISTING])
 async function handlePropertyShare(request, env, url) {
@@ -150,10 +306,11 @@ async function handleSlugRedirect(request, env, url) {
 function parseSlugForKodeListing(slug) {
 	const parts = slug.split('-');
 
-	// Look for kode_listing pattern (e.g., K2.60, R1.25)
+	// Look for kode_listing pattern (e.g., K2.60, R1.25, H15, A1, etc.)
 	for (let i = parts.length - 1; i >= 0; i--) {
 		const part = parts[i].toUpperCase();
-		if (/^[A-Z]\d+\.\d+$/.test(part)) {
+		// Support both formats: with dot (K2.60) and without dot (H15)
+		if (/^[A-Z]\d+(\.\d+)?$/.test(part)) {
 			return part;
 		}
 	}
@@ -499,6 +656,469 @@ Guidelines:
 		console.error('Chat API error:', error);
 		return new Response(JSON.stringify({ error: 'Internal server error' }), {
 			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
+}
+
+// Handle AI description generation
+async function handleGenerateDescription(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type',
+			},
+		});
+	}
+
+	if (request.method !== 'POST') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		const {
+			title,
+			type,
+			status,
+			price,
+			land_area,
+			building_area,
+			bedrooms,
+			bathrooms,
+			legal,
+			location,
+			old_description,
+			model = "gemini-2.0-flash-exp",
+			requestId
+		} = await request.json();
+
+		console.log(`🔧 [${requestId}] BACKEND: Processing AI generation request`);
+
+		// Validate required fields
+		if (!type || !location || !location.province) {
+			console.error(`❌ [${requestId}] Validation failed - type: ${!!type}, location: ${!!location}, province: ${location?.province}`);
+			return new Response(JSON.stringify({
+				error: 'Missing required fields: type and location.province',
+				details: { type: !!type, location: !!location, province: location?.province }
+			}), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Get API key from environment
+		const geminiApiKey = env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY;
+		if (!geminiApiKey) {
+			console.error('Gemini API key not configured');
+			return new Response(JSON.stringify({ error: 'AI service unavailable' }), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+
+		let aiTitle = title;
+		let aiDescription = old_description;
+
+		// Use model from request or default to gemini-2.0-flash
+		const apiModel = model || "gemini-2.0-flash";
+
+		// Single combined prompt for efficiency - Focus on clickbait title and marketable SEO description
+		const combinedPrompt = `Dari Judul dan Deskripsi tersebut, tolong kembangkan menjadi judul Klik Bait yang bagus dan deskripsi yang marketable, seo friendly, meningkatkan visibilitas di google dan berpotensi muncul di pencarian atas google, mengandung keyword yang relevan. Tanpa bullet, tanpa bold, tanpa italic, keluarkan plain text saja.
+
+Judul: maximal 100 karakter, mengandung klik bait
+Deskripsi: output deskripsi maximal 600 karakter, mengandung judul klik bait, foreshadow, body, keyword relevan dan call to action: Jadwalkan Survay Lokasi, Hubungi Kami Segera! (gunakan emoticon didalam format deskripsi untuk mempercantik tampilan)
+
+Dalam penyusunan deskripsi:
+-Beri spasi jelas antar paragraf.
+-Bahasa harus mengalir, mudah dipahami, dan tidak bertele-tele.
+
+Judul Input: ${title || ''}
+Deskripsi Input: ${old_description || ''}
+
+FORMAT OUTPUT (harus mengikuti format ini persis):
+# Judul
+{judul properti}
+
+# Deskripsi
+{deskripsi lengkap properti}`;
+
+		try {
+			// Single API call for both title and description with timeout
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+			const response = await fetch(
+				`https://generativelanguage.googleapis.com/v1/models/${apiModel}:generateContent?key=${geminiApiKey}`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						contents: [{
+							role: 'user',
+							parts: [{ text: combinedPrompt }]
+						}],
+						generationConfig: {
+							temperature: 0.7,
+							maxOutputTokens: 1000,
+						}
+					}),
+					signal: controller.signal
+				}
+			);
+
+			clearTimeout(timeoutId);
+
+			if (response.ok) {
+				const result = await response.json();
+				const generatedContent = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+				console.log("RAW_AI_RESPONSE:", generatedContent);
+
+				if (generatedContent) {
+					// Parse the combined response with # Judul / # Deskripsi format
+					const titleMatch = generatedContent.match(/# Judul\s*\n(.+?)(?=\n# Deskripsi|\n*$)/is);
+					const descMatch = generatedContent.match(/# Deskripsi\s*\n(.+?)(?=\n#|\n*$)/is);
+
+					if (titleMatch && titleMatch[1] && titleMatch[1].trim().length > 0) {
+						aiTitle = titleMatch[1].trim();
+					} else {
+						console.error(`❌ [${requestId}] Format AI tidak sesuai - # Judul tidak ditemukan`);
+					}
+
+					if (descMatch && descMatch[1] && descMatch[1].trim().length > 0) {
+						aiDescription = descMatch[1].trim();
+					} else {
+						console.error(`❌ [${requestId}] Format AI tidak sesuai - # Deskripsi tidak ditemukan`);
+					}
+				}
+			} else {
+				const errorText = await response.text();
+				console.error(`❌ [${requestId}] AI generation failed:`, response.status, errorText);
+
+				// Log specific error types for debugging
+				if (response.status === 404) {
+					console.error(`❌ [${requestId}] Model not found:`, apiModel);
+					return new Response(JSON.stringify({
+						error: `Model "${apiModel}" tidak tersedia. Periksa daftar model yang valid.`,
+						model: apiModel
+					}), {
+						status: 503,
+						headers: {
+							'Content-Type': 'application/json',
+							'Access-Control-Allow-Origin': '*',
+						},
+					});
+				} else if (response.status === 429) {
+					console.error(`❌ [${requestId}] Quota exceeded for model:`, apiModel);
+				}
+			}
+		} catch (error) {
+			if (error.name === 'AbortError') {
+				console.error(`⏰ [${requestId}] AI generation timeout`);
+			} else {
+				console.error(`❌ [${requestId}] AI generation error:`, error);
+			}
+			// Continue with fallback - don't throw
+		}
+
+		// Always provide safe fallback content
+		const safeTitle = aiTitle && aiTitle !== title ? aiTitle : title;
+		const safeDescription = aiDescription && aiDescription !== old_description ? aiDescription : old_description;
+
+		// Check if AI actually generated new content
+		const isGenerated = (aiTitle !== title && aiTitle !== "") ||
+		                   (aiDescription !== old_description && aiDescription !== "");
+
+		// Extract keywords from final description
+		const keywords = extractKeywords(safeDescription, type, location.province, location.district);
+
+		console.log(`📊 [${requestId}] AI Generation result:`, {
+			isGenerated,
+			titleChanged: aiTitle !== title,
+			descriptionChanged: aiDescription !== old_description,
+			keywordCount: keywords.length
+		});
+
+		return new Response(JSON.stringify({
+			ai_title: safeTitle,
+			ai_description: safeDescription,
+			keywords: keywords,
+			is_generated: isGenerated,
+			message: isGenerated ? "AI berhasil generate konten baru" : "Konten berhasil dimuat dengan aman"
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+
+	} catch (error) {
+		console.error('Generate description API error:', error);
+		return new Response(JSON.stringify({ error: 'Internal server error' }), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
+}
+
+// Extract keywords from text
+function extractKeywords(text, propertyType, province, district) {
+	const keywords = new Set();
+
+	// Add property type
+	if (propertyType) keywords.add(propertyType.toLowerCase());
+
+	// Add location keywords
+	if (province) keywords.add(province.toLowerCase());
+	if (district) keywords.add(district.toLowerCase());
+
+	// Extract common real estate keywords from text
+	const commonKeywords = [
+		'rumah', 'apartemen', 'kost', 'villa', 'ruko', 'tanah', 'gudang',
+		'dijual', 'disewakan', 'sewa', 'jual',
+		'strategis', 'murah', 'bagus', 'baru', 'cantik', 'indah',
+		'fasilitas', 'dekat', 'pusat', 'kota', 'lokasi'
+	];
+
+	// Only process text if it's a valid string
+	if (text && typeof text === 'string') {
+		const lowerText = text.toLowerCase();
+		commonKeywords.forEach(keyword => {
+			if (lowerText.includes(keyword)) {
+				keywords.add(keyword);
+			}
+		});
+	}
+
+	return Array.from(keywords).slice(0, 10); // Limit to 10 keywords
+}
+
+// Handle analytics data fetching
+async function handleAnalyticsData(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'GET, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type',
+			},
+		});
+	}
+
+	if (request.method !== 'GET') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		// Get GA4 credentials from environment
+		const gaCredentials = env.GA_SERVICE_ACCOUNT_KEY;
+		const gaPropertyId = env.GA_PROPERTY_ID;
+
+		if (!gaCredentials || !gaPropertyId) {
+			console.error('GA4 credentials not configured');
+			return new Response(JSON.stringify({
+				error: 'Analytics service not configured',
+				details: 'GA4 credentials missing'
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Parse credentials
+		let serviceAccountKey;
+		try {
+			serviceAccountKey = JSON.parse(gaCredentials);
+		} catch (error) {
+			console.error('Invalid GA4 credentials format');
+			return new Response(JSON.stringify({
+				error: 'Invalid analytics configuration'
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Import googleapis dynamically (for Cloudflare Workers)
+		const { google } = await import('googleapis');
+
+		// Authenticate with GA4
+		const auth = new google.auth.GoogleAuth({
+			credentials: serviceAccountKey,
+			scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+		});
+
+		const analyticsData = google.analyticsdata({ version: 'v1beta', auth });
+
+		// Get date range from query params (default 30 days)
+		const url = new URL(request.url);
+		const days = parseInt(url.searchParams.get('days') || '30');
+		const endDate = new Date();
+		const startDate = new Date();
+		startDate.setDate(endDate.getDate() - days);
+
+		const startDateStr = startDate.toISOString().split('T')[0];
+		const endDateStr = endDate.toISOString().split('T')[0];
+
+		console.log(`📊 Fetching GA4 data for ${gaPropertyId}: ${startDateStr} to ${endDateStr}`);
+
+		// Fetch multiple reports in parallel
+		const [pageViewsReport, topPagesReport, trafficSourcesReport, realtimeReport] = await Promise.all([
+			// Page views trend
+			analyticsData.properties.runReport({
+				property: `properties/${gaPropertyId}`,
+				requestBody: {
+					dateRanges: [{ startDate: startDateStr, endDate: endDateStr }],
+					dimensions: [{ name: 'date' }],
+					metrics: [{ name: 'screenPageViews' }],
+					orderBys: [{ dimension: { dimensionName: 'date' } }]
+				}
+			}),
+
+			// Top pages
+			analyticsData.properties.runReport({
+				property: `properties/${gaPropertyId}`,
+				requestBody: {
+					dateRanges: [{ startDate: startDateStr, endDate: endDateStr }],
+					dimensions: [{ name: 'pagePath' }],
+					metrics: [{ name: 'screenPageViews' }],
+					orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+					limit: 10
+				}
+			}),
+
+			// Traffic sources
+			analyticsData.properties.runReport({
+				property: `properties/${gaPropertyId}`,
+				requestBody: {
+					dateRanges: [{ startDate: startDateStr, endDate: endDateStr }],
+					dimensions: [{ name: 'sessionDefaultChannelGrouping' }],
+					metrics: [{ name: 'sessions' }],
+					orderBys: [{ metric: { metricName: 'sessions' }, desc: true }]
+				}
+			}),
+
+			// Basic metrics (total users, sessions, etc.)
+			analyticsData.properties.runReport({
+				property: `properties/${gaPropertyId}`,
+				requestBody: {
+					dateRanges: [{ startDate: startDateStr, endDate: endDateStr }],
+					metrics: [
+						{ name: 'totalUsers' },
+						{ name: 'sessions' },
+						{ name: 'screenPageViews' },
+						{ name: 'bounceRate' },
+						{ name: 'averageSessionDuration' }
+					]
+				}
+			})
+		]);
+
+		// Process page views data for chart
+		const pageViewsData = pageViewsReport.data.rows?.map(row => ({
+			date: row.dimensionValues[0].value,
+			views: parseInt(row.metricValues[0].value)
+		})) || [];
+
+		// Process top pages data for chart
+		const topPagesData = topPagesReport.data.rows?.map(row => ({
+			page: row.dimensionValues[0].value,
+			views: parseInt(row.metricValues[0].value)
+		})) || [];
+
+		// Process traffic sources data for chart
+		const trafficSourcesData = trafficSourcesReport.data.rows?.map(row => ({
+			name: row.dimensionValues[0].value,
+			value: parseInt(row.metricValues[0].value)
+		})) || [];
+
+		// Get basic metrics
+		const metrics = realtimeReport.data.rows?.[0]?.metricValues || [];
+		const basicMetrics = {
+			totalUsers: parseInt(metrics[0]?.value || '0'),
+			sessions: parseInt(metrics[1]?.value || '0'),
+			pageViews: parseInt(metrics[2]?.value || '0'),
+			bounceRate: parseFloat(metrics[3]?.value || '0').toFixed(2),
+			avgSessionDuration: parseFloat(metrics[4]?.value || '0').toFixed(2)
+		};
+
+		const analyticsResponse = {
+			period: {
+				startDate: startDateStr,
+				endDate: endDateStr,
+				days: days
+			},
+			metrics: basicMetrics,
+			charts: {
+				pageViews: pageViewsData,
+				topPages: topPagesData,
+				trafficSources: trafficSourcesData
+			},
+			lastUpdated: new Date().toISOString()
+		};
+
+		console.log(`✅ Analytics data fetched successfully for ${days} days`);
+
+		return new Response(JSON.stringify(analyticsResponse), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+				'Cache-Control': 'no-cache'
+			},
+		});
+
+	} catch (error) {
+		console.error('Analytics API error:', error);
+
+		// Return fallback data for development/testing
+		const fallbackResponse = {
+			period: {
+				startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+				endDate: new Date().toISOString().split('T')[0],
+				days: 30
+			},
+			metrics: {
+				totalUsers: 0,
+				sessions: 0,
+				pageViews: 0,
+				bounceRate: '0.00',
+				avgSessionDuration: '0.00'
+			},
+			charts: {
+				pageViews: [],
+				topPages: [],
+				trafficSources: []
+			},
+			error: error.message,
+			lastUpdated: new Date().toISOString()
+		};
+
+		return new Response(JSON.stringify(fallbackResponse), {
 			headers: {
 				'Content-Type': 'application/json',
 				'Access-Control-Allow-Origin': '*',

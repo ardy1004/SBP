@@ -12,6 +12,7 @@ import { Footer } from "@/components/Footer";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import PropertyDetailPage from "@/pages/PropertyDetailPage";
+import LocationPage from "@/pages/LocationPage";
 import AboutPage from "@/pages/AboutPage";
 import PortfolioPage from "@/pages/PortfolioPage";
 import NotarisPage from "@/pages/NotarisPage";
@@ -27,6 +28,10 @@ import AdminIntegrationsPage from "@/pages/admin/AdminIntegrationsPage";
 function Router() {
   const [location, setLocation] = useLocation();
 
+  console.log('🛣️ Router Component Rendered');
+  console.log('📍 Router location:', location);
+  console.log('🔍 Checking routes for:', location);
+
   // Handle hash-based routing from worker redirects
   useEffect(() => {
     const hash = window.location.hash.substring(1); // Remove the '#'
@@ -39,6 +44,20 @@ function Router() {
 
   return (
     <Switch>
+      {/* Property Detail Routes - MUST COME FIRST */}
+      <Route path="/properti/:id">
+        <ErrorBoundary>
+          <PropertyDetailPage />
+        </ErrorBoundary>
+      </Route>
+
+      {/* TEST ROUTE - Simple specific route for testing */}
+      <Route path="/test-property">
+        <ErrorBoundary>
+          <PropertyDetailPage />
+        </ErrorBoundary>
+      </Route>
+
       {/* Public Routes */}
       <Route path="/">
         <ErrorBoundary>
@@ -75,23 +94,63 @@ function Router() {
           <Contact />
         </ErrorBoundary>
       </Route>
-      <Route path="/properti/:id">
-        <ErrorBoundary>
-          <PropertyDetailPage />
-        </ErrorBoundary>
-      </Route>
-      <Route path="/:slug*">
-        <ErrorBoundary>
-          <PropertyDetailPage />
-        </ErrorBoundary>
+
+      {/* SEO-friendly Property URLs - Handle property detail slugs */}
+      <Route path="/dijual">
+        {() => {
+          console.log('🟢 Matched /dijual route');
+          return (
+            <ErrorBoundary>
+              <PropertyDetailPage />
+            </ErrorBoundary>
+          );
+        }}
       </Route>
 
-      {/* Admin Routes */}
+      <Route path="/disewakan">
+        {() => {
+          console.log('🟢 Matched /disewakan route');
+          return (
+            <ErrorBoundary>
+              <PropertyDetailPage />
+            </ErrorBoundary>
+          );
+        }}
+      </Route>
+
+      {/* Admin Routes - MUST COME BEFORE LOCATION ROUTES */}
       <Route path="/admin/login"><AdminLoginPage /></Route>
       <Route path="/admin/dashboard"><AdminDashboardPage /></Route>
       <Route path="/admin/properties"><AdminPropertiesPage /></Route>
       <Route path="/admin/analytics"><AdminAnalyticsPage /></Route>
       <Route path="/admin/integrations"><AdminIntegrationsPage /></Route>
+
+      {/* Location Pages - only for specific patterns */}
+      <Route path="/:type/:location">
+        <ErrorBoundary>
+          <LocationPage />
+        </ErrorBoundary>
+      </Route>
+
+      {/* Catch-all route for SEO property URLs - MUST BE LAST */}
+      <Route path="*">
+        {() => {
+          const currentPath = window.location.pathname;
+          console.log('🔄 Catch-all route triggered for:', currentPath);
+
+          if (currentPath.startsWith('/dijual') || currentPath.startsWith('/disewakan')) {
+            console.log('🟢 Property URL detected, loading PropertyDetailPage');
+            return (
+              <ErrorBoundary>
+                <PropertyDetailPage />
+              </ErrorBoundary>
+            );
+          }
+
+          console.log('🔴 Not a property URL, showing 404');
+          return <NotFound />;
+        }}
+      </Route>
 
       {/* Fallback to 404 */}
       <Route><NotFound /></Route>

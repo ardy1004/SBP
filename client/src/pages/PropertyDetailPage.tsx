@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { PropertyCard } from "@/components/PropertyCard";
+import { ShareButtons } from "@/components/ShareButtons";
 import { InquiryForm } from "@/components/InquiryForm";
 import { apiRequest } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
@@ -34,16 +35,28 @@ function getYouTubeVideoId(url: string): string {
 }
 
 export default function PropertyDetailPage() {
+  console.log('🚀 PropertyDetailPage COMPONENT RENDERED');
+
   const [location, setLocation] = useLocation();
   const params = useParams();
 
+  console.log('📍 Location from useLocation:', location);
+  console.log('📍 Params from useParams:', params);
+
   // Get slug from URL path (remove leading slash)
   const slug = location.substring(1);
+  console.log('📝 Slug extracted:', slug);
+
   const parsedSlug = parsePropertySlug(slug);
+  console.log('🔍 Parsed slug result:', parsedSlug);
+
   const kodeListing = parsedSlug.kode_listing;
+  console.log('🏷️ Kode listing from slug:', kodeListing);
 
   // For backward compatibility, also check for direct ID parameter
   const propertyId = params.id || kodeListing;
+  console.log('🆔 Final propertyId used for query:', propertyId);
+
   const [favorites, setFavorites] = useState<string[]>(() => {
     const saved = localStorage.getItem('favorites');
     return saved ? JSON.parse(saved) : [];
@@ -65,16 +78,28 @@ export default function PropertyDetailPage() {
 
       // If we have a kode_listing from slug parsing, use kode_listing field; otherwise use ID field
       if (kodeListing) {
+        console.log('Querying by kode_listing:', kodeListing);
         query = query.eq('kode_listing', kodeListing);
       } else {
+        console.log('Querying by id:', propertyId);
         query = query.eq('id', propertyId);
       }
 
+      console.log('Final query:', query);
       const { data, error } = await query.single();
+
+      console.log('Query result - data:', data);
+      console.log('Query result - error:', error);
 
       if (error) {
         console.error('Supabase query error:', error);
+        console.error('Error details:', error.message, error.details, error.hint);
         throw error;
+      }
+
+      if (!data) {
+        console.error('No data returned from query');
+        throw new Error('Property not found');
       }
 
       console.log('Raw Supabase data:', data);
@@ -261,16 +286,16 @@ export default function PropertyDetailPage() {
       }
     }
 
-    // Fallback to property-type specific placeholder images
+    // Fallback to property-type specific placeholder images (social media friendly)
     const propertyTypePlaceholders: Record<string, string> = {
-      rumah: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop',
+      rumah: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop',
       kost: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=600&fit=crop',
       apartment: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
       villa: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
       ruko: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop',
       tanah: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=600&fit=crop',
       gudang: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&h=600&fit=crop',
-      hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop',
+      hotel: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&h=600&fit=crop', // Changed to more reliable hotel image
     };
 
     // Return property-type specific placeholder or generic one
@@ -310,6 +335,8 @@ export default function PropertyDetailPage() {
 
       <div className="min-h-screen flex flex-col">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-12 flex-1">
+          <Breadcrumb property={property} />
+
           <Button
             variant="ghost"
             onClick={() => setLocation('/')}
@@ -361,14 +388,6 @@ export default function PropertyDetailPage() {
                       <Heart
                         className={`h-5 w-5 ${favorites.includes(property.id) ? 'fill-destructive text-destructive' : ''}`}
                       />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleShare}
-                      data-testid="button-share"
-                    >
-                      <Share2 className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
@@ -459,6 +478,13 @@ export default function PropertyDetailPage() {
                 </Card>
               )}
 
+              {/* Share Buttons */}
+              <Card>
+                <CardContent className="p-6">
+                  <ShareButtons property={property} />
+                </CardContent>
+              </Card>
+
               {/* YouTube Video */}
               {property.youtubeUrl && (
                 <Card>
@@ -492,9 +518,41 @@ export default function PropertyDetailPage() {
   );
 }
 
-// Related Properties Component
+// Breadcrumb Component
+function Breadcrumb({ property }: { property: Property }) {
+  const [location, setLocation] = useLocation();
+
+  return (
+    <nav className="flex mb-6" aria-label="Breadcrumb">
+      <ol className="flex items-center space-x-2 text-sm">
+        <li>
+          <a href="/" className="text-muted-foreground hover:text-foreground">Home</a>
+        </li>
+        <li className="text-muted-foreground">/</li>
+        <li>
+          <a
+            href={`/${property.kabupaten.toLowerCase()}`}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            {property.kabupaten}
+          </a>
+        </li>
+        <li className="text-muted-foreground">/</li>
+        <li className="text-foreground">{property.judulProperti}</li>
+      </ol>
+    </nav>
+  );
+}
+
+// Related Properties Component with Enhanced Internal Links
 function RelatedPropertiesSection({ currentProperty }: { currentProperty: Property }) {
-  const { data: relatedProperties = [], isLoading } = useQuery<Property[]>({
+  const [location, setLocation] = useLocation();
+
+  const { data: relatedProperties = [], isLoading } = useQuery<{
+    locationBased: Property[];
+    typeBased: Property[];
+    recent: Property[];
+  }>({
     queryKey: ['related-properties', currentProperty.id],
     queryFn: async () => {
       console.log('=== FETCHING RELATED PROPERTIES ===');
@@ -508,39 +566,50 @@ function RelatedPropertiesSection({ currentProperty }: { currentProperty: Proper
         .neq('id', currentProperty.id) // Exclude current property
         .neq('status', 'sold') // Exclude sold properties
         .order('created_at', { ascending: false })
-        .limit(20); // Get more to filter
+        .limit(30); // Get more to categorize
 
       if (error) {
         console.error('Supabase query error:', error);
-        return [];
+        return { locationBased: [], typeBased: [], recent: [] };
       }
 
-      // Filter and sort on client side with more inclusive logic
-      let filtered = data
-        .filter((prop: any) => prop.id !== currentProperty.id && prop.status !== 'sold')
-        .map((prop: any) => ({
-          ...prop,
-          relevanceScore: calculateRelevanceScore(prop, currentProperty)
-        }))
-        .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-        .slice(0, 3);
+      const availableProperties = data.filter((prop: any) =>
+        prop.id !== currentProperty.id && prop.status !== 'sold'
+      );
 
-      // If we don't have enough high-relevance matches, add recent properties as fallback
-      if (filtered.length < 2) {
-        const fallbackProperties = data
-          .filter((prop: any) =>
-            prop.id !== currentProperty.id &&
-            prop.status !== 'sold' &&
-            !filtered.some((f: any) => f.id === prop.id)
-          )
-          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 3 - filtered.length);
+      // Categorize properties
+      const locationBased = availableProperties
+        .filter((prop: any) => prop.kabupaten === currentProperty.kabupaten)
+        .sort((a: any, b: any) => calculateRelevanceScore(b, currentProperty) - calculateRelevanceScore(a, currentProperty))
+        .slice(0, 4);
 
-        filtered = [...filtered, ...fallbackProperties];
-      }
+      const typeBased = availableProperties
+        .filter((prop: any) =>
+          prop.jenis_properti === currentProperty.jenisProperti &&
+          prop.kabupaten !== currentProperty.kabupaten
+        )
+        .sort((a: any, b: any) => calculateRelevanceScore(b, currentProperty) - calculateRelevanceScore(a, currentProperty))
+        .slice(0, 4);
 
-      console.log('Supabase filtered related properties:', filtered.length);
-      return filtered.map(transformSupabaseProperty);
+      const recent = availableProperties
+        .filter((prop: any) =>
+          !locationBased.some((p: any) => p.id === prop.id) &&
+          !typeBased.some((p: any) => p.id === prop.id)
+        )
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 4);
+
+      console.log('Categorized properties:', {
+        locationBased: locationBased.length,
+        typeBased: typeBased.length,
+        recent: recent.length
+      });
+
+      return {
+        locationBased: locationBased.map(transformSupabaseProperty),
+        typeBased: typeBased.map(transformSupabaseProperty),
+        recent: recent.map(transformSupabaseProperty)
+      };
     },
     enabled: !!currentProperty.id,
   });
@@ -647,25 +716,116 @@ function RelatedPropertiesSection({ currentProperty }: { currentProperty: Proper
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-8">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="space-y-3">
-                <div className="aspect-[4/3] bg-gray-200 rounded-lg animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+              <div key={i} className="space-y-4">
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[...Array(4)].map((_, j) => (
+                    <div key={j} className="space-y-3">
+                      <div className="aspect-[4/3] bg-gray-200 rounded-lg animate-pulse" />
+                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-        ) : relatedProperties.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {relatedProperties.map((relatedProperty) => (
-              <PropertyCard
-                key={relatedProperty.id}
-                property={relatedProperty}
-                onToggleFavorite={() => {}} // Related properties don't need favorite toggle
-                isFavorite={false}
-              />
-            ))}
+        ) : relatedProperties && typeof relatedProperties === 'object' && 'locationBased' in relatedProperties ? (
+          <div className="space-y-12">
+            {/* Properties in Same Location */}
+            {relatedProperties.locationBased && relatedProperties.locationBased.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl md:text-2xl font-semibold">
+                    Properti Lain di {currentProperty.kabupaten}
+                  </h3>
+                  <a
+                    href={`/${currentProperty.kabupaten.toLowerCase()}`}
+                    className="text-primary hover:text-primary/80 text-sm font-medium"
+                  >
+                    Lihat Semua →
+                  </a>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {relatedProperties.locationBased.map((property: Property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      onToggleFavorite={() => {}}
+                      isFavorite={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Properties of Same Type */}
+            {relatedProperties.typeBased && relatedProperties.typeBased.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl md:text-2xl font-semibold">
+                    {currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1)} Lainnya
+                  </h3>
+                  <a
+                    href={`/${currentProperty.jenisProperti.toLowerCase()}-dijual`}
+                    className="text-primary hover:text-primary/80 text-sm font-medium"
+                  >
+                    Lihat Semua →
+                  </a>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {relatedProperties.typeBased.map((property: Property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      onToggleFavorite={() => {}}
+                      isFavorite={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Properties */}
+            {relatedProperties.recent && relatedProperties.recent.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl md:text-2xl font-semibold">
+                    Properti Terbaru
+                  </h3>
+                  <a
+                    href="/portfolio"
+                    className="text-primary hover:text-primary/80 text-sm font-medium"
+                  >
+                    Lihat Semua →
+                  </a>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {relatedProperties.recent.map((property: Property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      onToggleFavorite={() => {}}
+                      isFavorite={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {(!relatedProperties.locationBased || relatedProperties.locationBased.length === 0) &&
+             (!relatedProperties.typeBased || relatedProperties.typeBased.length === 0) &&
+             (!relatedProperties.recent || relatedProperties.recent.length === 0) && (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground">
+                  <p className="text-lg mb-2">Tidak ada properti terkait ditemukan</p>
+                  <p className="text-sm">Coba lihat properti lainnya di halaman utama</p>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">
