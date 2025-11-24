@@ -24,6 +24,7 @@ export const properties = pgTable("properties", {
   kamarMandi: integer("kamar_mandi"),
   legalitas: text("legalitas"), // SHM, SHGB, PPJB, Girik, Letter C
   hargaProperti: numeric("harga_properti").notNull(),
+  hargaPerMeter: boolean("harga_per_meter").default(false).notNull(),
   provinsi: text("provinsi").notNull(),
   kabupaten: text("kabupaten").notNull(),
   alamatLengkap: text("alamat_lengkap"),

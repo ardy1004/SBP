@@ -12,22 +12,179 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState("7D");
   const { toast } = useToast();
 
-  const { data: analytics, refetch } = useQuery<any>({
-    queryKey: ['/api/admin/analytics', timeRange],
+  const { data: analytics, refetch } = useQuery({
+    queryKey: ['admin-analytics', timeRange],
+    queryFn: async () => {
+      console.log('Fetching analytics data for time range:', timeRange);
+
+      // Calculate date range based on timeRange
+      const now = new Date();
+      let startDate = new Date();
+
+      switch (timeRange) {
+        case '1D':
+          startDate.setDate(now.getDate() - 1);
+          break;
+        case '3D':
+          startDate.setDate(now.getDate() - 3);
+          break;
+        case '7D':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '1M':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case '3M':
+          startDate.setMonth(now.getMonth() - 3);
+          break;
+        case '1Y':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 7); // Default to 7 days
+      }
+
+      console.log('Date range:', startDate.toISOString(), 'to', now.toISOString());
+
+      // Get analytics events within date range
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('analytics_events')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', now.toISOString());
+
+      if (eventsError) {
+        console.error('Error fetching analytics events:', eventsError);
+      }
+
+      // Get inquiries within date range
+      const { data: inquiriesData, error: inquiriesError } = await supabase
+        .from('inquiries')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', now.toISOString());
+
+      if (inquiriesError) {
+        console.error('Error fetching inquiries:', inquiriesError);
+      }
+
+      // Calculate metrics
+      const totalViews = eventsData?.filter(event => event.event_type === 'property_view').length || 0;
+      const totalInquiries = inquiriesData?.length || 0;
+
+      // For searches, we might need to add search events to analytics_events table
+      // For now, we'll set it to 0 or implement based on available data
+      const totalSearches = eventsData?.filter(event => event.event_type === 'search').length || 0;
+
+      // Get top properties by views
+      const propertyViews = new Map();
+      eventsData?.filter(event => event.event_type === 'property_view' && event.property_id).forEach(event => {
+        const propertyId = event.property_id;
+        propertyViews.set(propertyId, (propertyViews.get(propertyId) || 0) + 1);
+      });
+
+      // Get property details for top properties
+      const topPropertiesPromises = Array.from(propertyViews.entries())
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10)
+        .map(async ([propertyId, views]) => {
+          const { data: property } = await supabase
+            .from('properties')
+            .select('kode_listing, jenis_properti')
+            .eq('id', propertyId)
+            .single();
+
+          return property ? {
+            kodeListing: property.kode_listing,
+            jenisProperti: property.jenis_properti,
+            views
+          } : null;
+        });
+
+      const topProperties = (await Promise.all(topPropertiesPromises)).filter(Boolean);
+
+      const result = {
+        totalViews,
+        totalInquiries,
+        totalSearches,
+        topProperties,
+        timeRange
+      };
+
+      console.log('Analytics result:', result);
+      return result;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   const handleExportCSV = async () => {
     try {
-      const data = await apiRequest('GET', `/api/admin/analytics/export?range=${timeRange}`, {});
-      
-      const csvContent = data.csv;
-      const blob = new Blob([csvContent], { type: "text/csv" });
+      // Calculate date range
+      const now = new Date();
+      let startDate = new Date();
+
+      switch (timeRange) {
+        case '1D':
+          startDate.setDate(now.getDate() - 1);
+          break;
+        case '3D':
+          startDate.setDate(now.getDate() - 3);
+          break;
+        case '7D':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '1M':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case '3M':
+          startDate.setMonth(now.getMonth() - 3);
+          break;
+        case '1Y':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 7);
+      }
+
+      // Get data for export
+      const { data: eventsData } = await supabase
+        .from('analytics_events')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', now.toISOString());
+
+      const { data: inquiriesData } = await supabase
+        .from('inquiries')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', now.toISOString());
+
+      // Generate CSV content
+      const csvHeaders = ['Date', 'Event Type', 'Property ID', 'Details'];
+      const csvRows = [
+        csvHeaders.join(','),
+        ...(eventsData || []).map(event => [
+          new Date(event.created_at).toISOString().split('T')[0],
+          event.event_type,
+          event.property_id || '',
+          JSON.stringify(event.metadata || {}).replace(/"/g, '""')
+        ].join(',')),
+        ...(inquiriesData || []).map(inquiry => [
+          new Date(inquiry.created_at).toISOString().split('T')[0],
+          'inquiry',
+          inquiry.property_id,
+          `"${inquiry.name} - ${inquiry.whatsapp} - ${inquiry.message?.substring(0, 50)}..."`
+        ].join(','))
+      ];
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -37,6 +194,7 @@ export default function AdminAnalyticsPage() {
 
       toast({ title: "Export berhasil" });
     } catch (error) {
+      console.error('Export error:', error);
       toast({
         title: "Export gagal",
         description: "Terjadi kesalahan saat export data",
@@ -46,12 +204,21 @@ export default function AdminAnalyticsPage() {
   };
 
   const handleReset = async () => {
-    if (confirm('Apakah Anda yakin ingin mereset semua data analytics?')) {
+    if (confirm('Apakah Anda yakin ingin mereset semua data analytics? Tindakan ini tidak dapat dibatalkan.')) {
       try {
-        await apiRequest('POST', '/api/admin/analytics/reset', {});
+        const { error } = await supabase
+          .from('analytics_events')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+        if (error) {
+          throw error;
+        }
+
         refetch();
         toast({ title: "Data analytics berhasil direset" });
       } catch (error) {
+        console.error('Reset error:', error);
         toast({
           title: "Reset gagal",
           description: "Terjadi kesalahan saat reset data",
@@ -158,7 +325,7 @@ export default function AdminAnalyticsPage() {
                 <CardTitle>Properti Paling Populer</CardTitle>
               </CardHeader>
               <CardContent>
-                {analytics?.topProperties?.length > 0 ? (
+                {analytics?.topProperties && analytics.topProperties.length > 0 ? (
                   <div className="space-y-4">
                     {analytics.topProperties.map((property: any, index: number) => (
                       <div key={index} className="flex justify-between items-center border-b pb-3">

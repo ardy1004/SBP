@@ -18,7 +18,8 @@ export async function apiRequest(
   const adminToken = localStorage.getItem('adminToken');
 
   // Use absolute URL for production, relative for development
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const isProduction = typeof window !== 'undefined' && window.location.hostname === 'salambumi.xyz';
+  const baseUrl = isProduction ? 'https://salambumi.xyz' : (import.meta.env.VITE_API_BASE_URL || '');
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
   const headers: HeadersInit = data instanceof FormData ? {} : (data ? { "Content-Type": "application/json" } : {});
@@ -60,8 +61,9 @@ export async function apiRequest(
     return { success: true };
   }
 
-  if (!contentLength || contentLength === '0' || !contentType?.includes('application/json')) {
-    console.log('Empty or non-JSON response, returning empty object');
+  // Check if response is JSON by content-type, not content-length (which can be null)
+  if (!contentType?.includes('application/json')) {
+    console.log('Non-JSON response, returning empty object');
     return {};
   }
 
@@ -99,7 +101,8 @@ export const getQueryFn: <T>(options: {
     const url = queryKey.length === 1 ? queryKey[0] as string : queryKey.join("/") as string;
 
     // Use absolute URL for production, relative for development
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const isProduction = typeof window !== 'undefined' && window.location.hostname === 'salambumi.xyz';
+    const baseUrl = isProduction ? 'https://salambumi.xyz' : (import.meta.env.VITE_API_BASE_URL || '');
     const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
     // Use admin token for admin endpoints, supabase token for others

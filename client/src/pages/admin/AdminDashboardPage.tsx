@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminDashboardPage() {
   const [, setLocation] = useLocation();
@@ -17,8 +18,61 @@ export default function AdminDashboardPage() {
     }
   }, [isAdmin, loading, setLocation]);
 
-  const { data: stats } = useQuery<any>({
-    queryKey: ['/api/admin/stats'],
+  const { data: stats } = useQuery({
+    queryKey: ['admin-dashboard-stats'],
+    queryFn: async () => {
+      console.log('Fetching dashboard stats from Supabase...');
+
+      // Total Properties
+      const { count: totalProperties, error: totalError } = await supabase
+        .from('properties')
+        .select('*', { count: 'exact', head: true });
+
+      if (totalError) {
+        console.error('Error fetching total properties:', totalError);
+      }
+
+      // Active Properties (not sold)
+      const { count: activeProperties, error: activeError } = await supabase
+        .from('properties')
+        .select('*', { count: 'exact', head: true })
+        .neq('is_sold', true);
+
+      if (activeError) {
+        console.error('Error fetching active properties:', activeError);
+      }
+
+      // Total Views from analytics_events
+      const { count: totalViews, error: viewsError } = await supabase
+        .from('analytics_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_type', 'property_view');
+
+      if (viewsError) {
+        console.error('Error fetching total views:', viewsError);
+      }
+
+      // Total Inquiries
+      const { count: totalInquiries, error: inquiriesError } = await supabase
+        .from('inquiries')
+        .select('*', { count: 'exact', head: true });
+
+      if (inquiriesError) {
+        console.error('Error fetching total inquiries:', inquiriesError);
+      }
+
+      const result = {
+        totalProperties: totalProperties || 0,
+        activeProperties: activeProperties || 0,
+        totalViews: totalViews || 0,
+        totalInquiries: totalInquiries || 0,
+      };
+
+      console.log('Dashboard stats result:', result);
+      return result;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
   });
 
   const statCards = [

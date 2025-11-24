@@ -37,6 +37,7 @@ export interface Property {
   kamarMandi?: number | null;
   legalitas?: string | null;
   hargaProperti: string;
+  hargaPerMeter?: boolean;
   provinsi: string;
   kabupaten: string;
   alamatLengkap?: string | null;

@@ -247,6 +247,7 @@ const transformSupabaseProperty = (supabaseProperty: any): Property => {
     kamarMandi: supabaseProperty.kamar_mandi,
     legalitas: supabaseProperty.legalitas,
     hargaProperti: supabaseProperty.harga_properti,
+    hargaPerMeter: Boolean(supabaseProperty.harga_per_meter || false),
     provinsi: supabaseProperty.provinsi,
     kabupaten: supabaseProperty.kabupaten,
     alamatLengkap: supabaseProperty.alamat_lengkap,

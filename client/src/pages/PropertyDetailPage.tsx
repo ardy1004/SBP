@@ -10,6 +10,7 @@ import { PropertyImageGallery } from "@/components/PropertyImageGallery";
 import { PropertyCard } from "@/components/PropertyCard";
 import { ShareButtons } from "@/components/ShareButtons";
 import { InquiryForm } from "@/components/InquiryForm";
+import { PropertySchemaMarkup } from "@/components/SchemaMarkup";
 import { apiRequest } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import { parsePropertySlug } from "@/lib/utils";
@@ -137,6 +138,7 @@ export default function PropertyDetailPage() {
         isSold: data.is_sold,
         priceOld: data.price_old,
         isPropertyPilihan: data.is_property_pilihan,
+        hargaPerMeter: data.harga_per_meter || false,
         ownerContact: data.owner_contact,
         status: data.status,
         createdAt: new Date(data.created_at),
@@ -303,9 +305,39 @@ export default function PropertyDetailPage() {
            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop';
   };
 
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string, isPerMeter: boolean = false) => {
     const num = parseFloat(price);
-    return `Rp ${num.toLocaleString('id-ID')}`;
+    let displayPrice = num;
+
+    if (isPerMeter) {
+      // For per meter pricing, show as "Rp 8.5jt/m²"
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000) {
+        const value = num / 1000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}rb/m²`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}/m²`;
+    } else {
+      // Regular pricing - use full format for detail page
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}`;
+    }
   };
 
   const getTitle = () => {
@@ -314,13 +346,16 @@ export default function PropertyDetailPage() {
 
   return (
     <>
+      {/* Schema Markup for SEO */}
+      {property && <PropertySchemaMarkup property={property} />}
+
       <Helmet>
         <title>{`${getTitle()} - Salam Bumi Property`}</title>
-        <meta name="description" content={property.deskripsi || `${property.jenisProperti} ${property.status} dengan ${property.kamarTidur} kamar tidur, ${property.kamarMandi} kamar mandi di ${property.kabupaten}, ${property.provinsi}. Harga: ${formatPrice(property.hargaProperti)}`} />
+        <meta name="description" content={property.deskripsi || `${property.jenisProperti} ${property.status} dengan ${property.kamarTidur} kamar tidur, ${property.kamarMandi} kamar mandi di ${property.kabupaten}, ${property.provinsi}. Harga: ${formatPrice(property.hargaProperti, (property as any).hargaPerMeter)}`} />
 
         {/* Open Graph */}
         <meta property="og:title" content={getTitle()} />
-        <meta property="og:description" content={property.deskripsi || `${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')} ${property.status} di ${property.kabupaten}, ${property.provinsi}. Harga: ${formatPrice(property.hargaProperti)}`} />
+        <meta property="og:description" content={property.deskripsi || `${property.jenisProperti.charAt(0).toUpperCase() + property.jenisProperti.slice(1).replace(/_/g, ' ')} ${property.status} di ${property.kabupaten}, ${property.provinsi}. Harga: ${formatPrice(property.hargaProperti, (property as any).hargaPerMeter)}`} />
         <meta property="og:image" content={getPrimaryImage()} />
         <meta property="og:url" content={window.location.href} />
         <meta property="og:type" content="website" />
@@ -396,7 +431,7 @@ export default function PropertyDetailPage() {
                   {property.isHot && property.priceOld && (
                     <div className="flex items-center gap-2">
                       <span className="text-lg text-muted-foreground line-through">
-                        {formatPrice(property.priceOld)}
+                        {formatPrice(property.priceOld, (property as any).hargaPerMeter)}
                       </span>
                       <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
                         DROP PRICE
@@ -404,7 +439,7 @@ export default function PropertyDetailPage() {
                     </div>
                   )}
                   <p className="text-3xl md:text-4xl font-bold text-primary" data-testid="text-price">
-                    {formatPrice(property.hargaProperti)}
+                    {formatPrice(property.hargaProperti, (property as any).hargaPerMeter)}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {property.status.charAt(0).toUpperCase() + property.status.slice(1)}

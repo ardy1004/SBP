@@ -21,6 +21,10 @@ zone_name = "salambumi.xyz"
 pattern = "salambumi.xyz/disewakan-*"
 zone_name = "salambumi.xyz"
 
+[[routes]]
+pattern = "salambumi.xyz/api/*"
+zone_name = "salambumi.xyz"
+
 # Environment variables
 [vars]
 SUPABASE_URL = "https://ljnqmfwbphlrlslfwjbr.supabase.co"
@@ -30,12 +34,15 @@ SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 VITE_GEMINI_API_KEY = "AIzaSyBRSqmBhMAuw85XZ4Ils60w9GjU6xP63hw"
 VITE_BYTEDANCE_API_KEY = "2ab3ea71-cec2-4de8-9121-b2004523ea01"
 
+# API Base URL for production
+VITE_API_BASE_URL = "https://salambumi.xyz"
+
 # AI API Keys for worker
 GEMINI_API_KEY = "AIzaSyBRSqmBhMAuw85XZ4Ils60w9GjU6xP63hw"
 
 # GA4 Analytics credentials (set via environment variables in production)
 GA_PROPERTY_ID = "513948591"
-GA_SERVICE_ACCOUNT_KEY = "REPLACE_WITH_ACTUAL_SERVICE_ACCOUNT_JSON"
+GA_SERVICE_ACCOUNT_KEY = "PLACEHOLDER_GA_SERVICE_ACCOUNT_KEY"
 
 # R2 Bucket binding for image storage
 [[r2_buckets]]

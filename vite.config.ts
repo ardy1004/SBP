@@ -18,6 +18,44 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('wouter') || id.includes('react-helmet')) {
+              return 'router-vendor';
+            }
+            if (id.includes('lucide-react') || id.includes('@radix-ui')) {
+              return 'ui-vendor';
+            }
+            if (id.includes('@tanstack/react-query') || id.includes('@supabase')) {
+              return 'query-vendor';
+            }
+            if (id.includes('react-hook-form')) {
+              return 'form-vendor';
+            }
+            // Other node_modules go to vendor
+            return 'vendor';
+          }
+
+          // Feature chunks
+          if (id.includes('/pages/admin/')) {
+            return 'admin';
+          }
+          if (id.includes('/components/Property') || id.includes('/components/ShareButtons')) {
+            return 'property-components';
+          }
+          if (id.includes('/lib/')) {
+            return 'utils';
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600, // Increase limit to 600kb
   },
   server: {
     fs: {
@@ -36,10 +74,5 @@ export default defineConfig({
         secure: false,
       },
     },
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./client/src/test/setup.ts'],
   },
 });

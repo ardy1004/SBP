@@ -98,6 +98,7 @@ export default function AdminPropertiesPage() {
     isSold: property.is_sold,
     priceOld: property.price_old,
     isPropertyPilihan: property.is_property_pilihan,
+    hargaPerMeter: Boolean((property as any).harga_per_meter || false),
     ownerContact: property.owner_contact,
     status: property.status,
     createdAt: new Date(property.created_at),
@@ -311,9 +312,39 @@ export default function AdminPropertiesPage() {
     }
   };
 
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string, isPerMeter: boolean = false) => {
     const num = parseFloat(price);
-    return `Rp ${num.toLocaleString('id-ID')}`;
+    let displayPrice = num;
+
+    if (isPerMeter) {
+      // For per meter pricing, show as "Rp 8.5jt/m²"
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000) {
+        const value = num / 1000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}rb/m²`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}/m²`;
+    } else {
+      // Regular pricing - use full format for admin panel
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}`;
+    }
   };
 
   // Helper function to get property image with fallbacks
@@ -678,7 +709,7 @@ export default function AdminPropertiesPage() {
                                   {property.isHot && property.priceOld && (
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className="text-sm text-muted-foreground line-through">
-                                        {formatPrice(property.priceOld)}
+                                        {formatPrice(property.priceOld, (property as any).hargaPerMeter)}
                                       </span>
                                       <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
                                         DROP PRICE
@@ -686,7 +717,7 @@ export default function AdminPropertiesPage() {
                                     </div>
                                   )}
                                   <p className="text-sm font-medium text-primary">
-                                    {formatPrice(property.hargaProperti)}
+                                    {formatPrice(property.hargaProperti, (property as any).hargaPerMeter)}
                                   </p>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">

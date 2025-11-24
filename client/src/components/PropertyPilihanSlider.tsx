@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Property } from "@shared/types";
 import { supabase } from "@/lib/supabase";
+import { generatePropertySlug } from "@/lib/utils";
 
 interface PropertyPilihanSliderProps {
   properties: Property[];
@@ -28,20 +29,39 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
     return null;
   }
 
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string, isPerMeter: boolean = false) => {
     const num = parseFloat(price);
-    if (num >= 1000000000) {
-      const value = num / 1000000000;
-      // Use Math.round to handle floating point precision issues
-      const rounded = Math.round(value * 10) / 10;
-      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
-    } else if (num >= 1000000) {
-      const value = num / 1000000;
-      // Use Math.round to handle floating point precision issues
-      const rounded = Math.round(value * 10) / 10;
-      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+    let displayPrice = num;
+
+    if (isPerMeter) {
+      // For per meter pricing, show as "Rp 8.5jt/m²"
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000) {
+        const value = num / 1000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}rb/m²`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}/m²`;
+    } else {
+      // Regular pricing
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}`;
     }
-    return `Rp ${num.toLocaleString('id-ID')}`;
   };
 
   const goToPrevious = () => {
@@ -56,8 +76,18 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
     // Set clicked state for green color
     setIsClicked(true);
 
-    // Navigate to property detail page with property ID
-    setLocation(`/${currentProperty.status}-${currentProperty.jenisProperti}-${currentProperty.kabupaten}?id=${currentProperty.id}`);
+    // Generate SEO-friendly slug for navigation
+    const slug = generatePropertySlug({
+      status: currentProperty.status,
+      jenis_properti: currentProperty.jenisProperti,
+      provinsi: currentProperty.provinsi,
+      kabupaten: currentProperty.kabupaten,
+      judul_properti: currentProperty.judulProperti || undefined,
+      kode_listing: currentProperty.kodeListing
+    });
+
+    // Navigate to property detail page
+    setLocation(`/${slug}`);
 
     // Reset clicked state after a short delay for visual feedback
     setTimeout(() => setIsClicked(false), 200);
@@ -89,6 +119,7 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
           <img
             src={currentProperty.imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1600&h=900&fit=crop'}
             alt={currentProperty.kodeListing}
+            loading="lazy"
             className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
             onError={(e) => {
               e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1600&h=900&fit=crop';
@@ -146,11 +177,11 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
                 <div className="flex items-center">
                   <div>
                     <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-white drop-shadow-2xl" data-testid="text-property-price">
-                      {formatPrice(currentProperty.hargaProperti)}
+                      {formatPrice(currentProperty.hargaProperti, (currentProperty as any).hargaPerMeter)}
                     </p>
                     {currentProperty.isHot && currentProperty.priceOld && (
                       <p className="text-xs sm:text-sm text-white/80 line-through mt-1">
-                        {formatPrice(currentProperty.priceOld)}
+                        {formatPrice(currentProperty.priceOld, (currentProperty as any).hargaPerMeter)}
                       </p>
                     )}
                   </div>
@@ -237,12 +268,12 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
              variant="ghost"
              size="icon"
              className="
-               absolute left-1 sm:left-2 md:left-4 top-1/2 -translate-y-1/2
+               absolute left-1 sm:left-2 md:left-4 top-1/2 -translate-y-1/2 z-20
                w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full
-               bg-white/10 backdrop-blur-md border border-white/30
-               hover:bg-white/20 hover:scale-110
+               bg-white/80 backdrop-blur-md border border-white/60
+               hover:bg-white hover:scale-110
                transition-all duration-300 shadow-2xl
-               opacity-50 sm:opacity-60 md:opacity-0 group-hover:opacity-100
+               opacity-50 sm:opacity-60 md:opacity-60 group-hover:opacity-100
                touch-manipulation
              "
              onClick={goToPrevious}
@@ -255,12 +286,12 @@ export function PropertyPilihanSlider({ properties }: PropertyPilihanSliderProps
              variant="ghost"
              size="icon"
              className="
-               absolute right-1 sm:right-2 md:right-4 top-1/2 -translate-y-1/2
+               absolute right-1 sm:right-2 md:right-4 top-1/2 -translate-y-1/2 z-20
                w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full
-               bg-white/10 backdrop-blur-md border border-white/30
-               hover:bg-white/20 hover:scale-110
+               bg-white/80 backdrop-blur-md border border-white/60
+               hover:bg-white hover:scale-110
                transition-all duration-300 shadow-2xl
-               opacity-50 sm:opacity-60 md:opacity-0 group-hover:opacity-100
+               opacity-50 sm:opacity-60 md:opacity-60 group-hover:opacity-100
                touch-manipulation
              "
              onClick={goToNext}

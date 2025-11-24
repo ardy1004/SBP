@@ -44,6 +44,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     kamarMandi: "",
     legalitas: "",
     hargaProperti: "",
+    hargaPerMeter: false,
     provinsi: "",
     kabupaten: "",
     alamatLengkap: "",
@@ -78,6 +79,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
 
 
 
+
   useEffect(() => {
     if (property) {
       setIsLoading(true);
@@ -97,6 +99,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         kamarMandi: "",
         legalitas: "",
         hargaProperti: "",
+        hargaPerMeter: false,
         provinsi: "",
         kabupaten: "",
         alamatLengkap: "",
@@ -151,6 +154,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           kamarMandi: property.kamarMandi ? property.kamarMandi.toString() : "",
           legalitas: property.legalitas || "",
           hargaProperti: property.hargaProperti || "",
+          hargaPerMeter: Boolean((property as any).hargaPerMeter || false),
           provinsi: property.provinsi || "",
           kabupaten: property.kabupaten || "",
           alamatLengkap: property.alamatLengkap || "",
@@ -219,6 +223,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         isSold: false,
         priceOld: "",
         isPropertyPilihan: false,
+        hargaPerMeter: formData.jenisProperti === 'tanah',
       });
     }
   }, [property]);
@@ -240,6 +245,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         kamar_mandi: formData.kamarMandi ? parseInt(formData.kamarMandi) : null,
         legalitas: formData.legalitas || null,
         harga_properti: formData.hargaProperti,
+        ...(formData.hargaPerMeter !== undefined && { harga_per_meter: formData.hargaPerMeter }),
         provinsi: formData.provinsi,
         kabupaten: formData.kabupaten,
         alamat_lengkap: formData.alamatLengkap || null,
@@ -470,6 +476,17 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
             required
             data-testid="input-harga"
           />
+          {formData.jenisProperti === 'tanah' && (
+            <div className="flex items-center gap-2 mt-2">
+              <Checkbox
+                id="hargaPerMeter"
+                checked={formData.hargaPerMeter}
+                onCheckedChange={(checked) => setFormData({ ...formData, hargaPerMeter: !!checked })}
+                data-testid="checkbox-harga-per-meter"
+              />
+              <label htmlFor="hargaPerMeter" className="text-sm font-medium">Harga per meter persegi</label>
+            </div>
+          )}
         </div>
 
         <div>

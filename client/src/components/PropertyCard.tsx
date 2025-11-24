@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { generatePropertySlug } from "@/lib/utils";
 import type { Property } from "@shared/types";
+import { lazy, Suspense } from "react";
+
+// Lazy load heavy components
+const ShareButtons = lazy(() => import("@/components/ShareButtons").then(module => ({ default: module.ShareButtons })));
 
 interface PropertyCardProps {
   property: Property;
@@ -13,20 +17,39 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, onToggleFavorite, isFavorite }: PropertyCardProps) {
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string, isPerMeter: boolean = false) => {
     const num = parseFloat(price);
-    if (num >= 1000000000) {
-      const value = num / 1000000000;
-      // Use Math.round to handle floating point precision issues
-      const rounded = Math.round(value * 10) / 10;
-      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
-    } else if (num >= 1000000) {
-      const value = num / 1000000;
-      // Use Math.round to handle floating point precision issues
-      const rounded = Math.round(value * 10) / 10;
-      return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+    let displayPrice = num;
+
+    if (isPerMeter) {
+      // For per meter pricing, show as "Rp 8.5jt/m²"
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
+      } else if (num >= 1000) {
+        const value = num / 1000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}rb/m²`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}/m²`;
+    } else {
+      // Regular pricing
+      if (num >= 1000000000) {
+        const value = num / 1000000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      } else if (num >= 1000000) {
+        const value = num / 1000000;
+        const rounded = Math.round(value * 10) / 10;
+        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+      }
+      return `Rp ${num.toLocaleString('id-ID')}`;
     }
-    return `Rp ${num.toLocaleString('id-ID')}`;
   };
 
   const getPropertyTypeLabel = (type: string) => {
@@ -124,6 +147,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
           <img
             src={getPropertyImage()}
             alt={getTitle()}
+            loading="lazy"
             className={`
               w-full h-full object-cover transition-all duration-500
               group-hover:scale-110 group-hover:brightness-110
@@ -254,7 +278,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             <div className="flex items-center gap-1.5 sm:gap-2">
               <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
               <span className="text-xs sm:text-sm text-gray-500 line-through">
-                {formatPrice(property.priceOld)}
+                {formatPrice(property.priceOld, (property as any).hargaPerMeter)}
               </span>
             </div>
           )}
@@ -262,7 +286,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             className="text-lg sm:text-xl font-bold text-gray-900"
             data-testid="text-price"
           >
-            {formatPrice(property.hargaProperti)}
+            {formatPrice(property.hargaProperti, (property as any).hargaPerMeter)}
           </p>
         </div>
 
