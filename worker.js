@@ -62,6 +62,22 @@ export default {
 				)
 			}
 
+			// Handle Search Console data fetching
+			if (request.method === 'GET' && url.pathname === '/api/search-console') {
+				return withPerformanceMonitoring(
+					() => handleSearchConsoleData(request, env),
+					'SEARCH_CONSOLE_DATA_FETCH'
+				)
+			}
+
+			// Handle PageSpeed Insights
+			if (request.method === 'GET' && url.pathname === '/api/pagespeed') {
+				return withPerformanceMonitoring(
+					() => handlePageSpeedInsights(request, env),
+					'PAGESPEED_INSIGHTS_FETCH'
+				)
+			}
+
 			// Handle image upload (existing functionality)
 			if (request.method === 'POST' && url.pathname === '/upload') {
 				return handleImageUpload(request, env);
@@ -1202,6 +1218,339 @@ async function handleImageUpload(request, env) {
 		console.error('Worker error:', error);
 		return new Response(JSON.stringify({ error: error.message }), {
 			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
+}
+
+// Handle Search Console data fetching
+async function handleSearchConsoleData(request, env) {
+	try {
+		// Get Search Console credentials from environment
+		const serviceAccountKey = env.SEARCH_CONSOLE_SERVICE_ACCOUNT_KEY;
+		const siteUrl = env.SEARCH_CONSOLE_SITE_URL;
+
+		if (!serviceAccountKey || !siteUrl) {
+			console.error('Search Console credentials not configured');
+			return new Response(JSON.stringify({
+				error: 'Search Console not configured',
+				details: 'Missing SEARCH_CONSOLE_SERVICE_ACCOUNT_KEY or SEARCH_CONSOLE_SITE_URL'
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Parse service account key
+		let credentials;
+		try {
+			credentials = JSON.parse(serviceAccountKey);
+		} catch (error) {
+			console.error('Invalid Search Console service account key format');
+			return new Response(JSON.stringify({
+				error: 'Invalid Search Console configuration'
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Import googleapis dynamically
+		const { google } = await import('googleapis');
+
+		// Authenticate with Search Console
+		const auth = new google.auth.GoogleAuth({
+			credentials: credentials,
+			scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+		});
+
+		const searchconsole = google.searchconsole({ version: 'v1', auth });
+
+		// Get date range from query params (default 30 days)
+		const url = new URL(request.url);
+		const days = parseInt(url.searchParams.get('days') || '30');
+		const endDate = new Date();
+		const startDate = new Date();
+		startDate.setDate(endDate.getDate() - days);
+
+		const startDateStr = startDate.toISOString().split('T')[0];
+		const endDateStr = endDate.toISOString().split('T')[0];
+
+		console.log(`📊 Fetching Search Console data for ${siteUrl}: ${startDateStr} to ${endDateStr}`);
+
+		// Fetch search analytics data
+		const searchAnalyticsResponse = await searchconsole.searchanalytics.query({
+			siteUrl: siteUrl,
+			requestBody: {
+				startDate: startDateStr,
+				endDate: endDateStr,
+				dimensions: ['query', 'page', 'device', 'country'],
+				rowLimit: 1000,
+				startRow: 0
+			}
+		});
+
+		// Process the data
+		const rows = searchAnalyticsResponse.data.rows || [];
+
+		// Aggregate data by query
+		const queryData = new Map();
+		const pageData = new Map();
+		const deviceData = new Map();
+		const countryData = new Map();
+
+		rows.forEach(row => {
+			const query = row.keys[0] || 'Unknown';
+			const page = row.keys[1] || 'Unknown';
+			const device = row.keys[2] || 'Unknown';
+			const country = row.keys[3] || 'Unknown';
+
+			// Aggregate by query
+			if (!queryData.has(query)) {
+				queryData.set(query, { clicks: 0, impressions: 0, ctr: 0, position: 0 });
+			}
+			const queryStats = queryData.get(query);
+			queryStats.clicks += row.clicks || 0;
+			queryStats.impressions += row.impressions || 0;
+			queryStats.ctr = queryStats.clicks / queryStats.impressions;
+			queryStats.position = (queryStats.position + (row.position || 0)) / 2;
+
+			// Aggregate by page
+			if (!pageData.has(page)) {
+				pageData.set(page, { clicks: 0, impressions: 0, ctr: 0, position: 0 });
+			}
+			const pageStats = pageData.get(page);
+			pageStats.clicks += row.clicks || 0;
+			pageStats.impressions += row.impressions || 0;
+			pageStats.ctr = pageStats.clicks / pageStats.impressions;
+			pageStats.position = (pageStats.position + (row.position || 0)) / 2;
+
+			// Aggregate by device
+			if (!deviceData.has(device)) {
+				deviceData.set(device, { clicks: 0, impressions: 0 });
+			}
+			const deviceStats = deviceData.get(device);
+			deviceStats.clicks += row.clicks || 0;
+			deviceStats.impressions += row.impressions || 0;
+
+			// Aggregate by country
+			if (!countryData.has(country)) {
+				countryData.set(country, { clicks: 0, impressions: 0 });
+			}
+			const countryStats = countryData.get(country);
+			countryStats.clicks += row.clicks || 0;
+			countryStats.impressions += row.impressions || 0;
+		});
+
+		// Convert to arrays and sort
+		const topQueries = Array.from(queryData.entries())
+			.map(([query, stats]) => ({ query, ...stats }))
+			.sort((a, b) => b.impressions - a.impressions)
+			.slice(0, 20);
+
+		const topPages = Array.from(pageData.entries())
+			.map(([page, stats]) => ({ page, ...stats }))
+			.sort((a, b) => b.impressions - a.impressions)
+			.slice(0, 20);
+
+		const deviceBreakdown = Array.from(deviceData.entries())
+			.map(([device, stats]) => ({ device, ...stats }));
+
+		const countryBreakdown = Array.from(countryData.entries())
+			.map(([country, stats]) => ({ country, ...stats }))
+			.sort((a, b) => b.impressions - a.impressions)
+			.slice(0, 10);
+
+		const searchConsoleResponse = {
+			period: {
+				startDate: startDateStr,
+				endDate: endDateStr,
+				days: days
+			},
+			summary: {
+				totalClicks: rows.reduce((sum, row) => sum + (row.clicks || 0), 0),
+				totalImpressions: rows.reduce((sum, row) => sum + (row.impressions || 0), 0),
+				averageCTR: rows.length > 0 ? rows.reduce((sum, row) => sum + (row.ctr || 0), 0) / rows.length : 0,
+				averagePosition: rows.length > 0 ? rows.reduce((sum, row) => sum + (row.position || 0), 0) / rows.length : 0
+			},
+			topQueries,
+			topPages,
+			deviceBreakdown,
+			countryBreakdown,
+			lastUpdated: new Date().toISOString()
+		};
+
+		console.log(`✅ Search Console data fetched successfully for ${days} days`);
+
+		return new Response(JSON.stringify(searchConsoleResponse), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+				'Cache-Control': 'no-cache'
+			},
+		});
+
+	} catch (error) {
+		console.error('Search Console API error:', error);
+
+		// Return fallback data for development/testing
+		const fallbackResponse = {
+			period: {
+				startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+				endDate: new Date().toISOString().split('T')[0],
+				days: 30
+			},
+			summary: {
+				totalClicks: 0,
+				totalImpressions: 0,
+				averageCTR: 0,
+				averagePosition: 0
+			},
+			topQueries: [],
+			topPages: [],
+			deviceBreakdown: [],
+			countryBreakdown: [],
+			error: error.message,
+			lastUpdated: new Date().toISOString()
+		};
+
+		return new Response(JSON.stringify(fallbackResponse), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
+}
+
+// Handle PageSpeed Insights
+async function handlePageSpeedInsights(request, env) {
+	try {
+		const url = new URL(request.url);
+		const targetUrl = url.searchParams.get('url') || 'https://salambumi.xyz';
+		const apiKey = env.PAGESPEED_API_KEY;
+
+		if (!apiKey) {
+			console.error('PageSpeed API key not configured');
+			return new Response(JSON.stringify({
+				error: 'PageSpeed API key not configured'
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		console.log(`📊 Running PageSpeed Insights for: ${targetUrl}`);
+
+		// Call Google PageSpeed Insights API
+		const response = await fetch(
+			`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(targetUrl)}&key=${apiKey}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`
+		);
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error('PageSpeed API error:', response.status, errorText);
+			return new Response(JSON.stringify({
+				error: 'PageSpeed API request failed',
+				details: errorText
+			}), {
+				status: response.status,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const data = await response.json();
+
+		// Extract key metrics
+		const lighthouseResult = data.lighthouseResult || {};
+		const categories = lighthouseResult.categories || {};
+		const audits = lighthouseResult.audits || {};
+
+		const processedData = {
+			url: targetUrl,
+			requestedUrl: data.id,
+			analysisUTCTimestamp: data.analysisUTCTimestamp,
+			categories: {
+				performance: {
+					score: categories.performance?.score || 0,
+					title: categories.performance?.title || 'Performance'
+				},
+				accessibility: {
+					score: categories.accessibility?.score || 0,
+					title: categories.accessibility?.title || 'Accessibility'
+				},
+				'best-practices': {
+					score: categories['best-practices']?.score || 0,
+					title: categories['best-practices']?.title || 'Best Practices'
+				},
+				seo: {
+					score: categories.seo?.score || 0,
+					title: categories.seo?.title || 'SEO'
+				}
+			},
+			coreWebVitals: {
+				lcp: audits['largest-contentful-paint']?.displayValue || 'N/A',
+				fid: audits['first-input']?.displayValue || 'N/A',
+				cls: audits['cumulative-layout-shift']?.displayValue || 'N/A',
+				fcp: audits['first-contentful-paint']?.displayValue || 'N/A',
+				ttfb: audits['server-response-time']?.displayValue || 'N/A'
+			},
+			loadingExperience: data.loadingExperience || {},
+			originLoadingExperience: data.originLoadingExperience || {},
+			lastUpdated: new Date().toISOString()
+		};
+
+		console.log(`✅ PageSpeed Insights completed for ${targetUrl}`);
+
+		return new Response(JSON.stringify(processedData), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+				'Cache-Control': 'no-cache'
+			},
+		});
+
+	} catch (error) {
+		console.error('PageSpeed Insights error:', error);
+
+		// Return fallback data for development/testing
+		const fallbackResponse = {
+			url: 'https://salambumi.xyz',
+			categories: {
+				performance: { score: 0, title: 'Performance' },
+				accessibility: { score: 0, title: 'Accessibility' },
+				'best-practices': { score: 0, title: 'Best Practices' },
+				seo: { score: 0, title: 'SEO' }
+			},
+			coreWebVitals: {
+				lcp: 'N/A',
+				fid: 'N/A',
+				cls: 'N/A',
+				fcp: 'N/A',
+				ttfb: 'N/A'
+			},
+			loadingExperience: {},
+			originLoadingExperience: {},
+			error: error.message,
+			lastUpdated: new Date().toISOString()
+		};
+
+		return new Response(JSON.stringify(fallbackResponse), {
 			headers: {
 				'Content-Type': 'application/json',
 				'Access-Control-Allow-Origin': '*',

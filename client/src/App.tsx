@@ -29,6 +29,8 @@ const AdminLoginPage = lazy(() => import("@/pages/admin/AdminLoginPage"));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/AdminDashboardPage"));
 const AdminPropertiesPage = lazy(() => import("@/pages/admin/AdminPropertiesPage"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage"));
+const AdminSearchConsolePage = lazy(() => import("@/pages/admin/AdminSearchConsolePage"));
+const AdminPageInsightsPage = lazy(() => import("@/pages/admin/AdminPageInsightsPage"));
 const AdminIntegrationsPage = lazy(() => import("@/pages/admin/AdminIntegrationsPage"));
 
 // Loading fallback component for Suspense
@@ -166,6 +168,8 @@ function Router() {
         <Route path="/admin/dashboard"><AdminDashboardPage /></Route>
         <Route path="/admin/properties"><AdminPropertiesPage /></Route>
         <Route path="/admin/analytics"><AdminAnalyticsPage /></Route>
+        <Route path="/admin/search-console"><AdminSearchConsolePage /></Route>
+        <Route path="/admin/page-insights"><AdminPageInsightsPage /></Route>
         <Route path="/admin/integrations"><AdminIntegrationsPage /></Route>
 
         {/* Location Pages - only for specific patterns */}
