@@ -145,7 +145,7 @@ export function SearchConsoleDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(searchData?.summary.totalClicks || 0)}</div>
+            <div className="text-2xl font-bold">{formatNumber(searchData?.summary?.totalClicks || 0)}</div>
           </CardContent>
         </Card>
 
@@ -157,7 +157,7 @@ export function SearchConsoleDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(searchData?.summary.totalImpressions || 0)}</div>
+            <div className="text-2xl font-bold">{formatNumber(searchData?.summary?.totalImpressions || 0)}</div>
           </CardContent>
         </Card>
 
@@ -169,7 +169,7 @@ export function SearchConsoleDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPercentage(searchData?.summary.averageCTR || 0)}</div>
+            <div className="text-2xl font-bold">{formatPercentage(searchData?.summary?.averageCTR || 0)}</div>
           </CardContent>
         </Card>
 
@@ -181,7 +181,7 @@ export function SearchConsoleDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(searchData?.summary.averagePosition || 0).toFixed(1)}</div>
+            <div className="text-2xl font-bold">{(searchData?.summary?.averagePosition || 0).toFixed(1)}</div>
           </CardContent>
         </Card>
       </div>
@@ -271,7 +271,7 @@ export function SearchConsoleDashboard() {
           <CardContent>
             <div className="space-y-3">
               {searchData?.deviceBreakdown?.map((device, index) => {
-                const totalImpressions = searchData.deviceBreakdown.reduce((sum, d) => sum + d.impressions, 0);
+                const totalImpressions = searchData?.deviceBreakdown?.reduce((sum, d) => sum + (d.impressions || 0), 0) || 0;
                 const percentage = totalImpressions > 0 ? ((device.impressions / totalImpressions) * 100).toFixed(1) : '0.0';
                 return (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">

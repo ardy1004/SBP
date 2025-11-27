@@ -1402,7 +1402,7 @@ async function handleSearchConsoleData(request, env) {
 	} catch (error) {
 		console.error('Search Console API error:', error);
 
-		// Return fallback data for development/testing
+		// Always return JSON response, never HTML
 		const fallbackResponse = {
 			period: {
 				startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -1419,14 +1419,16 @@ async function handleSearchConsoleData(request, env) {
 			topPages: [],
 			deviceBreakdown: [],
 			countryBreakdown: [],
-			error: error.message,
+			error: error.message || 'Search Console API unavailable',
 			lastUpdated: new Date().toISOString()
 		};
 
 		return new Response(JSON.stringify(fallbackResponse), {
+			status: 200, // Always return 200 to prevent HTML error pages
 			headers: {
 				'Content-Type': 'application/json',
 				'Access-Control-Allow-Origin': '*',
+				'Cache-Control': 'no-cache'
 			},
 		});
 	}
@@ -1528,9 +1530,9 @@ async function handlePageSpeedInsights(request, env) {
 	} catch (error) {
 		console.error('PageSpeed Insights error:', error);
 
-		// Return fallback data for development/testing
+		// Always return JSON response, never HTML
 		const fallbackResponse = {
-			url: 'https://salambumi.xyz',
+			url: targetUrl || 'https://salambumi.xyz',
 			categories: {
 				performance: { score: 0, title: 'Performance' },
 				accessibility: { score: 0, title: 'Accessibility' },
@@ -1546,14 +1548,16 @@ async function handlePageSpeedInsights(request, env) {
 			},
 			loadingExperience: {},
 			originLoadingExperience: {},
-			error: error.message,
+			error: error.message || 'PageSpeed API unavailable',
 			lastUpdated: new Date().toISOString()
 		};
 
 		return new Response(JSON.stringify(fallbackResponse), {
+			status: 200, // Always return 200 to prevent HTML error pages
 			headers: {
 				'Content-Type': 'application/json',
 				'Access-Control-Allow-Origin': '*',
+				'Cache-Control': 'no-cache'
 			},
 		});
 	}
