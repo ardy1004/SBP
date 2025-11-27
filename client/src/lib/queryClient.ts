@@ -103,6 +103,7 @@ export const getQueryFn: <T>(options: {
     // Use absolute URL for production, relative for development
     const isProduction = typeof window !== 'undefined' && window.location.hostname === 'salambumi.xyz';
     const baseUrl = isProduction ? 'https://salambumi.xyz' : (import.meta.env.VITE_API_BASE_URL || '');
+    console.log('🔧 Environment detection:', { hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR', isProduction, baseUrl, VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL });
     const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
     // Use admin token for admin endpoints, supabase token for others
