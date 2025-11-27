@@ -44,18 +44,51 @@ export default function PropertyDetailPage() {
   console.log('📍 Location from useLocation:', location);
   console.log('📍 Params from useParams:', params);
 
-  // Get slug from URL path (remove leading slash)
-  const slug = location.substring(1);
-  console.log('📝 Slug extracted:', slug);
+  // Check if we have structured route parameters (new format)
+  const hasStructuredParams = params.status && params.jenis && params.kabupaten;
 
-  const parsedSlug = parsePropertySlug(slug);
-  console.log('🔍 Parsed slug result:', parsedSlug);
+  let kodeListing: string | undefined;
+  let propertyId: string | undefined;
 
-  const kodeListing = parsedSlug.kode_listing;
-  console.log('🏷️ Kode listing from slug:', kodeListing);
+  if (hasStructuredParams) {
+    // New format: /{status}/{jenis}/{kabupaten}/{provinsi}/{judul}
+    console.log('🆕 Using structured route parameters');
+    const { status, jenis, kabupaten, provinsi, judul } = params;
+
+    // Try to extract kode_listing from judul (last part after last dash)
+    const judulParts = judul?.split('-') || [];
+    const potentialKodeListing = judulParts[judulParts.length - 1];
+
+    // Check if last part looks like kode_listing (K2.60, R1.25, A123, etc)
+    if (potentialKodeListing && /^[A-Z]+\d+[\.\d]*$/.test(potentialKodeListing)) {
+      kodeListing = potentialKodeListing;
+      console.log('🏷️ Kode listing extracted from structured params:', kodeListing);
+      propertyId = kodeListing;
+    } else {
+      // If no kode_listing found, reconstruct slug for parsing
+      const reconstructedSlug = `${status}-${jenis}-${kabupaten}-${provinsi}-${judul}`;
+      console.log('🔄 Reconstructing slug for parsing:', reconstructedSlug);
+      const parsedSlug = parsePropertySlug(reconstructedSlug);
+      kodeListing = parsedSlug.kode_listing;
+      propertyId = kodeListing;
+      console.log('🏷️ Kode listing from reconstructed slug:', kodeListing);
+    }
+  } else {
+    // Legacy format: get slug from URL path (remove leading slash)
+    const slug = location.substring(1);
+    console.log('📝 Slug extracted (legacy):', slug);
+
+    const parsedSlug = parsePropertySlug(slug);
+    console.log('🔍 Parsed slug result (legacy):', parsedSlug);
+
+    kodeListing = parsedSlug.kode_listing;
+    console.log('🏷️ Kode listing from legacy slug:', kodeListing);
+
+    propertyId = kodeListing;
+  }
 
   // For backward compatibility, also check for direct ID parameter
-  const propertyId = params.id || kodeListing;
+  propertyId = params.id || propertyId;
   console.log('🆔 Final propertyId used for query:', propertyId);
 
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -70,8 +103,8 @@ export default function PropertyDetailPage() {
 
       console.log('=== PROPERTY DETAIL QUERY ===');
       console.log('Property ID/Kode Listing:', propertyId);
-      console.log('Slug:', slug);
-      console.log('Parsed slug:', parsedSlug);
+      console.log('Has structured params:', hasStructuredParams);
+      console.log('Route params:', params);
 
       // Fetch from Supabase directly
       console.log('Fetching from Supabase...');
@@ -565,12 +598,9 @@ function Breadcrumb({ property }: { property: Property }) {
         </li>
         <li className="text-muted-foreground">/</li>
         <li>
-          <a
-            href={`/${property.kabupaten.toLowerCase()}`}
-            className="text-muted-foreground hover:text-foreground"
-          >
+          <span className="text-muted-foreground">
             {property.kabupaten}
-          </a>
+          </span>
         </li>
         <li className="text-muted-foreground">/</li>
         <li className="text-foreground">{property.judulProperti}</li>

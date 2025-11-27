@@ -137,6 +137,30 @@ function Router() {
           }}
         </Route>
 
+        {/* Full SEO slug format: /{status}/{jenis}/{kabupaten}/{provinsi}/{judul} */}
+        <Route path="/:status/:jenis/:kabupaten/:provinsi/:judul">
+          {() => {
+            console.log('🟢 Matched full SEO slug route');
+            return (
+              <ErrorBoundary>
+                <PropertyDetailPage />
+              </ErrorBoundary>
+            );
+          }}
+        </Route>
+
+        {/* Partial SEO slug formats for flexibility */}
+        <Route path="/:status/:jenis/:kabupaten/:provinsi">
+          {() => {
+            console.log('🟢 Matched partial SEO slug route (no title)');
+            return (
+              <ErrorBoundary>
+                <PropertyDetailPage />
+              </ErrorBoundary>
+            );
+          }}
+        </Route>
+
         {/* Admin Routes - MUST COME BEFORE LOCATION ROUTES */}
         <Route path="/admin/login"><AdminLoginPage /></Route>
         <Route path="/admin/dashboard"><AdminDashboardPage /></Route>
