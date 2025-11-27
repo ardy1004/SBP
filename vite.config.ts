@@ -23,9 +23,10 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
+            // Temporarily disable react-vendor chunk to fix React initialization error
+            // if (id.includes('react') || id.includes('react-dom')) {
+            //   return 'react-vendor';
+            // }
             if (id.includes('wouter') || id.includes('react-helmet')) {
               return 'router-vendor';
             }
