@@ -12,10 +12,10 @@ interface PageInsightsData {
   requestedUrl: string;
   analysisUTCTimestamp: string;
   categories: {
-    performance: { score: number; title: string };
-    accessibility: { score: number; title: string };
-    'best-practices': { score: number; title: string };
-    seo: { score: number; title: string };
+    performance: { score: number | null; title: string };
+    accessibility: { score: number | null; title: string };
+    'best-practices': { score: number | null; title: string };
+    seo: { score: number | null; title: string };
   };
   coreWebVitals: {
     lcp: string;
@@ -43,20 +43,22 @@ export function PageInsightsDashboard() {
     refetch();
   };
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number | null) => {
+    if (score === null) return 'text-gray-600 bg-gray-100';
     if (score >= 90) return 'text-green-600 bg-green-100';
     if (score >= 50) return 'text-yellow-600 bg-yellow-100';
     return 'text-red-600 bg-red-100';
   };
 
-  const getScoreLabel = (score: number) => {
+  const getScoreLabel = (score: number | null) => {
+    if (score === null) return 'Not Configured';
     if (score >= 90) return 'Good';
     if (score >= 50) return 'Needs Improvement';
     return 'Poor';
   };
 
   const formatMetric = (value: string) => {
-    if (value === 'N/A') return value;
+    if (value === 'N/A' || value === 'API Not Configured') return value;
     // Convert milliseconds to seconds for readability
     const numValue = parseFloat(value.replace(/[^\d.]/g, ''));
     if (numValue > 1000) {
@@ -107,6 +109,23 @@ export function PageInsightsDashboard() {
         </CardContent>
       </Card>
 
+      {/* Error Display */}
+      {insights?.error && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                <span className="text-yellow-600 text-sm">⚠️</span>
+              </div>
+              <div>
+                <h3 className="font-medium text-yellow-800">Configuration Required</h3>
+                <p className="text-sm text-yellow-700 mt-1">{insights.error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results */}
       {insights && !error && (
         <>
@@ -116,16 +135,21 @@ export function PageInsightsDashboard() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center">
                   <TrendingUp className="h-4 w-4 mr-2" />
-                  Performance
+                  {insights.categories?.performance?.title || 'Performance'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round((insights.categories?.performance?.score || 0) * 100)}
+                    {insights.categories?.performance?.score !== null ?
+                      Math.round(insights.categories.performance.score * 100) :
+                      'N/A'
+                    }
                   </div>
-                  <Badge className={getScoreColor((insights.categories?.performance?.score || 0) * 100)}>
-                    {getScoreLabel((insights.categories?.performance?.score || 0) * 100)}
+                  <Badge className={getScoreColor(insights.categories?.performance?.score !== null ?
+                    insights.categories.performance.score * 100 : null)}>
+                    {getScoreLabel(insights.categories?.performance?.score !== null ?
+                      insights.categories.performance.score * 100 : null)}
                   </Badge>
                 </div>
               </CardContent>
@@ -135,16 +159,21 @@ export function PageInsightsDashboard() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center">
                   <Monitor className="h-4 w-4 mr-2" />
-                  Accessibility
+                  {insights.categories?.accessibility?.title || 'Accessibility'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round((insights.categories?.accessibility?.score || 0) * 100)}
+                    {insights.categories?.accessibility?.score !== null ?
+                      Math.round(insights.categories.accessibility.score * 100) :
+                      'N/A'
+                    }
                   </div>
-                  <Badge className={getScoreColor((insights.categories?.accessibility?.score || 0) * 100)}>
-                    {getScoreLabel((insights.categories?.accessibility?.score || 0) * 100)}
+                  <Badge className={getScoreColor(insights.categories?.accessibility?.score !== null ?
+                    insights.categories.accessibility.score * 100 : null)}>
+                    {getScoreLabel(insights.categories?.accessibility?.score !== null ?
+                      insights.categories.accessibility.score * 100 : null)}
                   </Badge>
                 </div>
               </CardContent>
@@ -154,16 +183,21 @@ export function PageInsightsDashboard() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center">
                   <Zap className="h-4 w-4 mr-2" />
-                  Best Practices
+                  {insights.categories?.['best-practices']?.title || 'Best Practices'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round((insights.categories?.['best-practices']?.score || 0) * 100)}
+                    {insights.categories?.['best-practices']?.score !== null ?
+                      Math.round(insights.categories['best-practices'].score * 100) :
+                      'N/A'
+                    }
                   </div>
-                  <Badge className={getScoreColor((insights.categories?.['best-practices']?.score || 0) * 100)}>
-                    {getScoreLabel((insights.categories?.['best-practices']?.score || 0) * 100)}
+                  <Badge className={getScoreColor(insights.categories?.['best-practices']?.score !== null ?
+                    insights.categories['best-practices'].score * 100 : null)}>
+                    {getScoreLabel(insights.categories?.['best-practices']?.score !== null ?
+                      insights.categories['best-practices'].score * 100 : null)}
                   </Badge>
                 </div>
               </CardContent>
@@ -173,16 +207,21 @@ export function PageInsightsDashboard() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center">
                   <Globe className="h-4 w-4 mr-2" />
-                  SEO
+                  {insights.categories?.seo?.title || 'SEO'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round((insights.categories?.seo?.score || 0) * 100)}
+                    {insights.categories?.seo?.score !== null ?
+                      Math.round(insights.categories.seo.score * 100) :
+                      'N/A'
+                    }
                   </div>
-                  <Badge className={getScoreColor((insights.categories?.seo?.score || 0) * 100)}>
-                    {getScoreLabel((insights.categories?.seo?.score || 0) * 100)}
+                  <Badge className={getScoreColor(insights.categories?.seo?.score !== null ?
+                    insights.categories.seo.score * 100 : null)}>
+                    {getScoreLabel(insights.categories?.seo?.score !== null ?
+                      insights.categories.seo.score * 100 : null)}
                   </Badge>
                 </div>
               </CardContent>

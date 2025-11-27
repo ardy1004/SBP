@@ -1534,21 +1534,21 @@ async function handlePageSpeedInsights(request, env) {
 		const fallbackResponse = {
 			url: targetUrl || 'https://salambumi.xyz',
 			categories: {
-				performance: { score: 0, title: 'Performance' },
-				accessibility: { score: 0, title: 'Accessibility' },
-				'best-practices': { score: 0, title: 'Best Practices' },
-				seo: { score: 0, title: 'SEO' }
+				performance: { score: null, title: 'Performance - API Not Configured' },
+				accessibility: { score: null, title: 'Accessibility - API Not Configured' },
+				'best-practices': { score: null, title: 'Best Practices - API Not Configured' },
+				seo: { score: null, title: 'SEO - API Not Configured' }
 			},
 			coreWebVitals: {
-				lcp: 'N/A',
-				fid: 'N/A',
-				cls: 'N/A',
-				fcp: 'N/A',
-				ttfb: 'N/A'
+				lcp: 'API Not Configured',
+				fid: 'API Not Configured',
+				cls: 'API Not Configured',
+				fcp: 'API Not Configured',
+				ttfb: 'API Not Configured'
 			},
 			loadingExperience: {},
 			originLoadingExperience: {},
-			error: error.message || 'PageSpeed API unavailable',
+			error: 'PageSpeed API key not configured. Please set PAGESPEED_API_KEY environment variable.',
 			lastUpdated: new Date().toISOString()
 		};
 
