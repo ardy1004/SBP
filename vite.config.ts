@@ -32,9 +32,10 @@ export default defineConfig({
             if (id.includes('lucide-react') || id.includes('@radix-ui')) {
               return 'ui-vendor';
             }
-            if (id.includes('@tanstack/react-query') || id.includes('@supabase')) {
-              return 'query-vendor';
-            }
+            // Temporarily disable query-vendor chunk to fix initialization error
+            // if (id.includes('@tanstack/react-query') || id.includes('@supabase')) {
+            //   return 'query-vendor';
+            // }
             if (id.includes('react-hook-form')) {
               return 'form-vendor';
             }
