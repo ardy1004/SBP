@@ -122,10 +122,10 @@ export function PageInsightsDashboard() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round(insights.categories.performance.score * 100)}
+                    {Math.round((insights.categories?.performance?.score || 0) * 100)}
                   </div>
-                  <Badge className={getScoreColor(insights.categories.performance.score * 100)}>
-                    {getScoreLabel(insights.categories.performance.score * 100)}
+                  <Badge className={getScoreColor((insights.categories?.performance?.score || 0) * 100)}>
+                    {getScoreLabel((insights.categories?.performance?.score || 0) * 100)}
                   </Badge>
                 </div>
               </CardContent>
@@ -141,10 +141,10 @@ export function PageInsightsDashboard() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round(insights.categories.accessibility.score * 100)}
+                    {Math.round((insights.categories?.accessibility?.score || 0) * 100)}
                   </div>
-                  <Badge className={getScoreColor(insights.categories.accessibility.score * 100)}>
-                    {getScoreLabel(insights.categories.accessibility.score * 100)}
+                  <Badge className={getScoreColor((insights.categories?.accessibility?.score || 0) * 100)}>
+                    {getScoreLabel((insights.categories?.accessibility?.score || 0) * 100)}
                   </Badge>
                 </div>
               </CardContent>
@@ -160,10 +160,10 @@ export function PageInsightsDashboard() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round(insights.categories['best-practices'].score * 100)}
+                    {Math.round((insights.categories?.['best-practices']?.score || 0) * 100)}
                   </div>
-                  <Badge className={getScoreColor(insights.categories['best-practices'].score * 100)}>
-                    {getScoreLabel(insights.categories['best-practices'].score * 100)}
+                  <Badge className={getScoreColor((insights.categories?.['best-practices']?.score || 0) * 100)}>
+                    {getScoreLabel((insights.categories?.['best-practices']?.score || 0) * 100)}
                   </Badge>
                 </div>
               </CardContent>
@@ -179,10 +179,10 @@ export function PageInsightsDashboard() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">
-                    {Math.round(insights.categories.seo.score * 100)}
+                    {Math.round((insights.categories?.seo?.score || 0) * 100)}
                   </div>
-                  <Badge className={getScoreColor(insights.categories.seo.score * 100)}>
-                    {getScoreLabel(insights.categories.seo.score * 100)}
+                  <Badge className={getScoreColor((insights.categories?.seo?.score || 0) * 100)}>
+                    {getScoreLabel((insights.categories?.seo?.score || 0) * 100)}
                   </Badge>
                 </div>
               </CardContent>
@@ -204,7 +204,7 @@ export function PageInsightsDashboard() {
                     <Clock className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-medium">Largest Contentful Paint (LCP)</span>
                   </div>
-                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals.lcp)}</div>
+                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals?.lcp || 'N/A')}</div>
                   <p className="text-xs text-muted-foreground">
                     Measures loading performance. Target: under 2.5s
                   </p>
@@ -215,7 +215,7 @@ export function PageInsightsDashboard() {
                     <MousePointer className="h-4 w-4 text-green-600" />
                     <span className="text-sm font-medium">First Input Delay (FID)</span>
                   </div>
-                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals.fid)}</div>
+                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals?.fid || 'N/A')}</div>
                   <p className="text-xs text-muted-foreground">
                     Measures interactivity. Target: under 100ms
                   </p>
@@ -226,7 +226,7 @@ export function PageInsightsDashboard() {
                     <Monitor className="h-4 w-4 text-purple-600" />
                     <span className="text-sm font-medium">Cumulative Layout Shift (CLS)</span>
                   </div>
-                  <div className="text-2xl font-bold">{insights.coreWebVitals.cls}</div>
+                  <div className="text-2xl font-bold">{insights.coreWebVitals?.cls || 'N/A'}</div>
                   <p className="text-xs text-muted-foreground">
                     Measures visual stability. Target: under 0.1
                   </p>
@@ -237,7 +237,7 @@ export function PageInsightsDashboard() {
                     <Zap className="h-4 w-4 text-orange-600" />
                     <span className="text-sm font-medium">First Contentful Paint (FCP)</span>
                   </div>
-                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals.fcp)}</div>
+                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals?.fcp || 'N/A')}</div>
                   <p className="text-xs text-muted-foreground">
                     Measures paint performance. Target: under 1.8s
                   </p>
@@ -248,7 +248,7 @@ export function PageInsightsDashboard() {
                     <Smartphone className="h-4 w-4 text-red-600" />
                     <span className="text-sm font-medium">Time to First Byte (TTFB)</span>
                   </div>
-                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals.ttfb)}</div>
+                  <div className="text-2xl font-bold">{formatMetric(insights.coreWebVitals?.ttfb || 'N/A')}</div>
                   <p className="text-xs text-muted-foreground">
                     Measures server response time. Target: under 800ms
                   </p>
@@ -266,7 +266,7 @@ export function PageInsightsDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Tested URL:</span>
-                  <p className="text-muted-foreground break-all">{insights.requestedUrl}</p>
+                  <p className="text-muted-foreground break-all">{insights.requestedUrl || 'N/A'}</p>
                 </div>
                 <div>
                   <span className="font-medium">Analysis Time:</span>
@@ -284,7 +284,7 @@ export function PageInsightsDashboard() {
                 <div>
                   <span className="font-medium">Last Updated:</span>
                   <p className="text-muted-foreground">
-                    {new Date(insights.lastUpdated).toLocaleString()}
+                    {insights.lastUpdated ? new Date(insights.lastUpdated).toLocaleString() : 'Never'}
                   </p>
                 </div>
               </div>
