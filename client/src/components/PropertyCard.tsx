@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown, Eye, Calendar } from "lucide-react";
+import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -347,11 +347,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
         )}
 
         {/* Footer Actions - More compact for mobile */}
-        <div className="flex items-center justify-between pt-1.5 sm:pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500">
-            <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-            <span>{new Date(property.createdAt).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</span>
-          </div>
+        <div className="flex items-center justify-end pt-1.5 sm:pt-3 border-t border-gray-100">
           <Button
             size="sm"
             className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white"
