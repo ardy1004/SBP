@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight, X, Info, Share2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -17,7 +17,6 @@ interface PropertyImageGalleryProps {
 export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: PropertyImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [loadedImages, setLoadedImages] = useState(new Set([0]));
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchStartY, setTouchStartY] = useState(0);
@@ -183,13 +182,6 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
         case 'Escape':
           event.preventDefault();
           setIsLightboxOpen(false);
-          break;
-        case 'i':
-        case 'I':
-          if (isDesktop) {
-            event.preventDefault();
-            setShowInfo(prev => !prev);
-          }
           break;
       }
     };
@@ -384,49 +376,30 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
             </Button>
           </div>
 
-          {/* Desktop Controls - Info Only */}
-          {isDesktop && (
-            <div className="absolute top-20 right-6 z-60">
-              {/* Info Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowInfo(prev => !prev);
-                }}
-                className="bg-black/80 backdrop-blur-md text-white hover:bg-white/20 border border-white/40 h-10 w-10 p-0"
-                aria-label="Toggle image info"
-              >
-                <Info className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
 
-          {/* Image Counter - Adaptive positioning */}
+          {/* Image Counter - Positioned to not interfere with full screen image */}
           <div className={`absolute z-60 bg-black/80 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium border border-white/30 shadow-lg ${
-            isMobile ? 'bottom-32 left-6' : 'bottom-32 left-6'
+            isMobile ? 'top-20 left-6' : 'top-20 left-6'
           }`}>
             {currentIndex + 1} / {images.length}
           </div>
 
-          {/* Keyboard Shortcuts Hint - Desktop only */}
+          {/* Keyboard Shortcuts Hint - Desktop only, positioned safely */}
           {isDesktop && (
-            <div className="absolute bottom-32 right-6 z-60 bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-lg text-xs border border-white/20">
-              <div>← → Swipe</div>
+            <div className="absolute top-20 right-6 z-60 bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-lg text-xs border border-white/20">
+              <div>← → Navigate</div>
               <div>Esc Close</div>
-              <div>I Info</div>
             </div>
           )}
 
-          {/* Main Content Area - Full Size Images */}
-          <div className="relative w-full h-full flex items-center justify-center px-8 py-20">
-            {/* Main Image Container - Full Size */}
-            <div className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center">
+          {/* Main Content Area - TRUE Full Screen Images */}
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Main Image Container - TRUE Full Screen */}
+            <div className="relative w-screen h-screen flex items-center justify-center">
               <img
                 src={images[currentIndex]}
-                alt={`${propertyTitle} - Full size ${currentIndex + 1}`}
-                className="w-full h-full object-cover select-none rounded-lg shadow-2xl"
+                alt={`${propertyTitle} - Full screen ${currentIndex + 1}`}
+                className="w-screen h-screen object-cover select-none"
                 onClick={(e) => e.stopPropagation()}
                 onError={(e) => {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&h=1080&fit=crop';
@@ -434,34 +407,15 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
                 draggable={false}
               />
 
-              {/* Image Info Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-lg">
-                <p className="text-white text-sm font-medium truncate">
-                  {propertyTitle}
-                </p>
-              </div>
-
-              {/* Info Panel - Desktop only */}
-              {showInfo && isDesktop && (
-                <div className="absolute top-4 left-4 bg-black/90 backdrop-blur-md text-white p-4 rounded-lg border border-white/20 max-w-xs">
-                  <h3 className="font-semibold mb-2">{propertyTitle}</h3>
-                  <div className="text-sm space-y-1">
-                    <p><strong>Image:</strong> {currentIndex + 1} of {images.length}</p>
-                    <p><strong>Status:</strong> {loadedImages.has(currentIndex) ? 'Loaded' : 'Loading...'}</p>
-                    <p><strong>Navigation:</strong> Arrow keys or click buttons</p>
-                    <p><strong>Close:</strong> Press Escape</p>
-                  </div>
-                </div>
-              )}
             </div>
 
             {images.length > 1 && (
               <>
 
-                {/* Thumbnail Strip - Adaptive positioning */}
+                {/* Thumbnail Strip - Positioned safely above bottom */}
                 {config.showThumbnails && (
                   <div className={`absolute z-60 flex gap-2 bg-black/60 backdrop-blur-md rounded-full p-2 border border-white/20 ${
-                    isMobile ? 'bottom-24 left-1/2 -translate-x-1/2' : 'bottom-8 left-1/2 -translate-x-1/2'
+                    isMobile ? 'bottom-32 left-1/2 -translate-x-1/2' : 'bottom-20 left-1/2 -translate-x-1/2'
                   }`}>
                     {images.slice(Math.max(0, currentIndex - 2), Math.min(images.length, currentIndex + 3)).map((image, idx) => {
                       const actualIndex = Math.max(0, currentIndex - 2) + idx;
