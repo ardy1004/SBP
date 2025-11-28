@@ -24,7 +24,6 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [lastClickTime, setLastClickTime] = useState(0);
   const lightboxRef = useRef<HTMLDivElement>(null);
 
   // Device detection
@@ -168,18 +167,6 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
       }
     };
 
-    // Double-click handler
-    const handleDoubleClick = () => {
-      if (zoom > 1) {
-        // If zoomed, reset to fit
-        setZoom(1);
-        setPanX(0);
-        setPanY(0);
-      } else {
-        // If not zoomed, close lightbox
-        setIsLightboxOpen(false);
-      }
-    };
 
     // Mouse wheel zoom
     const handleWheel = (e: WheelEvent) => {
@@ -249,16 +236,6 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
       handleEnd(e.clientX, e.clientY);
     };
 
-    const handleClick = (e: MouseEvent) => {
-      const currentTime = Date.now();
-      const timeDiff = currentTime - lastClickTime;
-
-      if (timeDiff < 300) { // Double-click within 300ms
-        handleDoubleClick();
-      } else {
-        setLastClickTime(currentTime);
-      }
-    };
 
     const lightboxElement = lightboxRef.current;
     if (lightboxElement) {
@@ -272,7 +249,6 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
       lightboxElement.addEventListener('mousemove', handleMouseMove);
       lightboxElement.addEventListener('mouseup', handleMouseUp);
       lightboxElement.addEventListener('wheel', handleWheel, { passive: false });
-      lightboxElement.addEventListener('click', handleClick);
     }
 
     return () => {
@@ -284,7 +260,6 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
         lightboxElement.removeEventListener('mousemove', handleMouseMove);
         lightboxElement.removeEventListener('mouseup', handleMouseUp);
         lightboxElement.removeEventListener('wheel', handleWheel);
-        lightboxElement.removeEventListener('click', handleClick);
       }
     };
   }, [isLightboxOpen]);
@@ -558,6 +533,18 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
                   cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
                 }}
                 onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  if (zoom > 1) {
+                    // If zoomed, reset to fit
+                    setZoom(1);
+                    setPanX(0);
+                    setPanY(0);
+                  } else {
+                    // If not zoomed, close lightbox
+                    setIsLightboxOpen(false);
+                  }
+                }}
                 onError={(e) => {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&h=1080&fit=crop';
                 }}
