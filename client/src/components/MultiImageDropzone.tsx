@@ -181,40 +181,106 @@ export function MultiImageDropzone({
     toast({ title: 'Gambar berhasil dihapus dari form' });
   }, [images, toast, onImagesChange]);
 
-  // Function to convert image to WebP
+  // Check WebP support safely
+  const checkWebPSupport = useCallback(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      if (!canvas.getContext || !canvas.getContext('2d')) return false;
+
+      // Test WebP encoding support
+      return canvas.toDataURL('image/webp').indexOf('image/webp') === 5;
+    } catch (error) {
+      console.warn('WebP support check failed:', error);
+      return false;
+    }
+  }, []);
+
+  // Function to convert image to WebP with comprehensive error handling
   const convertToWebP = useCallback(async (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
+      // Check WebP support first
+      if (!checkWebPSupport()) {
+        console.warn('WebP not supported by browser, using original file');
+        resolve(file); // Safe fallback to original file
+        return;
+      }
+
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
 
+      // Add timeout for safety (10 seconds)
+      const timeout = setTimeout(() => {
+        console.warn('WebP conversion timeout, using original file');
+        resolve(file); // Safe fallback
+      }, 10000);
+
       img.onload = () => {
-        // Set canvas size to image size
-        canvas.width = img.width;
-        canvas.height = img.height;
+        clearTimeout(timeout);
 
-        // Draw image to canvas
-        ctx?.drawImage(img, 0, 0);
+        try {
+          // Set canvas size with safety limits to prevent memory issues
+          const maxSize = 4096; // Max 4K resolution
+          let { width, height } = img;
 
-        // Convert to WebP blob
-        canvas.toBlob((blob) => {
-          if (blob) {
-            // Create new File from blob with WebP extension
-            const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
-              type: 'image/webp',
-              lastModified: Date.now(),
-            });
-            resolve(webpFile);
-          } else {
-            reject(new Error('Failed to convert to WebP'));
+          if (width > maxSize || height > maxSize) {
+            const ratio = Math.min(maxSize / width, maxSize / height);
+            width *= ratio;
+            height *= ratio;
+            console.log('Image resized for WebP conversion:', { original: img.width + 'x' + img.height, resized: width + 'x' + height });
           }
-        }, 'image/webp', 0.8); // 80% quality
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw image to canvas
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Convert to WebP blob
+          canvas.toBlob((blob) => {
+            if (blob && blob.size > 0) {
+              const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+                type: 'image/webp',
+                lastModified: Date.now(),
+              });
+
+              const compressionRatio = ((file.size - webpFile.size) / file.size * 100).toFixed(1);
+              console.log('WebP conversion successful:', {
+                originalSize: file.size,
+                webpSize: webpFile.size,
+                compressionRatio: compressionRatio + '%',
+                dimensions: width + 'x' + height
+              });
+
+              resolve(webpFile);
+            } else {
+              console.warn('WebP conversion produced empty blob, using original file');
+              resolve(file); // Safe fallback
+            }
+          }, 'image/webp', 0.8); // 80% quality
+        } catch (error) {
+          console.error('Canvas operation failed during WebP conversion:', error);
+          clearTimeout(timeout);
+          resolve(file); // Safe fallback
+        }
       };
 
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        clearTimeout(timeout);
+        console.warn('Image failed to load for WebP conversion, using original file');
+        resolve(file); // Safe fallback
+      };
+
+      // Create object URL safely
+      try {
+        img.src = URL.createObjectURL(file);
+      } catch (error) {
+        clearTimeout(timeout);
+        console.error('Failed to create object URL for WebP conversion:', error);
+        resolve(file); // Safe fallback
+      }
     });
-  }, []);
+  }, [checkWebPSupport]);
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
     try {
@@ -224,14 +290,27 @@ export function MultiImageDropzone({
       const webpFile = await convertToWebP(file);
       console.log('WebP conversion successful, new file:', webpFile.name, 'size:', webpFile.size);
 
+      const isProduction = typeof window !== 'undefined' && window.location.hostname === 'salambumi.xyz';
+
+      if (!isProduction) {
+        // For development: Use data URL instead of uploading to avoid cloud dependency
+        console.log('Development mode: Using data URL instead of cloud upload');
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(webpFile);
+        });
+      }
+
+      // Production: Upload to Cloudflare Worker
       const formData = new FormData();
-      formData.append('image', webpFile); // Upload WebP file
+      formData.append('image', webpFile);
       formData.append('propertyId', propertyId || 'temp');
 
       console.log('Uploading WebP file:', webpFile.name, 'to Cloudflare Worker');
 
-      // Upload WebP file to Cloudflare Worker
-      const workerUrl = 'https://sbp-upload-worker.salambumiproperty-f1b.workers.dev';
+      const workerUrl = 'https://sbp-upload-worker.salambumiproperty-f1b.workers.dev/upload';
+
       const response = await fetch(workerUrl, {
         method: 'POST',
         body: formData,
@@ -240,9 +319,30 @@ export function MultiImageDropzone({
       console.log('Worker response status:', response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.log('Worker error response:', errorText);
-        throw new Error(`Upload gagal: ${response.status} ${errorText}`);
+        let errorMessage = `Upload gagal: ${response.status}`;
+        try {
+          const errorText = await response.text();
+          console.error('Worker error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
+
+          // Try to parse as JSON for better error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error || errorMessage;
+          } catch {
+            // If not JSON, use the raw text
+            if (errorText) {
+              errorMessage += ` - ${errorText}`;
+            }
+          }
+        } catch (readError) {
+          console.error('Failed to read error response:', readError);
+        }
+
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -365,17 +465,29 @@ export function MultiImageDropzone({
     setUploadingCount(prev => prev - validFiles.length);
 
     const successCount = results.filter(r => r.success).length;
+    const webpConverted = results.filter(r => r.success && r.url?.includes('.webp')).length;
+    const fallbackUsed = results.filter(r => r.success && !r.url?.includes('.webp')).length;
+
     if (successCount > 0) {
+      let description = `${successCount} gambar berhasil diupload.`;
+      if (webpConverted > 0) {
+        description += ` ${webpConverted} dikonversi ke WebP.`;
+      }
+      if (fallbackUsed > 0) {
+        description += ` ${fallbackUsed} menggunakan format asli (WebP tidak didukung).`;
+      }
+
       toast({
         title: 'Upload Berhasil!',
-        description: `${successCount} gambar berhasil dikonversi ke WebP dan diupload.`,
+        description: description,
       });
     }
 
     if (successCount < validFiles.length) {
+      const failedCount = validFiles.length - successCount;
       toast({
         title: 'Beberapa upload gagal',
-        description: `${validFiles.length - successCount} gambar gagal diupload.`,
+        description: `${failedCount} gambar gagal diupload. Periksa koneksi internet dan ukuran file.`,
         variant: 'destructive',
       });
     }

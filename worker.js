@@ -1178,6 +1178,41 @@ async function handleImageUpload(request, env) {
 			);
 		}
 
+		// Enhanced file validation
+		console.log('Received file for upload:', {
+			name: file.name,
+			size: file.size,
+			type: file.type,
+			propertyId: propertyId
+		});
+
+		// Validate file size
+		if (file.size === 0) {
+			return new Response(
+				JSON.stringify({ error: 'File is empty' }),
+				{
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*',
+					},
+				}
+			);
+		}
+
+		if (file.size > 10 * 1024 * 1024) { // 10MB limit
+			return new Response(
+				JSON.stringify({ error: 'File too large (max 10MB)' }),
+				{
+					status: 400,
+					headers: {
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*',
+					},
+				}
+			);
+		}
+
 		// --- VALIDASI FILE ---
 		const fileName = file.name || 'upload';
 		const extensionMatch = fileName.match(/\.(\w+)$/);
@@ -1191,17 +1226,32 @@ async function handleImageUpload(request, env) {
 		}
 
 		// --- SETUP ---
+		// For development, we need to use a publicly accessible URL
+		// Since R2 development bucket is not publicly accessible, we'll use production domain
+		// In production deployment, this should use the actual production CDN
 		const publicDomain = 'https://images.salambumi.xyz';
 		const timestamp = Date.now();
 
 		// --- SIMPAN FILE ASLI KE R2 ---
 		const originalKey = `images/${propertyId}/${timestamp}-original.${ext}`;
+
+		console.log('Saving file to R2:', {
+			key: originalKey,
+			size: file.size,
+			type: file.type,
+			bucket: 'IMAGES_BUCKET'
+		});
+
 		await env.IMAGES_BUCKET.put(originalKey, file, {
 			httpMetadata: { contentType: file.type || `image/${ext}` },
 		});
 
+		console.log('File successfully saved to R2');
+
 		// --- RETURN URL ORIGINAL (Konversi WebP akan dilakukan di backend) ---
 		const imageUrl = `${publicDomain}/${originalKey}`;
+
+		console.log('Generated image URL:', imageUrl);
 
 		return new Response(JSON.stringify({
 			success: true,
