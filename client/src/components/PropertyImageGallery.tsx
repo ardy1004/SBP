@@ -20,6 +20,11 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
   const [loadedImages, setLoadedImages] = useState(new Set([0]));
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchStartY, setTouchStartY] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
   const lightboxRef = useRef<HTMLDivElement>(null);
 
   // Device detection
@@ -77,6 +82,13 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
     return () => clearInterval(interval);
   }, [images.length, isLightboxOpen]);
 
+  // Reset zoom and pan when image changes
+  useEffect(() => {
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+  }, [currentIndex]);
+
   // Smart image preloading
   useEffect(() => {
     const preloadIndices = [currentIndex - 1, currentIndex + 1];
@@ -91,18 +103,34 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
     });
   }, [currentIndex, images, loadedImages]);
 
-  // Touch and mouse gesture handling for all devices
+  // Touch and mouse gesture handling for all devices with zoom support
   useEffect(() => {
     if (!isLightboxOpen) return;
 
     let startX = 0;
     let startY = 0;
     let isDragging = false;
+    let initialDistance = 0;
+    let initialZoom = 1;
 
     const handleStart = (clientX: number, clientY: number) => {
       startX = clientX;
       startY = clientY;
       isDragging = true;
+      setIsDragging(true);
+    };
+
+    const handleMove = (clientX: number, clientY: number) => {
+      if (!isDragging || zoom <= 1) return;
+
+      const deltaX = clientX - startX;
+      const deltaY = clientY - startY;
+
+      setPanX(prev => prev + deltaX);
+      setPanY(prev => prev + deltaY);
+
+      startX = clientX;
+      startY = clientY;
     };
 
     const handleEnd = (clientX: number, clientY: number) => {
@@ -111,8 +139,8 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
       const deltaX = startX - clientX;
       const deltaY = startY - clientY;
 
-      // Only handle horizontal swipes/drags (ignore vertical scrolls)
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      // Only handle horizontal swipes/drags when not zoomed (ignore vertical scrolls)
+      if (zoom <= 1 && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
         if (deltaX > 0) {
           // Swipe/drag left - go to next image
           goToNext();
@@ -125,14 +153,85 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
       startX = 0;
       startY = 0;
       isDragging = false;
+      setIsDragging(false);
     };
 
+    // Zoom functions
+    const handleZoom = (newZoom: number, centerX?: number, centerY?: number) => {
+      const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
+      setZoom(clampedZoom);
+
+      // Reset pan if zooming out to fit
+      if (clampedZoom <= 1) {
+        setPanX(0);
+        setPanY(0);
+      }
+    };
+
+    // Double-click handler
+    const handleDoubleClick = () => {
+      if (zoom > 1) {
+        // If zoomed, reset to fit
+        setZoom(1);
+        setPanX(0);
+        setPanY(0);
+      } else {
+        // If not zoomed, close lightbox
+        setIsLightboxOpen(false);
+      }
+    };
+
+    // Mouse wheel zoom
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const centerX = e.clientX - rect.left;
+      const centerY = e.clientY - rect.top;
+
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      handleZoom(zoom * zoomFactor, centerX, centerY);
+    };
+
+    // Touch zoom (pinch)
     const handleTouchStart = (e: TouchEvent) => {
-      handleStart(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length === 2) {
+        // Pinch start
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        initialDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        initialZoom = zoom;
+      } else if (e.touches.length === 1) {
+        handleStart(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Pinch zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+
+        if (initialDistance > 0) {
+          const scale = currentDistance / initialDistance;
+          handleZoom(initialZoom * scale);
+        }
+      } else if (e.touches.length === 1 && zoom > 1) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      if (e.changedTouches.length === 1) {
+        handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+      initialDistance = 0;
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -140,27 +239,52 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
       handleStart(e.clientX, e.clientY);
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      if (zoom > 1) {
+        handleMove(e.clientX, e.clientY);
+      }
+    };
+
     const handleMouseUp = (e: MouseEvent) => {
       handleEnd(e.clientX, e.clientY);
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const currentTime = Date.now();
+      const timeDiff = currentTime - lastClickTime;
+
+      if (timeDiff < 300) { // Double-click within 300ms
+        handleDoubleClick();
+      } else {
+        setLastClickTime(currentTime);
+      }
     };
 
     const lightboxElement = lightboxRef.current;
     if (lightboxElement) {
       // Touch events for mobile/tablet
       lightboxElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+      lightboxElement.addEventListener('touchmove', handleTouchMove, { passive: false });
       lightboxElement.addEventListener('touchend', handleTouchEnd, { passive: false });
 
       // Mouse events for desktop
       lightboxElement.addEventListener('mousedown', handleMouseDown);
+      lightboxElement.addEventListener('mousemove', handleMouseMove);
       lightboxElement.addEventListener('mouseup', handleMouseUp);
+      lightboxElement.addEventListener('wheel', handleWheel, { passive: false });
+      lightboxElement.addEventListener('click', handleClick);
     }
 
     return () => {
       if (lightboxElement) {
         lightboxElement.removeEventListener('touchstart', handleTouchStart);
+        lightboxElement.removeEventListener('touchmove', handleTouchMove);
         lightboxElement.removeEventListener('touchend', handleTouchEnd);
         lightboxElement.removeEventListener('mousedown', handleMouseDown);
+        lightboxElement.removeEventListener('mousemove', handleMouseMove);
         lightboxElement.removeEventListener('mouseup', handleMouseUp);
+        lightboxElement.removeEventListener('wheel', handleWheel);
+        lightboxElement.removeEventListener('click', handleClick);
       }
     };
   }, [isLightboxOpen]);
@@ -182,6 +306,22 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
         case 'Escape':
           event.preventDefault();
           setIsLightboxOpen(false);
+          break;
+        case '+':
+        case '=':
+          event.preventDefault();
+          setZoom(prev => Math.max(0.5, Math.min(3, prev * 1.2)));
+          break;
+        case '-':
+        case '_':
+          event.preventDefault();
+          setZoom(prev => Math.max(0.5, Math.min(3, prev * 0.8)));
+          break;
+        case '0':
+          event.preventDefault();
+          setZoom(1);
+          setPanX(0);
+          setPanY(0);
           break;
       }
     };
@@ -377,29 +517,46 @@ export function PropertyImageGallery({ images, propertyTitle, propertyLabels }: 
           </div>
 
 
-          {/* Image Counter - Positioned to not interfere with full screen image */}
+          {/* Image Counter and Zoom Indicator - Positioned to not interfere with full screen image */}
           <div className={`absolute z-60 bg-black/80 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium border border-white/30 shadow-lg ${
             isMobile ? 'top-20 left-6' : 'top-20 left-6'
           }`}>
             {currentIndex + 1} / {images.length}
+            {zoom > 1 && (
+              <span className="ml-2 text-yellow-400">
+                {Math.round(zoom * 100)}%
+              </span>
+            )}
           </div>
 
           {/* Keyboard Shortcuts Hint - Desktop only, positioned safely */}
           {isDesktop && (
             <div className="absolute top-20 right-6 z-60 bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-lg text-xs border border-white/20">
               <div>← → Navigate</div>
+              <div>Mouse wheel Zoom</div>
+              <div>+ - Zoom in/out</div>
+              <div>0 Reset zoom</div>
+              <div>Double-click Close</div>
               <div>Esc Close</div>
             </div>
           )}
 
           {/* Main Content Area - TRUE Full Screen Images */}
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* Main Image Container - TRUE Full Screen */}
-            <div className="relative w-screen h-screen flex items-center justify-center">
+            {/* Main Image Container - TRUE Full Screen with Zoom Support */}
+            <div className="relative w-screen h-screen flex items-center justify-center overflow-hidden">
               <img
                 src={images[currentIndex]}
                 alt={`${propertyTitle} - Full screen ${currentIndex + 1}`}
-                className="w-screen h-screen object-cover select-none"
+                className="select-none transition-transform duration-200 ease-out"
+                style={{
+                  width: zoom > 1 ? `${100 * zoom}vw` : '100vw',
+                  height: zoom > 1 ? `${100 * zoom}vh` : '100vh',
+                  objectFit: zoom > 1 ? 'contain' : 'cover',
+                  transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+                  transformOrigin: 'center center',
+                  cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+                }}
                 onClick={(e) => e.stopPropagation()}
                 onError={(e) => {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&h=1080&fit=crop';
