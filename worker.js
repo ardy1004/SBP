@@ -87,7 +87,16 @@ export default {
 			}
 
 			// Handle AI SEO optimization
-			if (request.method === 'POST' && url.pathname === '/api/ai/optimize-seo') {
+			if ((request.method === 'POST' || request.method === 'OPTIONS') && url.pathname === '/api/ai/optimize-seo') {
+				if (request.method === 'OPTIONS') {
+					return new Response(null, {
+						headers: {
+							'Access-Control-Allow-Origin': '*',
+							'Access-Control-Allow-Methods': 'POST, OPTIONS',
+							'Access-Control-Allow-Headers': 'Content-Type',
+						},
+					});
+				}
 				return withPerformanceMonitoring(
 					() => handleAIOptimizeSEO(request, env),
 					'AI_SEO_OPTIMIZATION'
