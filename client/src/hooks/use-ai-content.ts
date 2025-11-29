@@ -55,7 +55,7 @@ export const useAIPropertyDescription = () => {
 
   const generateDescription = useMutation<AIGenerationResponse, Error, PropertyData>({
     mutationFn: async (propertyData: PropertyData) => {
-      const response = await fetch('/api/ai/generate-description', {
+      const response = await fetch('https://sbp-upload-worker.salambumiproperty-f1b.workers.dev/api/ai/generate-description', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ export const useAISEOOptimization = () => {
     description?: string;
   }>({
     mutationFn: async ({ title, description }) => {
-      const response = await fetch('/api/ai/optimize-seo', {
+      const response = await fetch('https://sbp-upload-worker.salambumiproperty-f1b.workers.dev/api/ai/optimize-seo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ export const useAISocialPost = () => {
     platform: 'facebook' | 'instagram' | 'twitter' | 'tiktok' | 'linkedin';
   }>({
     mutationFn: async ({ property, platform }) => {
-      const response = await fetch('/api/ai/generate-social-post', {
+      const response = await fetch('https://sbp-upload-worker.salambumiproperty-f1b.workers.dev/api/ai/generate-social-post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
