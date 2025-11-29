@@ -282,7 +282,10 @@ export function MultiImageDropzone({
     });
   }, [checkWebPSupport]);
 
-  const uploadFile = useCallback(async (file: File): Promise<string> => {
+  const uploadFile = useCallback(async (file: File, retryCount = 0): Promise<string> => {
+    const maxRetries = 3;
+    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+
     try {
       console.log('Converting image to WebP:', file.name);
 
@@ -290,6 +293,7 @@ export function MultiImageDropzone({
       const webpFile = await convertToWebP(file);
       console.log('WebP conversion successful, new file:', webpFile.name, 'size:', webpFile.size);
 
+      // Always try to upload to worker in production, fallback to data URL if needed
       const isProduction = typeof window !== 'undefined' && window.location.hostname === 'salambumi.xyz';
 
       if (!isProduction) {
@@ -314,6 +318,8 @@ export function MultiImageDropzone({
       const response = await fetch(workerUrl, {
         method: 'POST',
         body: formData,
+        // Add timeout for fetch
+        signal: AbortSignal.timeout(30000), // 30 second timeout
       });
 
       console.log('Worker response status:', response.status);
@@ -342,6 +348,27 @@ export function MultiImageDropzone({
           console.error('Failed to read error response:', readError);
         }
 
+        // Provide specific error messages for common issues
+        if (response.status === 404) {
+          errorMessage = 'Worker endpoint tidak ditemukan. Periksa konfigurasi worker.';
+        } else if (response.status === 500) {
+          errorMessage = 'Terjadi kesalahan di server upload. Coba lagi nanti.';
+        } else if (response.status === 0) {
+          errorMessage = 'Tidak dapat terhubung ke server upload. Periksa koneksi internet.';
+        }
+
+        // Don't retry for client errors (4xx)
+        if (response.status >= 400 && response.status < 500) {
+          throw new Error(errorMessage);
+        }
+
+        // Retry for server errors (5xx) or network errors
+        if (retryCount < maxRetries) {
+          console.log(`Upload failed, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return uploadFile(file, retryCount + 1);
+        }
+
         throw new Error(errorMessage);
       }
 
@@ -358,6 +385,28 @@ export function MultiImageDropzone({
 
       return imageUrl;
     } catch (error) {
+      // Handle timeout errors
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        const timeoutMessage = 'Upload timeout. Server membutuhkan waktu terlalu lama untuk merespons.';
+        if (retryCount < maxRetries) {
+          console.log(`Upload timeout, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return uploadFile(file, retryCount + 1);
+        }
+        throw new Error(timeoutMessage);
+      }
+
+      // Handle network errors
+      if (error instanceof Error && error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        const networkMessage = 'Gagal terhubung ke server upload. Periksa koneksi internet.';
+        if (retryCount < maxRetries) {
+          console.log(`Network error, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return uploadFile(file, retryCount + 1);
+        }
+        throw new Error(networkMessage);
+      }
+
       console.error('Upload/WebP conversion error:', error);
       throw error;
     }

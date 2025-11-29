@@ -34,3 +34,7 @@ SEARCH_CONSOLE_SITE_URL = "https://salambumi.xyz"
 
 # PageSpeed API key (placeholder - set in production)
 PAGESPEED_API_KEY = "PLACEHOLDER_PAGESPEED_KEY"
+
+# Ollama Local AI Configuration (optional - for local AI integration)
+OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_MODEL = "mistral"

@@ -78,6 +78,30 @@ export default {
 				)
 			}
 
+			// Handle AI content generation (Ollama/Local AI)
+			if (request.method === 'POST' && url.pathname === '/api/ai/generate-description') {
+				return withPerformanceMonitoring(
+					() => handleAIGenerateDescription(request, env),
+					'AI_DESCRIPTION_GENERATION_LOCAL'
+				)
+			}
+
+			// Handle AI SEO optimization
+			if (request.method === 'POST' && url.pathname === '/api/ai/optimize-seo') {
+				return withPerformanceMonitoring(
+					() => handleAIOptimizeSEO(request, env),
+					'AI_SEO_OPTIMIZATION'
+				)
+			}
+
+			// Handle AI social media post generation
+			if (request.method === 'POST' && url.pathname === '/api/ai/generate-social-post') {
+				return withPerformanceMonitoring(
+					() => handleAIGenerateSocialPost(request, env),
+					'AI_SOCIAL_POST_GENERATION'
+				)
+			}
+
 			// Handle image upload (existing functionality)
 			if (request.method === 'POST' && url.pathname === '/upload') {
 				return handleImageUpload(request, env);
@@ -893,6 +917,574 @@ FORMAT OUTPUT (harus mengikuti format ini persis):
 			},
 		});
 	}
+}
+
+// Handle AI content generation using Ollama (Local AI) with Gemini fallback
+async function handleAIGenerateDescription(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type',
+			},
+		});
+	}
+
+	if (request.method !== 'POST') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		const {
+			kodeListing,
+			judulProperti,
+			jenisProperti,
+			kabupaten,
+			provinsi,
+			hargaProperti,
+			kamarTidur,
+			kamarMandi,
+			luasTanah,
+			luasBangunan,
+			legalitas,
+			requestId = `req_${Date.now()}`
+		} = await request.json();
+
+		console.log(`🤖 [${requestId}] AI Description generation request received`);
+
+		// Validate required fields
+		if (!jenisProperti || !kabupaten || !provinsi) {
+			console.error(`❌ [${requestId}] Validation failed - missing required fields`);
+			return new Response(JSON.stringify({
+				error: 'Missing required fields: jenisProperti, kabupaten, provinsi',
+				requestId
+			}), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Try Ollama first (Local AI - Free & Private)
+		try {
+			const ollamaUrl = env.OLLAMA_BASE_URL || 'http://localhost:11434';
+
+			console.log(`🔄 [${requestId}] Trying Ollama at ${ollamaUrl}`);
+
+			const ollamaResponse = await fetch(`${ollamaUrl}/api/generate`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					model: env.OLLAMA_MODEL || 'mistral',
+					prompt: buildPropertyDescriptionPrompt({
+						kodeListing,
+						judulProperti,
+						jenisProperti,
+						kabupaten,
+						provinsi,
+						hargaProperti,
+						kamarTidur,
+						kamarMandi,
+						luasTanah,
+						luasBangunan,
+						legalitas
+					}),
+					stream: false,
+					options: {
+						temperature: 0.7,
+						num_predict: 800,
+					},
+				}),
+			});
+
+			if (ollamaResponse.ok) {
+				const ollamaResult = await ollamaResponse.json();
+				const generatedDescription = ollamaResult.response?.trim();
+
+				if (generatedDescription && generatedDescription.length > 50) {
+					console.log(`✅ [${requestId}] Ollama generated description successfully`);
+
+					return new Response(JSON.stringify({
+						success: true,
+						content: cleanAndFormatDescription(generatedDescription),
+						model: 'ollama-local',
+						source: 'local-ai',
+						requestId,
+						timestamp: new Date().toISOString()
+					}), {
+						headers: {
+							'Content-Type': 'application/json',
+							'Access-Control-Allow-Origin': '*',
+						},
+					});
+				}
+			}
+
+			console.log(`⚠️ [${requestId}] Ollama not available or failed, falling back to Gemini`);
+		} catch (ollamaError) {
+			console.log(`⚠️ [${requestId}] Ollama connection failed:`, ollamaError.message);
+		}
+
+		// Fallback to Gemini API (Cloud-based)
+		console.log(`🔄 [${requestId}] Using Gemini API as fallback`);
+
+		const geminiApiKey = env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY;
+		if (!geminiApiKey) {
+			console.error(`❌ [${requestId}] No AI service available`);
+			return new Response(JSON.stringify({
+				error: 'AI service not configured',
+				requestId
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Use existing Gemini implementation for fallback
+		const prompt = `Buat deskripsi properti yang menarik dan SEO-friendly dalam bahasa Indonesia.
+
+Data Properti:
+- Kode: ${kodeListing || 'N/A'}
+- Judul: ${judulProperti || 'N/A'}
+- Tipe: ${jenisProperti}
+- Lokasi: ${kabupaten}, ${provinsi}
+- Harga: ${hargaProperti || 'N/A'}
+- Kamar Tidur: ${kamarTidur || 'N/A'}
+- Kamar Mandi: ${kamarMandi || 'N/A'}
+- Luas Tanah: ${luasTanah ? `${luasTanah} m²` : 'N/A'}
+- Luas Bangunan: ${luasBangunan ? `${luasBangunan} m²` : 'N/A'}
+- Legalitas: ${legalitas || 'N/A'}
+
+Instruksi:
+- Buat deskripsi 200-400 kata yang persuasif
+- Sertakan keyword SEO: ${kabupaten}, ${jenisProperti}, dijual, ${provinsi}
+- Gunakan bahasa yang mengalir dan profesional
+- Sebutkan keunggulan properti
+- Akhiri dengan call-to-action untuk menghubungi
+- Format: plain text dengan paragraf yang jelas
+
+Deskripsi:`;
+
+		const response = await fetch(
+			`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					contents: [{
+						role: 'user',
+						parts: [{ text: prompt }]
+					}],
+					generationConfig: {
+						temperature: 0.7,
+						maxOutputTokens: 1000,
+					}
+				}),
+			}
+		);
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error(`❌ [${requestId}] Gemini API error:`, response.status, errorText);
+			return new Response(JSON.stringify({
+				error: 'AI service temporarily unavailable',
+				requestId
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const result = await response.json();
+		const generatedContent = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+		if (!generatedContent) {
+			console.error(`❌ [${requestId}] No content generated by Gemini`);
+			return new Response(JSON.stringify({
+				error: 'Failed to generate content',
+				requestId
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		console.log(`✅ [${requestId}] Gemini generated description successfully`);
+
+		return new Response(JSON.stringify({
+			success: true,
+			content: cleanAndFormatDescription(generatedContent),
+			model: 'gemini-2.0-flash-exp',
+			source: 'cloud-ai',
+			requestId,
+			timestamp: new Date().toISOString()
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+
+	} catch (error) {
+		console.error('AI Description generation error:', error);
+		return new Response(JSON.stringify({
+			error: 'Internal server error during AI generation',
+			requestId: `req_${Date.now()}`
+		}), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
+}
+
+// Handle AI SEO optimization
+async function handleAIOptimizeSEO(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type',
+			},
+		});
+	}
+
+	if (request.method !== 'POST') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		const { title, description, requestId = `req_${Date.now()}` } = await request.json();
+
+		console.log(`🔍 [${requestId}] AI SEO optimization request`);
+
+		if (!title && !description) {
+			return new Response(JSON.stringify({
+				error: 'Title or description required',
+				requestId
+			}), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// For now, use Gemini as it's more reliable for SEO tasks
+		const geminiApiKey = env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY;
+		if (!geminiApiKey) {
+			return new Response(JSON.stringify({
+				error: 'AI service not configured',
+				requestId
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const seoPrompt = `Optimize the following content for SEO and engagement:
+
+Title: "${title || ''}"
+Description: "${description || ''}"
+
+Tasks:
+1. Create an SEO-optimized title (max 60 characters)
+2. Optimize description for search engines and readability
+3. Suggest relevant keywords
+
+Return in this exact format:
+TITLE: [optimized title]
+DESCRIPTION: [optimized description]
+KEYWORDS: [comma-separated keywords]`;
+
+		const response = await fetch(
+			`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					contents: [{
+						role: 'user',
+						parts: [{ text: seoPrompt }]
+					}],
+					generationConfig: {
+						temperature: 0.6,
+						maxOutputTokens: 500,
+					}
+				}),
+			}
+		);
+
+		if (!response.ok) {
+			return new Response(JSON.stringify({
+				error: 'SEO optimization service unavailable',
+				requestId
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const result = await response.json();
+		const optimizedContent = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+		if (!optimizedContent) {
+			return new Response(JSON.stringify({
+				error: 'Failed to optimize content',
+				requestId
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		// Parse the response
+		const titleMatch = optimizedContent.match(/TITLE:\s*(.+)/);
+		const descMatch = optimizedContent.match(/DESCRIPTION:\s*(.+)/);
+		const keywordsMatch = optimizedContent.match(/KEYWORDS:\s*(.+)/);
+
+		return new Response(JSON.stringify({
+			success: true,
+			optimizedTitle: titleMatch ? titleMatch[1].trim() : title,
+			optimizedDescription: descMatch ? descMatch[1].trim() : description,
+			keywords: keywordsMatch ? keywordsMatch[1].split(',').map(k => k.trim()) : [],
+			requestId,
+			timestamp: new Date().toISOString()
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+
+	} catch (error) {
+		console.error('AI SEO optimization error:', error);
+		return new Response(JSON.stringify({
+			error: 'Internal server error during SEO optimization',
+			requestId: `req_${Date.now()}`
+		}), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
+}
+
+// Handle AI social media post generation
+async function handleAIGenerateSocialPost(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type',
+			},
+		});
+	}
+
+	if (request.method !== 'POST') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		const { property, platform, requestId = `req_${Date.now()}` } = await request.json();
+
+		console.log(`📱 [${requestId}] AI Social post generation for ${platform}`);
+
+		if (!property || !platform) {
+			return new Response(JSON.stringify({
+				error: 'Property data and platform required',
+				requestId
+			}), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const geminiApiKey = env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY;
+		if (!geminiApiKey) {
+			return new Response(JSON.stringify({
+				error: 'AI service not configured',
+				requestId
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const platformGuidelines = {
+			facebook: 'Professional, informative, with property details and call-to-action',
+			instagram: 'Engaging, visual-focused, with emojis and relevant hashtags',
+			twitter: 'Concise, impactful, under 280 characters with hashtags',
+			tiktok: 'Fun, story-like script for video content',
+			linkedin: 'Professional networking tone, B2B focused'
+		};
+
+		const socialPrompt = `Create a ${platform} post for this property:
+
+Property Details:
+- Title: ${property.judulProperti || property.title || 'N/A'}
+- Type: ${property.jenisProperti || property.type || 'N/A'}
+- Location: ${property.kabupaten || property.city || 'N/A'}, ${property.provinsi || property.province || 'N/A'}
+- Price: ${property.hargaProperti || property.price || 'N/A'}
+- Bedrooms: ${property.kamarTidur || property.bedrooms || 'N/A'}
+- Link: https://salambumi.xyz/properti/${property.id || property.kodeListing}
+
+Guidelines for ${platform}: ${platformGuidelines[platform] || 'Engaging and informative'}
+
+Make it compelling and include relevant emojis and hashtags.`;
+
+		const response = await fetch(
+			`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					contents: [{
+						role: 'user',
+						parts: [{ text: socialPrompt }]
+					}],
+					generationConfig: {
+						temperature: 0.8,
+						maxOutputTokens: 300,
+					}
+				}),
+			}
+		);
+
+		if (!response.ok) {
+			return new Response(JSON.stringify({
+				error: 'Social post generation service unavailable',
+				requestId
+			}), {
+				status: 503,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		const result = await response.json();
+		const generatedPost = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+		if (!generatedPost) {
+			return new Response(JSON.stringify({
+				error: 'Failed to generate social post',
+				requestId
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
+		}
+
+		return new Response(JSON.stringify({
+			success: true,
+			content: generatedPost.trim(),
+			platform,
+			requestId,
+			timestamp: new Date().toISOString()
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+
+	} catch (error) {
+		console.error('AI Social post generation error:', error);
+		return new Response(JSON.stringify({
+			error: 'Internal server error during social post generation',
+			requestId: `req_${Date.now()}`
+		}), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
+}
+
+// Helper functions
+function buildPropertyDescriptionPrompt(data) {
+	return `Buat deskripsi properti yang menarik dan SEO-friendly dalam bahasa Indonesia.
+
+Data Properti:
+- Kode: ${data.kodeListing || 'N/A'}
+- Judul: ${data.judulProperti || 'N/A'}
+- Tipe: ${data.jenisProperti}
+- Lokasi: ${data.kabupaten}, ${data.provinsi}
+- Harga: ${data.hargaProperti || 'N/A'}
+- Kamar Tidur: ${data.kamarTidur || 'N/A'}
+- Kamar Mandi: ${data.kamarMandi || 'N/A'}
+- Luas Tanah: ${data.luasTanah ? `${data.luasTanah} m²` : 'N/A'}
+- Luas Bangunan: ${data.luasBangunan ? `${data.luasBangunan} m²` : 'N/A'}
+- Legalitas: ${data.legalitas || 'N/A'}
+
+Instruksi:
+- Buat deskripsi 200-400 kata yang persuasif
+- Sertakan keyword SEO: ${data.kabupaten}, ${data.jenisProperti}, dijual, ${data.provinsi}
+- Gunakan bahasa yang mengalir dan profesional
+- Sebutkan keunggulan properti
+- Akhiri dengan call-to-action untuk menghubungi
+- Format: plain text dengan paragraf yang jelas
+
+Deskripsi:`;
+}
+
+function cleanAndFormatDescription(content) {
+	return content
+		.trim()
+		.replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+		.replace(/^\s*[-•*]\s*/gm, '') // Remove bullet points
+		.replace(/\s+/g, ' ') // Normalize spaces
+		.trim();
 }
 
 // Extract keywords from text

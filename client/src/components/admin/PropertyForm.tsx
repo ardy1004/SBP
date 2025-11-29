@@ -25,6 +25,10 @@ import { supabase } from "@/lib/supabase";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { MultiImageDropzone } from "@/components/MultiImageDropzone";
 import { AIDescriptionGenerator } from "@/components/admin/AIDescriptionGenerator";
+import { SEOOptimizer } from "@/components/admin/SEOOptimizer";
+import { useAIContent } from "@/hooks/use-ai-content";
+import { Sparkles, Wand2, Search } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, LEGAL_STATUSES, type Property } from "@shared/types";
 import { MessageCircle } from "lucide-react";
 
@@ -73,9 +77,49 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // AI Content Generation
+  const { generateDescription, isGeneratingDescription } = useAIContent();
+
+  // Handle AI Description Generation
+  const handleAIGenerateDescription = async () => {
+    if (!formData.jenisProperti || !formData.kabupaten || !formData.provinsi) {
+      toast({
+        title: "Data Tidak Lengkap",
+        description: "Mohon lengkapi jenis properti, kabupaten, dan provinsi terlebih dahulu",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await generateDescription.mutateAsync({
+        kodeListing: formData.kodeListing,
+        judulProperti: formData.judulProperti,
+        jenisProperti: formData.jenisProperti,
+        kabupaten: formData.kabupaten,
+        provinsi: formData.provinsi,
+        hargaProperti: formData.hargaProperti,
+        kamarTidur: formData.kamarTidur ? parseInt(formData.kamarTidur) : undefined,
+        kamarMandi: formData.kamarMandi ? parseInt(formData.kamarMandi) : undefined,
+        luasTanah: formData.luasTanah ? parseFloat(formData.luasTanah) : undefined,
+        luasBangunan: formData.luasBangunan ? parseFloat(formData.luasBangunan) : undefined,
+        legalitas: formData.legalitas,
+      });
+
+      if (result.success && result.content) {
+        setFormData(prev => ({ ...prev, deskripsi: result.content! }));
+        toast({
+          title: "AI Description Generated",
+          description: `Generated using ${result.source === 'local-ai' ? 'Local AI (Free)' : 'Cloud AI'}`,
+        });
+      }
+    } catch (error) {
+      // Error sudah di-handle oleh hook
+    }
+  };
 
 
 
@@ -671,39 +715,88 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="deskripsi">Deskripsi</Label>
-          <Textarea
-            id="deskripsi"
-            value={formData.deskripsi}
-            onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
-            data-testid="textarea-deskripsi"
-            rows={6}
+      {/* Content Management with AI Tools */}
+      <Tabs defaultValue="description" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="description" className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4" />
+            Description
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            SEO Optimization
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="description" className="space-y-4 mt-4">
+          <div>
+            <Label htmlFor="deskripsi">Deskripsi Properti</Label>
+            <Textarea
+              id="deskripsi"
+              value={formData.deskripsi}
+              onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
+              data-testid="textarea-deskripsi"
+              rows={6}
+              placeholder="Jelaskan detail properti ini..."
+            />
+          </div>
+
+          {/* AI Description Generator */}
+          <AIDescriptionGenerator
+            propertyData={{
+              jenis_properti: formData.jenisProperti,
+              kabupaten: formData.kabupaten,
+              provinsi: formData.provinsi,
+              harga_properti: formData.hargaProperti,
+              kamar_tidur: formData.kamarTidur ? parseInt(formData.kamarTidur) : undefined,
+              kamar_mandi: formData.kamarMandi ? parseInt(formData.kamarMandi) : undefined,
+              luas_tanah: formData.luasTanah ? parseFloat(formData.luasTanah) : undefined,
+              luas_bangunan: formData.luasBangunan ? parseFloat(formData.luasBangunan) : undefined,
+              kode_listing: formData.kodeListing,
+              judul_properti: formData.judulProperti,
+              legalitas: formData.legalitas,
+            }}
+            currentDescription={formData.deskripsi}
+            onDescriptionChange={(description) => setFormData({ ...formData, deskripsi: description })}
+            onTitleChange={(title) => setFormData({ ...formData, judulProperti: title })}
           />
-        </div>
 
-        {/* AI Description Generator */}
-        <AIDescriptionGenerator
-          propertyData={{
-            jenis_properti: formData.jenisProperti,
-            kabupaten: formData.kabupaten,
-            provinsi: formData.provinsi,
-            harga_properti: formData.hargaProperti,
-            kamar_tidur: formData.kamarTidur ? parseInt(formData.kamarTidur) : undefined,
-            kamar_mandi: formData.kamarMandi ? parseInt(formData.kamarMandi) : undefined,
-            luas_tanah: formData.luasTanah ? parseFloat(formData.luasTanah) : undefined,
-            luas_bangunan: formData.luasBangunan ? parseFloat(formData.luasBangunan) : undefined,
-            kode_listing: formData.kodeListing,
-            judul_properti: formData.judulProperti,
-            legalitas: formData.legalitas,
-          }}
-          currentDescription={formData.deskripsi}
-          onDescriptionChange={(description) => setFormData({ ...formData, deskripsi: description })}
-          onTitleChange={(title) => setFormData({ ...formData, judulProperti: title })}
-        />
+          {/* New AI Button - Local AI (Free) */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAIGenerateDescription}
+              disabled={isGeneratingDescription || !formData.jenisProperti || !formData.kabupaten || !formData.provinsi}
+              className="flex items-center gap-2"
+            >
+              {isGeneratingDescription ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  AI Generate (Free)
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground self-center">
+              Generate deskripsi dengan AI lokal (gratis, tanpa batas)
+            </p>
+          </div>
+        </TabsContent>
 
-      </div>
+        <TabsContent value="seo" className="mt-4">
+          <SEOOptimizer
+            title={formData.judulProperti}
+            description={formData.deskripsi}
+            onTitleChange={(title) => setFormData({ ...formData, judulProperti: title })}
+            onDescriptionChange={(description) => setFormData({ ...formData, deskripsi: description })}
+          />
+        </TabsContent>
+      </Tabs>
 
       <div className="space-y-4">
         <div>
