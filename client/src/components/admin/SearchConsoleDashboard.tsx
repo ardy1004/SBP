@@ -169,7 +169,7 @@ export function SearchConsoleDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPercentage(searchData?.summary?.averageCTR || 0)}</div>
+            <div className="text-2xl font-bold">{formatPercentage(Number(searchData?.summary?.averageCTR || 0))}</div>
           </CardContent>
         </Card>
 
@@ -181,7 +181,7 @@ export function SearchConsoleDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(searchData?.summary?.averagePosition || 0).toFixed(1)}</div>
+            <div className="text-2xl font-bold">{Number(searchData?.summary?.averagePosition || 0).toFixed(1)}</div>
           </CardContent>
         </Card>
       </div>
@@ -211,7 +211,7 @@ export function SearchConsoleDashboard() {
                       {formatNumber(query.impressions)} impressions
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      CTR: {formatPercentage(query.ctr)}
+                      CTR: {formatPercentage(Number(query.ctr || 0))}
                     </p>
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export function SearchConsoleDashboard() {
                       {formatNumber(page.impressions)} impressions
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Pos: {page.position.toFixed(1)}
+                      Pos: {Number(page.position || 0).toFixed(1)}
                     </p>
                   </div>
                 </div>
