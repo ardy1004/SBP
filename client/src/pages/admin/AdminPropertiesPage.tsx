@@ -101,6 +101,8 @@ export default function AdminPropertiesPage() {
     hargaPerMeter: Boolean((property as any).harga_per_meter || false),
     ownerContact: property.owner_contact,
     status: property.status,
+    metaTitle: property.meta_title,
+    metaDescription: property.meta_description,
     createdAt: new Date(property.created_at),
     updatedAt: new Date(property.updated_at),
   }));

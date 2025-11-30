@@ -53,6 +53,8 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     kabupaten: "",
     alamatLengkap: "",
     deskripsi: "",
+    metaTitle: "",
+    metaDescription: "",
     imageUrl: "",
     imageUrl1: "",
     imageUrl2: "",
@@ -81,7 +83,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
   const { toast } = useToast();
 
   // AI Content Generation
-  const { generateDescription, isGeneratingDescription } = useAIContent();
+  const { generateDescription, isGeneratingDescription, optimizeSEO, isOptimizingSEO } = useAIContent();
 
   // Handle AI Description Generation
   const handleAIGenerateDescription = async () => {
@@ -121,6 +123,50 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
     }
   };
 
+  // Handle AI SEO Optimization
+  const handleAISEOOptimization = async () => {
+    if (!formData.judulProperti && !formData.deskripsi) {
+      toast({
+        title: "Konten Diperlukan",
+        description: "Masukkan minimal judul atau deskripsi untuk dioptimasi",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await optimizeSEO.mutateAsync({
+        title: formData.judulProperti || undefined,
+        description: formData.deskripsi || undefined,
+      });
+
+      if (result.success) {
+        // Update main title and description (for backward compatibility)
+        if (result.optimizedTitle && result.optimizedTitle !== formData.judulProperti) {
+          setFormData(prev => ({ ...prev, judulProperti: result.optimizedTitle! }));
+        }
+        if (result.optimizedDescription && result.optimizedDescription !== formData.deskripsi) {
+          setFormData(prev => ({ ...prev, deskripsi: result.optimizedDescription! }));
+        }
+
+        // Update meta title and description
+        if (result.optimizedTitle) {
+          setFormData(prev => ({ ...prev, metaTitle: result.optimizedTitle! }));
+        }
+        if (result.optimizedDescription) {
+          setFormData(prev => ({ ...prev, metaDescription: result.optimizedDescription! }));
+        }
+
+        toast({
+          title: "SEO Dioptimasi",
+          description: `Konten berhasil dioptimasi untuk mesin pencari`,
+        });
+      }
+    } catch (error) {
+      // Error sudah di-handle oleh hook
+    }
+  };
+
 
 
 
@@ -148,6 +194,8 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         kabupaten: "",
         alamatLengkap: "",
         deskripsi: "",
+        metaTitle: "",
+        metaDescription: "",
         imageUrl: "",
         imageUrl1: "",
         imageUrl2: "",
@@ -203,6 +251,8 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           kabupaten: property.kabupaten || "",
           alamatLengkap: property.alamatLengkap || "",
           deskripsi: property.deskripsi || "",
+          metaTitle: (property as any).metaTitle || "",
+          metaDescription: (property as any).metaDescription || "",
           imageUrl: property.imageUrl || "",
           imageUrl1: property.imageUrl1 || "",
           imageUrl2: property.imageUrl2 || "",
@@ -246,6 +296,8 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         kabupaten: "",
         alamatLengkap: "",
         deskripsi: "",
+        metaTitle: "",
+        metaDescription: "",
         imageUrl: "",
         imageUrl1: "",
         imageUrl2: "",
@@ -274,6 +326,7 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('PropertyForm: handleSubmit called');
     setIsSubmitting(true);
 
     try {
@@ -282,6 +335,8 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         kode_listing: formData.kodeListing,
         judul_properti: formData.judulProperti || null,
         deskripsi: formData.deskripsi || null,
+        meta_title: formData.metaTitle || null,
+        meta_description: formData.metaDescription || null,
         jenis_properti: formData.jenisProperti,
         luas_tanah: formData.luasTanah ? parseFloat(formData.luasTanah) : null,
         luas_bangunan: formData.luasBangunan ? parseFloat(formData.luasBangunan) : null,
@@ -318,15 +373,15 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
         status: formData.status,
       };
 
-      console.log('Submitting payload:', payload);
-      console.log('Image URLs in payload:', {
+      console.log('PropertyForm: Submitting payload:', payload);
+      console.log('PropertyForm: Image URLs in payload:', {
         image_url: payload.image_url,
         image_url1: payload.image_url1,
         image_url2: payload.image_url2,
         image_url3: payload.image_url3,
         image_url4: payload.image_url4,
       });
-      console.log('Form data image URLs:', {
+      console.log('PropertyForm: Form data image URLs:', {
         imageUrl: formData.imageUrl,
         imageUrl1: formData.imageUrl1,
         imageUrl2: formData.imageUrl2,
@@ -335,37 +390,43 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
       });
 
       if (property) {
+        console.log('PropertyForm: Updating existing property');
         const { error } = await supabase
           .from('properties')
           .update(payload)
           .eq('id', property.id);
 
         if (error) {
-          console.error('Update error:', error);
+          console.error('PropertyForm: Update error:', error);
           throw error;
         }
+        console.log('PropertyForm: Property updated successfully');
         toast({ title: "Properti berhasil diupdate" });
       } else {
+        console.log('PropertyForm: Inserting new property');
         const { error } = await supabase
           .from('properties')
           .insert(payload);
 
         if (error) {
-          console.error('Insert error:', error);
+          console.error('PropertyForm: Insert error:', error);
           throw error;
         }
+        console.log('PropertyForm: Property inserted successfully');
         toast({ title: "Properti berhasil ditambahkan" });
       }
 
+      console.log('PropertyForm: Calling onSuccess callback');
       onSuccess();
     } catch (error: any) {
-      console.error('Submit error:', error);
+      console.error('PropertyForm: Submit error:', error);
       toast({
         title: "Error",
         description: error?.message || "Gagal menyimpan properti",
         variant: "destructive",
       });
     } finally {
+      console.log('PropertyForm: Clearing submitting state');
       setIsSubmitting(false);
     }
   };
@@ -788,12 +849,58 @@ export function PropertyForm({ property, onSuccess }: PropertyFormProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="seo" className="mt-4">
+        <TabsContent value="seo" className="mt-4 space-y-4">
+          {/* Meta Title Field */}
+          <div>
+            <Label htmlFor="metaTitle">Meta Title (SEO)</Label>
+            <Input
+              id="metaTitle"
+              value={formData.metaTitle}
+              onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
+              placeholder="Judul untuk SEO (50-60 karakter)"
+              maxLength={60}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.metaTitle.length}/60 karakter - Ditampilkan di hasil pencarian Google
+            </p>
+          </div>
+
+          {/* Meta Description Field */}
+          <div>
+            <Label htmlFor="metaDescription">Meta Description (SEO)</Label>
+            <Textarea
+              id="metaDescription"
+              value={formData.metaDescription}
+              onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+              placeholder="Deskripsi untuk SEO (150-160 karakter)"
+              maxLength={160}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.metaDescription.length}/160 karakter - Ringkasan yang muncul di hasil pencarian
+            </p>
+          </div>
+
+          {/* SEO Optimizer */}
           <SEOOptimizer
             title={formData.judulProperti}
             description={formData.deskripsi}
-            onTitleChange={(title) => setFormData({ ...formData, judulProperti: title })}
-            onDescriptionChange={(description) => setFormData({ ...formData, deskripsi: description })}
+            onTitleChange={(title) => {
+              console.log('PropertyForm: Updating judulProperti:', title);
+              setFormData(prev => ({ ...prev, judulProperti: title }));
+            }}
+            onDescriptionChange={(description) => {
+              console.log('PropertyForm: Updating deskripsi:', description);
+              setFormData(prev => ({ ...prev, deskripsi: description }));
+            }}
+            onMetaTitleChange={(metaTitle) => {
+              console.log('PropertyForm: Updating metaTitle:', metaTitle);
+              setFormData(prev => ({ ...prev, metaTitle: metaTitle }));
+            }}
+            onMetaDescriptionChange={(metaDescription) => {
+              console.log('PropertyForm: Updating metaDescription:', metaDescription);
+              setFormData(prev => ({ ...prev, metaDescription: metaDescription }));
+            }}
           />
         </TabsContent>
       </Tabs>

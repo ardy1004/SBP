@@ -3,8 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-// Temporarily disabled recharts due to CDN issues
-// import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { RefreshCw, TrendingUp, Users, Eye, Clock, MousePointer } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -27,6 +26,14 @@ interface AnalyticsData {
     pageViews: Array<{ date: string; views: number }>;
     topPages: Array<{ page: string; views: number }>;
     trafficSources: Array<{ name: string; value: number }>;
+    demographics?: {
+      age: Array<{ age: string; users: number }>;
+      gender: Array<{ gender: string; users: number }>;
+    };
+    geography?: {
+      countries: Array<{ country: string; users: number }>;
+      cities: Array<{ city: string; users: number }>;
+    };
   };
   lastUpdated: string;
   error?: string;
@@ -189,7 +196,7 @@ export function AnalyticsDashboard() {
 
       {/* Data Tables (Fallback for Charts) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Page Views Trend Table */}
+        {/* Page Views Trend */}
         <Card className="col-span-1 lg:col-span-2">
           <CardHeader>
             <CardTitle>Page Views Trend</CardTitle>
@@ -198,30 +205,51 @@ export function AnalyticsDashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2">Date</th>
-                    <th className="text-right py-2">Page Views</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analytics?.charts.pageViews?.slice(0, 10).map((item, index) => (
-                    <tr key={index} className="border-b hover:bg-muted/50">
-                      <td className="py-2">{new Date(item.date).toLocaleDateString()}</td>
-                      <td className="text-right py-2 font-medium">{formatNumber(item.views)}</td>
-                    </tr>
-                  )) || (
-                    <tr>
-                      <td colSpan={2} className="text-center py-4 text-muted-foreground">
-                        No data available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {analytics?.charts.pageViews && analytics.charts.pageViews.length > 0 ? (
+              <div className="space-y-4">
+                {/* Bar Chart */}
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analytics.charts.pageViews}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(date) => new Date(date).toLocaleDateString('id-ID', { month: 'short', day: 'numeric' })}
+                      />
+                      <YAxis tickFormatter={formatNumber} />
+                      <Tooltip
+                        labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                        formatter={(value) => [formatNumber(value as number), 'Page Views']}
+                      />
+                      <Bar dataKey="views" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Table as additional info */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2">Date</th>
+                        <th className="text-right py-2">Page Views</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.charts.pageViews.slice(0, 10).map((item, index) => (
+                        <tr key={index} className="border-b hover:bg-muted/50">
+                          <td className="py-2">{new Date(item.date).toLocaleDateString()}</td>
+                          <td className="text-right py-2 font-medium">{formatNumber(item.views)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                No data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -256,7 +284,7 @@ export function AnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Traffic Sources Table */}
+        {/* Traffic Sources */}
         <Card>
           <CardHeader>
             <CardTitle>Traffic Sources</CardTitle>
@@ -265,32 +293,176 @@ export function AnalyticsDashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {analytics?.charts.trafficSources?.map((item, index) => {
-                const percentage = analytics.metrics.sessions > 0
-                  ? ((item.value / analytics.metrics.sessions) * 100).toFixed(1)
-                  : '0.0';
-                return (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                      ></div>
-                      <span className="text-sm font-medium">{item.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">{formatNumber(item.value)}</p>
-                      <p className="text-xs text-muted-foreground">{percentage}%</p>
+            {analytics?.charts.trafficSources && analytics.charts.trafficSources.length > 0 ? (
+              <div className="space-y-4">
+                {/* Pie Chart */}
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={analytics.charts.trafficSources}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {analytics.charts.trafficSources.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [formatNumber(value as number), 'Sessions']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Table as additional info */}
+                <div className="space-y-3">
+                  {analytics.charts.trafficSources.map((item, index) => {
+                    const percentage = analytics.metrics.sessions > 0
+                      ? ((item.value / analytics.metrics.sessions) * 100).toFixed(1)
+                      : '0.0';
+                    return (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                          ></div>
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold">{formatNumber(item.value)}</p>
+                          <p className="text-xs text-muted-foreground">{percentage}%</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                No data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Demographics and Geography */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Demographics */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Demographics</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              User age and gender distribution
+            </p>
+          </CardHeader>
+          <CardContent>
+            {analytics?.charts.demographics ? (
+              <div className="space-y-6">
+                {/* Age Distribution */}
+                {analytics.charts.demographics.age && analytics.charts.demographics.age.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Age Groups</h4>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analytics.charts.demographics.age}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="age" />
+                          <YAxis tickFormatter={formatNumber} />
+                          <Tooltip formatter={(value) => [formatNumber(value as number), 'Users']} />
+                          <Bar dataKey="users" fill="#82ca9d" />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
-                );
-              }) || (
-                <div className="text-center py-4 text-muted-foreground">
-                  No data available
-                </div>
-              )}
-            </div>
+                )}
+
+                {/* Gender Distribution */}
+                {analytics.charts.demographics.gender && analytics.charts.demographics.gender.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Gender Distribution</h4>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={analytics.charts.demographics.gender}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                            outerRadius={70}
+                            fill="#8884d8"
+                            dataKey="users"
+                          >
+                            {analytics.charts.demographics.gender.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => [formatNumber(value as number), 'Users']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                Demographics data not available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Geography */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Geography</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              User location distribution
+            </p>
+          </CardHeader>
+          <CardContent>
+            {analytics?.charts.geography ? (
+              <div className="space-y-6">
+                {/* Countries */}
+                {analytics.charts.geography.countries && analytics.charts.geography.countries.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Top Countries</h4>
+                    <div className="space-y-3">
+                      {analytics.charts.geography.countries.slice(0, 5).map((item, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <span className="text-sm font-medium">{item.country}</span>
+                          <span className="text-lg font-bold">{formatNumber(item.users)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cities */}
+                {analytics.charts.geography.cities && analytics.charts.geography.cities.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Top Cities</h4>
+                    <div className="space-y-3">
+                      {analytics.charts.geography.cities.slice(0, 5).map((item, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <span className="text-sm font-medium">{item.city}</span>
+                          <span className="text-lg font-bold">{formatNumber(item.users)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                Geography data not available
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -17,6 +17,8 @@ export const properties = pgTable("properties", {
   kodeListing: text("kode_listing").notNull().unique(),
   judulProperti: text("judul_properti"),
   deskripsi: text("deskripsi"),
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
   jenisProperti: text("jenis_properti").notNull(), // apartment, gudang, villa, hotel, kost, rumah, ruko, tanah, bangunan_komersial
   luasTanah: numeric("luas_tanah"),
   luasBangunan: numeric("luas_bangunan"),

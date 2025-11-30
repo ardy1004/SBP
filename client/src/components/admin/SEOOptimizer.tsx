@@ -17,6 +17,8 @@ interface SEOOptimizerProps {
   description: string;
   onTitleChange: (title: string) => void;
   onDescriptionChange: (description: string) => void;
+  onMetaTitleChange?: (metaTitle: string) => void;
+  onMetaDescriptionChange?: (metaDescription: string) => void;
   keywords?: string[];
   onKeywordsChange?: (keywords: string[]) => void;
 }
@@ -26,6 +28,8 @@ export function SEOOptimizer({
   description,
   onTitleChange,
   onDescriptionChange,
+  onMetaTitleChange,
+  onMetaDescriptionChange,
   keywords = [],
   onKeywordsChange
 }: SEOOptimizerProps) {
@@ -34,7 +38,10 @@ export function SEOOptimizer({
   const { toast } = useToast();
 
   const handleOptimizeSEO = async () => {
+    console.log('SEOOptimizer: handleOptimizeSEO called', { title, description });
+
     if (!title && !description) {
+      console.log('SEOOptimizer: No content provided');
       toast({
         title: "Konten Diperlukan",
         description: "Masukkan minimal judul atau deskripsi untuk dioptimasi",
@@ -44,33 +51,145 @@ export function SEOOptimizer({
     }
 
     setIsOptimizing(true);
+
     try {
-      const result = await optimizeSEO.mutateAsync({
-        title: title || undefined,
-        description: description || undefined,
+      console.log('SEOOptimizer: Starting optimization');
+
+      // Generate meta title and description from main title and description
+      const generatedMetaTitle = generateMetaTitle(title);
+      const generatedMetaDescription = generateMetaDescription(description);
+
+      console.log('SEOOptimizer: Generated content', {
+        generatedMetaTitle,
+        generatedMetaDescription,
+        titleLength: title.length,
+        descriptionLength: description.length
       });
 
-      if (result.success) {
-        if (result.optimizedTitle && result.optimizedTitle !== title) {
-          onTitleChange(result.optimizedTitle);
-        }
-        if (result.optimizedDescription && result.optimizedDescription !== description) {
-          onDescriptionChange(result.optimizedDescription);
-        }
-        if (result.keywords && onKeywordsChange) {
-          onKeywordsChange(result.keywords);
+      // Extract keywords from description
+      const extractedKeywords = extractKeywords(description);
+      console.log('SEOOptimizer: Extracted keywords', extractedKeywords);
+
+      // Update all state in a single batch to avoid conflicts
+      console.log('SEOOptimizer: About to update all state in batch');
+
+      // Use Promise.resolve().then() to defer state updates
+      await Promise.resolve().then(() => {
+        console.log('SEOOptimizer: Executing deferred state updates');
+
+        // Update keywords first
+        if (onKeywordsChange) {
+          try {
+            onKeywordsChange(extractedKeywords);
+            console.log('SEOOptimizer: Keywords updated successfully');
+          } catch (error) {
+            console.error('SEOOptimizer: Error updating keywords:', error);
+          }
         }
 
-        toast({
-          title: "SEO Dioptimasi",
-          description: "Konten berhasil dioptimasi untuk mesin pencari",
-        });
-      }
+        // Update meta title and description
+        if (onMetaTitleChange && generatedMetaTitle) {
+          try {
+            onMetaTitleChange(generatedMetaTitle);
+            console.log('SEOOptimizer: Meta title updated successfully');
+          } catch (error) {
+            console.error('SEOOptimizer: Error updating meta title:', error);
+          }
+        }
+
+        if (onMetaDescriptionChange && generatedMetaDescription) {
+          try {
+            onMetaDescriptionChange(generatedMetaDescription);
+            console.log('SEOOptimizer: Meta description updated successfully');
+          } catch (error) {
+            console.error('SEOOptimizer: Error updating meta description:', error);
+          }
+        }
+      });
+
+      console.log('SEOOptimizer: All state updates completed successfully');
+
+      toast({
+        title: "SEO Dioptimasi",
+        description: "Meta title dan meta description berhasil di-generate",
+      });
+
     } catch (error) {
-      // Error sudah di-handle oleh hook
+      console.error('SEOOptimizer: Error during optimization:', error);
+      toast({
+        title: "SEO Optimization Failed",
+        description: error instanceof Error ? error.message : "Gagal mengoptimasi konten SEO",
+        variant: "destructive",
+      });
     } finally {
+      // Ensure loading state is cleared
       setIsOptimizing(false);
+      console.log('SEOOptimizer: Loading state cleared');
     }
+  };
+
+  // Helper function to generate meta title
+  const generateMetaTitle = (mainTitle: string): string => {
+    if (!mainTitle) return '';
+
+    // Clean and truncate title to optimal length (50-60 characters)
+    let metaTitle = mainTitle.trim();
+
+    // If title is too long, truncate it
+    if (metaTitle.length > 57) {
+      metaTitle = metaTitle.substring(0, 54) + '...';
+    }
+
+    // Add brand name if there's space and it's not already there
+    if (metaTitle.length <= 50 && !metaTitle.includes('Salam Bumi')) {
+      metaTitle += ' - Salam Bumi Property';
+    }
+
+    return metaTitle;
+  };
+
+  // Helper function to generate meta description
+  const generateMetaDescription = (mainDescription: string): string => {
+    if (!mainDescription) return '';
+
+    // Clean description and truncate to optimal length (150-160 characters)
+    let metaDesc = mainDescription.trim();
+
+    // Remove any existing call-to-action if present
+    metaDesc = metaDesc.replace(/\s*Hubungi kami.*$/i, '').trim();
+
+    // Truncate to optimal length
+    if (metaDesc.length > 147) {
+      metaDesc = metaDesc.substring(0, 144) + '...';
+    }
+
+    // Add call-to-action
+    metaDesc += ' Hubungi kami untuk informasi lebih lanjut.';
+
+    return metaDesc;
+  };
+
+  // Helper function to extract keywords
+  const extractKeywords = (text: string): string[] => {
+    if (!text) return [];
+
+    const keywords = new Set<string>();
+
+    // Common real estate keywords
+    const commonKeywords = [
+      'kost', 'rumah', 'apartemen', 'villa', 'ruko', 'tanah', 'properti',
+      'dijual', 'disewakan', 'sewa', 'jual', 'murah', 'strategis',
+      'fasilitas', 'lokasi', 'dekat', 'pusat', 'kota', 'baru', 'cantik'
+    ];
+
+    const lowerText = text.toLowerCase();
+    commonKeywords.forEach(keyword => {
+      if (lowerText.includes(keyword)) {
+        keywords.add(keyword);
+      }
+    });
+
+    return Array.from(keywords).slice(0, 8); // Limit to 8 keywords
   };
 
   const getTitleScore = (text: string) => {
