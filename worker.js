@@ -62,6 +62,11 @@ export default {
 				)
 			}
 
+			// Handle analytics diagnostics
+			if (request.method === 'GET' && url.pathname === '/api/analytics/diagnose') {
+				return handleAnalyticsDiagnostics(request, env);
+			}
+
 			// Handle Search Console data fetching
 			if (request.method === 'GET' && url.pathname === '/api/search-console') {
 				return withPerformanceMonitoring(
@@ -1164,6 +1169,187 @@ Deskripsi:`;
 	}
 }
 
+// Handle analytics diagnostics
+async function handleAnalyticsDiagnostics(request, env) {
+	try {
+		console.log('🔍 Starting Analytics Diagnostics');
+
+		const diagnostics = {
+			timestamp: new Date().toISOString(),
+			environment: {
+				hasServiceAccountKey: !!env.GA_SERVICE_ACCOUNT_KEY,
+				hasPropertyId: !!env.GA_PROPERTY_ID,
+				serviceAccountKeyLength: env.GA_SERVICE_ACCOUNT_KEY?.length || 0,
+				propertyId: env.GA_PROPERTY_ID || 'NOT_SET'
+			},
+			ga4Connection: null,
+			dataAvailability: null,
+			errors: []
+		};
+
+		// Test GA4 connection
+		if (env.GA_SERVICE_ACCOUNT_KEY && env.GA_PROPERTY_ID) {
+			try {
+				console.log('🔍 Testing GA4 connection...');
+
+				// Parse service account key
+				let serviceAccountKey;
+				try {
+					serviceAccountKey = JSON.parse(env.GA_SERVICE_ACCOUNT_KEY);
+					diagnostics.ga4Connection = { parsed: true };
+				} catch (parseError) {
+					diagnostics.ga4Connection = { parsed: false, error: parseError.message };
+					diagnostics.errors.push(`Service account key parse error: ${parseError.message}`);
+				}
+
+				if (serviceAccountKey) {
+					// Import googleapis
+					const { google } = await import('googleapis');
+
+					// Authenticate
+					const auth = new google.auth.GoogleAuth({
+						credentials: serviceAccountKey,
+						scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+					});
+
+					const analyticsData = google.analyticsdata({ version: 'v1beta', auth });
+
+					// Test basic connectivity with a simple query
+					const testResponse = await analyticsData.properties.runReport({
+						property: `properties/${env.GA_PROPERTY_ID}`,
+						requestBody: {
+							dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+							metrics: [{ name: 'totalUsers' }]
+						}
+					});
+
+					diagnostics.ga4Connection.connected = true;
+					diagnostics.ga4Connection.basicData = testResponse.data;
+
+					// Test demographics data availability
+					const [ageTest, genderTest, countryTest, cityTest] = await Promise.allSettled([
+						analyticsData.properties.runReport({
+							property: `properties/${env.GA_PROPERTY_ID}`,
+							requestBody: {
+								dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+								dimensions: [{ name: 'userAgeBracket' }],
+								metrics: [{ name: 'totalUsers' }],
+								limit: 1
+							}
+						}),
+						analyticsData.properties.runReport({
+							property: `properties/${env.GA_PROPERTY_ID}`,
+							requestBody: {
+								dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+								dimensions: [{ name: 'userGender' }],
+								metrics: [{ name: 'totalUsers' }],
+								limit: 1
+							}
+						}),
+						analyticsData.properties.runReport({
+							property: `properties/${env.GA_PROPERTY_ID}`,
+							requestBody: {
+								dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+								dimensions: [{ name: 'country' }],
+								metrics: [{ name: 'totalUsers' }],
+								limit: 1
+							}
+						}),
+						analyticsData.properties.runReport({
+							property: `properties/${env.GA_PROPERTY_ID}`,
+							requestBody: {
+								dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+								dimensions: [{ name: 'city' }],
+								metrics: [{ name: 'totalUsers' }],
+								limit: 1
+							}
+						})
+					]);
+
+					diagnostics.dataAvailability = {
+						age: {
+							available: ageTest.status === 'fulfilled',
+							rowCount: ageTest.status === 'fulfilled' ? (ageTest.value.data.rows?.length || 0) : 0,
+							error: ageTest.status === 'rejected' ? ageTest.reason.message : null
+						},
+						gender: {
+							available: genderTest.status === 'fulfilled',
+							rowCount: genderTest.status === 'fulfilled' ? (genderTest.value.data.rows?.length || 0) : 0,
+							error: genderTest.status === 'rejected' ? genderTest.reason.message : null
+						},
+						country: {
+							available: countryTest.status === 'fulfilled',
+							rowCount: countryTest.status === 'fulfilled' ? (countryTest.value.data.rows?.length || 0) : 0,
+							error: countryTest.status === 'rejected' ? countryTest.reason.message : null
+						},
+						city: {
+							available: cityTest.status === 'fulfilled',
+							rowCount: cityTest.status === 'fulfilled' ? (cityTest.value.data.rows?.length || 0) : 0,
+							error: cityTest.status === 'rejected' ? cityTest.reason.message : null
+						}
+					};
+
+				}
+			} catch (error) {
+				console.error('🔍 GA4 Connection test failed:', error);
+				diagnostics.ga4Connection = {
+					connected: false,
+					error: error.message,
+					stack: error.stack
+				};
+				diagnostics.errors.push(`GA4 connection error: ${error.message}`);
+			}
+		} else {
+			diagnostics.errors.push('GA4 credentials not configured');
+		}
+
+		// Add recommendations
+		diagnostics.recommendations = [];
+		if (!diagnostics.environment.hasServiceAccountKey) {
+			diagnostics.recommendations.push('Set GA_SERVICE_ACCOUNT_KEY environment variable');
+		}
+		if (!diagnostics.environment.hasPropertyId) {
+			diagnostics.recommendations.push('Set GA_PROPERTY_ID environment variable');
+		}
+		if (diagnostics.ga4Connection && !diagnostics.ga4Connection.connected) {
+			diagnostics.recommendations.push('Check GA4 service account permissions and property access');
+		}
+		if (diagnostics.dataAvailability) {
+			const unavailableData = Object.entries(diagnostics.dataAvailability)
+				.filter(([key, value]) => !value.available)
+				.map(([key]) => key);
+
+			if (unavailableData.length > 0) {
+				diagnostics.recommendations.push(`Data not available for: ${unavailableData.join(', ')}. Wait 24-48 hours after consent is given.`);
+			}
+		}
+
+		console.log('🔍 Diagnostics completed');
+
+		return new Response(JSON.stringify(diagnostics, null, 2), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*',
+				'Cache-Control': 'no-cache'
+			}
+		});
+
+	} catch (error) {
+		console.error('🔍 Diagnostics error:', error);
+		return new Response(JSON.stringify({
+			error: 'Diagnostics failed',
+			message: error.message,
+			timestamp: new Date().toISOString()
+		}, null, 2), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				'Access-Control-Allow-Origin': '*'
+			}
+		});
+	}
+}
+
 // Handle AI SEO optimization
 async function handleAIOptimizeSEO(request, env) {
 	// CORS handling
@@ -1735,6 +1921,14 @@ async function handleAnalyticsData(request, env) {
 			city: row.dimensionValues[0].value,
 			users: parseInt(row.metricValues[0].value)
 		})) || [];
+
+		// Debug logging
+		console.log('📊 Demographics data processed:');
+		console.log('  - Age data:', ageData.length, 'entries');
+		console.log('  - Gender data:', genderData.length, 'entries');
+		console.log('📊 Geography data processed:');
+		console.log('  - Countries data:', countriesData.length, 'entries');
+		console.log('  - Cities data:', citiesData.length, 'entries');
 
 		// Get basic metrics
 		const metrics = realtimeReport.data.rows?.[0]?.metricValues || [];
