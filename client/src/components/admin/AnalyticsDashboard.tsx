@@ -361,59 +361,63 @@ export function AnalyticsDashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            {analytics?.charts.demographics ? (
-              <div className="space-y-6">
-                {/* Age Distribution */}
-                {analytics.charts.demographics.age && analytics.charts.demographics.age.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3">Age Groups</h4>
-                    <div className="h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analytics.charts.demographics.age}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="age" />
-                          <YAxis tickFormatter={formatNumber} />
-                          <Tooltip formatter={(value) => [formatNumber(value as number), 'Users']} />
-                          <Bar dataKey="users" fill="#82ca9d" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+            <div className="space-y-6">
+              {/* Age Distribution */}
+              {analytics?.charts.demographics?.age && analytics.charts.demographics.age.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-medium mb-3">Age Groups</h4>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={analytics.charts.demographics.age}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="age" />
+                        <YAxis tickFormatter={formatNumber} />
+                        <Tooltip formatter={(value) => [formatNumber(value as number), 'Users']} />
+                        <Bar dataKey="users" fill="#82ca9d" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
-                )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Age distribution data not available</p>
+                  <p className="text-xs mt-1">Configure Google Analytics 4 to see demographic data</p>
+                </div>
+              )}
 
-                {/* Gender Distribution */}
-                {analytics.charts.demographics.gender && analytics.charts.demographics.gender.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3">Gender Distribution</h4>
-                    <div className="h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={analytics.charts.demographics.gender}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                            outerRadius={70}
-                            fill="#8884d8"
-                            dataKey="users"
-                          >
-                            {analytics.charts.demographics.gender.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => [formatNumber(value as number), 'Users']} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+              {/* Gender Distribution */}
+              {analytics?.charts.demographics?.gender && analytics.charts.demographics.gender.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-medium mb-3">Gender Distribution</h4>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={analytics.charts.demographics.gender}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                          outerRadius={70}
+                          fill="#8884d8"
+                          dataKey="users"
+                        >
+                          {analytics.charts.demographics.gender.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [formatNumber(value as number), 'Users']} />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                Demographics data not available
-              </div>
-            )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Gender distribution data not available</p>
+                  <p className="text-xs mt-1">Configure Google Analytics 4 to see demographic data</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -426,43 +430,47 @@ export function AnalyticsDashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            {analytics?.charts.geography ? (
-              <div className="space-y-6">
-                {/* Countries */}
-                {analytics.charts.geography.countries && analytics.charts.geography.countries.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3">Top Countries</h4>
-                    <div className="space-y-3">
-                      {analytics.charts.geography.countries.slice(0, 5).map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <span className="text-sm font-medium">{item.country}</span>
-                          <span className="text-lg font-bold">{formatNumber(item.users)}</span>
-                        </div>
-                      ))}
-                    </div>
+            <div className="space-y-6">
+              {/* Countries */}
+              {analytics?.charts.geography?.countries && analytics.charts.geography.countries.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-medium mb-3">Top Countries</h4>
+                  <div className="space-y-3">
+                    {analytics.charts.geography.countries.slice(0, 5).map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <span className="text-sm font-medium">{item.country}</span>
+                        <span className="text-lg font-bold">{formatNumber(item.users)}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Country data not available</p>
+                  <p className="text-xs mt-1">Configure Google Analytics 4 to see geographic data</p>
+                </div>
+              )}
 
-                {/* Cities */}
-                {analytics.charts.geography.cities && analytics.charts.geography.cities.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3">Top Cities</h4>
-                    <div className="space-y-3">
-                      {analytics.charts.geography.cities.slice(0, 5).map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <span className="text-sm font-medium">{item.city}</span>
-                          <span className="text-lg font-bold">{formatNumber(item.users)}</span>
-                        </div>
-                      ))}
-                    </div>
+              {/* Cities */}
+              {analytics?.charts.geography?.cities && analytics.charts.geography.cities.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-medium mb-3">Top Cities</h4>
+                  <div className="space-y-3">
+                    {analytics.charts.geography.cities.slice(0, 5).map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <span className="text-sm font-medium">{item.city}</span>
+                        <span className="text-lg font-bold">{formatNumber(item.users)}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                Geography data not available
-              </div>
-            )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">City data not available</p>
+                  <p className="text-xs mt-1">Configure Google Analytics 4 to see geographic data</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
