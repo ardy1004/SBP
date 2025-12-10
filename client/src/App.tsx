@@ -5,12 +5,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Navigation } from "@/components/Navigation";
 import { OrganizationSchemaMarkup } from "@/components/SchemaMarkup";
 import { useCoreWebVitals } from "@/hooks/use-core-web-vitals";
 import { Footer } from "@/components/Footer";
-// import { ChatWidget } from "@/components/ChatWidget"; // Temporarily disabled
 
 // Lazy load pages for better performance
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -26,12 +25,13 @@ const Contact = lazy(() => import("@/pages/Contact"));
 
 // Admin pages - separate chunk
 const AdminLoginPage = lazy(() => import("@/pages/admin/AdminLoginPage"));
-const AdminDashboardPage = lazy(() => import("@/pages/admin/AdminDashboardPage"));
-const AdminPropertiesPage = lazy(() => import("@/pages/admin/AdminPropertiesPage"));
+const EnhancedAdminDashboardPage = lazy(() => import("@/pages/admin/EnhancedAdminDashboardPage"));
+const EnhancedAdminPropertiesPage = lazy(() => import("@/pages/admin/EnhancedAdminPropertiesPage"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage"));
 const AdminSearchConsolePage = lazy(() => import("@/pages/admin/AdminSearchConsolePage"));
 const AdminPageInsightsPage = lazy(() => import("@/pages/admin/AdminPageInsightsPage"));
 const AdminIntegrationsPage = lazy(() => import("@/pages/admin/AdminIntegrationsPage"));
+const AdminLeadsPage = lazy(() => import("@/pages/admin/AdminLeadsPage"));
 
 // Loading fallback component for Suspense
 function PageLoadingFallback() {
@@ -45,12 +45,31 @@ function PageLoadingFallback() {
   );
 }
 
+// Admin Guard Component
+function AdminGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!loading && (!isAuthenticated || !isAdmin)) {
+      setLocation('/admin/login');
+    }
+  }, [isAuthenticated, isAdmin, loading, setLocation]);
+
+  if (loading) {
+    return <PageLoadingFallback />;
+  }
+
+  if (!isAuthenticated || !isAdmin) {
+    return null; // Will redirect via useEffect
+  }
+
+  return <>{children}</>;
+}
+
 function Router() {
   const [location, setLocation] = useLocation();
-
-  console.log('🛣️ Router Component Rendered');
-  console.log('📍 Router location:', location);
-  console.log('🔍 Checking routes for:', location);
+  const isAdminRoute = location.startsWith('/admin');
 
   // Handle hash-based routing from worker redirects
   useEffect(() => {
@@ -63,8 +82,11 @@ function Router() {
   }, [location, setLocation]);
 
   return (
-    <Suspense fallback={<PageLoadingFallback />}>
-      <Switch>
+    <div className="min-h-screen flex flex-col">
+      {!isAdminRoute && <Navigation />}
+      <main className="flex-1">
+        <Suspense fallback={<PageLoadingFallback />}>
+          <Switch>
         {/* Property Detail Routes - MUST COME FIRST */}
         <Route path="/properti/:id">
           <ErrorBoundary>
@@ -118,59 +140,116 @@ function Router() {
 
         {/* SEO-friendly Property URLs - Handle property detail slugs */}
         <Route path="/dijual">
-          {() => {
-            console.log('🟢 Matched /dijual route');
-            return (
-              <ErrorBoundary>
-                <PropertyDetailPage />
-              </ErrorBoundary>
-            );
-          }}
+          {() => (
+            <ErrorBoundary>
+              <PropertyDetailPage />
+            </ErrorBoundary>
+          )}
         </Route>
 
         <Route path="/disewakan">
-          {() => {
-            console.log('🟢 Matched /disewakan route');
-            return (
-              <ErrorBoundary>
-                <PropertyDetailPage />
-              </ErrorBoundary>
-            );
-          }}
+          {() => (
+            <ErrorBoundary>
+              <PropertyDetailPage />
+            </ErrorBoundary>
+          )}
         </Route>
 
         {/* Full SEO slug format: /{status}/{jenis}/{kabupaten}/{provinsi}/{judul} */}
         <Route path="/:status/:jenis/:kabupaten/:provinsi/:judul">
-          {() => {
-            console.log('🟢 Matched full SEO slug route');
-            return (
-              <ErrorBoundary>
-                <PropertyDetailPage />
-              </ErrorBoundary>
-            );
-          }}
+          {() => (
+            <ErrorBoundary>
+              <PropertyDetailPage />
+            </ErrorBoundary>
+          )}
         </Route>
 
         {/* Partial SEO slug formats for flexibility */}
         <Route path="/:status/:jenis/:kabupaten/:provinsi">
-          {() => {
-            console.log('🟢 Matched partial SEO slug route (no title)');
-            return (
-              <ErrorBoundary>
-                <PropertyDetailPage />
-              </ErrorBoundary>
-            );
-          }}
+          {() => (
+            <ErrorBoundary>
+              <PropertyDetailPage />
+            </ErrorBoundary>
+          )}
         </Route>
 
         {/* Admin Routes - MUST COME BEFORE LOCATION ROUTES */}
         <Route path="/admin/login"><AdminLoginPage /></Route>
-        <Route path="/admin/dashboard"><AdminDashboardPage /></Route>
-        <Route path="/admin/properties"><AdminPropertiesPage /></Route>
-        <Route path="/admin/analytics"><AdminAnalyticsPage /></Route>
-        <Route path="/admin/search-console"><AdminSearchConsolePage /></Route>
-        <Route path="/admin/page-insights"><AdminPageInsightsPage /></Route>
-        <Route path="/admin/integrations"><AdminIntegrationsPage /></Route>
+        <Route path="/admin/dashboard">
+          <AdminGuard>
+            <EnhancedAdminDashboardPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/properties/:tab?">
+          <AdminGuard>
+            <EnhancedAdminPropertiesPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/properties/add">
+          <AdminGuard>
+            <EnhancedAdminPropertiesPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/properties/categories">
+          <AdminGuard>
+            <EnhancedAdminPropertiesPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/properties/templates">
+          <AdminGuard>
+            <EnhancedAdminPropertiesPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/analytics">
+          <AdminGuard>
+            <AdminAnalyticsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/search-console">
+          <AdminGuard>
+            <AdminSearchConsolePage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/page-insights">
+          <AdminGuard>
+            <AdminPageInsightsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/seo-optimizer">
+          <AdminGuard>
+            <AdminPageInsightsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/integrations">
+          <AdminGuard>
+            <AdminIntegrationsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/leads">
+          <AdminGuard>
+            <AdminLeadsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/leads/scoring">
+          <AdminGuard>
+            <AdminLeadsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/leads/followup">
+          <AdminGuard>
+            <AdminLeadsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/leads/analytics">
+          <AdminGuard>
+            <AdminLeadsPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/activity">
+          <AdminGuard>
+            <EnhancedAdminDashboardPage />
+          </AdminGuard>
+        </Route>
 
         {/* Location Pages - only for specific patterns */}
         <Route path="/:type/:location">
@@ -183,10 +262,8 @@ function Router() {
         <Route path="*">
           {() => {
             const currentPath = window.location.pathname;
-            console.log('🔄 Catch-all route triggered for:', currentPath);
 
             if (currentPath.startsWith('/dijual') || currentPath.startsWith('/disewakan')) {
-              console.log('🟢 Property URL detected, loading PropertyDetailPage');
               return (
                 <ErrorBoundary>
                   <PropertyDetailPage />
@@ -194,21 +271,21 @@ function Router() {
               );
             }
 
-            console.log('🔴 Not a property URL, showing 404');
             return <NotFound />;
           }}
         </Route>
 
         {/* Fallback to 404 */}
         <Route><NotFound /></Route>
-      </Switch>
-    </Suspense>
+          </Switch>
+        </Suspense>
+      </main>
+      {!isAdminRoute && <Footer />}
+    </div>
   );
 }
 
 function App() {
-  const isAdminRoute = window.location.pathname.startsWith('/admin');
-
   // Track Core Web Vitals for performance monitoring
   useCoreWebVitals();
 
@@ -227,10 +304,7 @@ function App() {
           <TooltipProvider>
             {/* Organization Schema Markup for all pages */}
             <OrganizationSchemaMarkup />
-            {!isAdminRoute && <Navigation />}
             <Router />
-            {!isAdminRoute && <Footer />}
-            {/* {!isAdminRoute && <ChatWidget />} // Temporarily disabled */}
             <Toaster />
           </TooltipProvider>
         </AuthProvider>

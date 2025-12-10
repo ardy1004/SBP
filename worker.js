@@ -1,3 +1,47 @@
+// Rate limiting store
+const rateLimitStore = new Map();
+
+// Rate limiting configuration
+const RATE_LIMITS = {
+	DEFAULT: { windowMs: 60000, maxRequests: 100 }, // 100 requests per minute
+	API_HEAVY: { windowMs: 60000, maxRequests: 30 }, // 30 requests per minute for heavy APIs
+	IMAGE_UPLOAD: { windowMs: 60000, maxRequests: 10 }, // 10 uploads per minute
+};
+
+// Rate limiting middleware
+function checkRateLimit(clientIP, endpoint, limitType = 'DEFAULT') {
+	const key = `${clientIP}:${endpoint}`;
+	const now = Date.now();
+	const limit = RATE_LIMITS[limitType];
+
+	if (!rateLimitStore.has(key)) {
+		rateLimitStore.set(key, { count: 1, resetTime: now + limit.windowMs });
+		return { allowed: true, remaining: limit.maxRequests - 1 };
+	}
+
+	const userLimit = rateLimitStore.get(key);
+
+	if (now > userLimit.resetTime) {
+		userLimit.count = 1;
+		userLimit.resetTime = now + limit.windowMs;
+		return { allowed: true, remaining: limit.maxRequests - 1 };
+	}
+
+	if (userLimit.count >= limit.maxRequests) {
+		return {
+			allowed: false,
+			remaining: 0,
+			resetTime: userLimit.resetTime
+		};
+	}
+
+	userLimit.count++;
+	return {
+		allowed: true,
+		remaining: limit.maxRequests - userLimit.count
+	};
+}
+
 // Performance monitoring middleware
 async function withPerformanceMonitoring(handler, operationName) {
 	const startTime = Date.now()
@@ -28,6 +72,33 @@ export default {
 
 		try {
 			const url = new URL(request.url);
+			const clientIP = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
+
+			// Rate limiting check
+			let limitType = 'DEFAULT';
+			if (url.pathname.startsWith('/api/')) {
+				limitType = 'API_HEAVY';
+			} else if (url.pathname === '/upload' && request.method === 'POST') {
+				limitType = 'IMAGE_UPLOAD';
+			}
+
+			const rateLimitResult = checkRateLimit(clientIP, url.pathname, limitType);
+
+			if (!rateLimitResult.allowed) {
+				console.warn(`🚫 Rate limit exceeded for ${clientIP} on ${url.pathname}`);
+				return new Response(JSON.stringify({
+					error: 'Rate limit exceeded',
+					message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.',
+					retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+				}), {
+					status: 429,
+					headers: {
+						'Content-Type': 'application/json',
+						'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+						'X-RateLimit-Remaining': '0'
+					}
+				});
+			}
 
 			// --- ROUTING ---
 			// Handle /p/[PROPERTY_ID] for shareable property cards
@@ -43,7 +114,7 @@ export default {
 
 			// Handle AI chat requests
 			if (request.method === 'POST' && url.pathname === '/api/chat') {
-				return handleChatRequest(request, env);
+				return handleChatRequest(request, env, ctx);
 			}
 
 			// Handle AI description generation with performance monitoring
@@ -75,6 +146,22 @@ export default {
 				)
 			}
 
+			// Handle lead capture
+			if (request.method === 'POST' && url.pathname === '/api/leads') {
+				return withPerformanceMonitoring(
+					() => handleLeadCapture(request, env),
+					'LEAD_CAPTURE'
+				)
+			}
+
+			// Handle get leads (admin)
+			if (request.method === 'GET' && url.pathname === '/api/leads') {
+				return withPerformanceMonitoring(
+					() => handleGetLeads(request, env),
+					'GET_LEADS'
+				)
+			}
+
 			// Handle PageSpeed Insights
 			if (request.method === 'GET' && url.pathname === '/api/pagespeed') {
 				return withPerformanceMonitoring(
@@ -96,7 +183,7 @@ export default {
 				if (request.method === 'OPTIONS') {
 					return new Response(null, {
 						headers: {
-							'Access-Control-Allow-Origin': '*',
+							...getCORSHeaders(request),
 							'Access-Control-Allow-Methods': 'POST, OPTIONS',
 							'Access-Control-Allow-Headers': 'Content-Type',
 						},
@@ -121,30 +208,94 @@ export default {
 				return handleImageUpload(request, env);
 			}
 
-			// Health check endpoint for monitoring
+			// Enhanced health check endpoint for monitoring
 			if (url.pathname === '/api/health') {
-				const healthCheck = {
-					status: 'healthy',
-					timestamp: new Date().toISOString(),
-					version: '1.0.0',
-					environment: 'production',
-					services: {
-						ai_api: 'configured',
-						database: 'configured',
-						storage: 'configured'
-					},
-					metrics: {
-						uptime: Date.now(),
-						request_count: 0 // TODO: Add actual metrics
-					}
+				const startTime = Date.now();
+
+				// Check database connectivity
+				let dbStatus = 'unknown';
+				try {
+					const dbResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+						headers: {
+							'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
+							'apikey': env.SUPABASE_ANON_KEY,
+						},
+					});
+					dbStatus = dbResponse.ok ? 'healthy' : 'unhealthy';
+				} catch (error) {
+					dbStatus = 'error';
 				}
 
+				// Check AI services
+				let aiStatus = 'unknown';
+				try {
+					const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${env.GEMINI_API_KEY}`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							contents: [{ parts: [{ text: 'test' }] }]
+						}),
+					});
+					aiStatus = aiResponse.status !== 400 ? 'healthy' : 'unhealthy'; // 400 is expected for invalid request
+				} catch (error) {
+					aiStatus = 'error';
+				}
+
+				// Check Cloudflare Images
+				let imagesStatus = 'unknown';
+				try {
+					const imagesResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/images/v1`, {
+						headers: {
+							'Authorization': `Bearer ${env.CF_IMAGES_TOKEN}`,
+						},
+					});
+					imagesStatus = imagesResponse.ok ? 'healthy' : 'unhealthy';
+				} catch (error) {
+					imagesStatus = 'error';
+				}
+
+				const healthCheckTime = Date.now() - startTime;
+				const overallStatus = (dbStatus === 'healthy' && aiStatus !== 'error' && imagesStatus !== 'error') ? 'healthy' : 'degraded';
+
+				const healthCheck = {
+					status: overallStatus,
+					timestamp: new Date().toISOString(),
+					version: '1.0.0',
+					environment: env.ENVIRONMENT || 'production',
+					response_time_ms: healthCheckTime,
+					services: {
+						database: dbStatus,
+						ai_api: aiStatus,
+						cloudflare_images: imagesStatus,
+						rate_limiting: 'active',
+						cors: 'configured'
+					},
+					metrics: {
+						uptime_seconds: Math.floor(Date.now() / 1000),
+						memory_usage_mb: typeof process !== 'undefined' ? Math.round(process.memoryUsage?.().heapUsed / 1024 / 1024) : null,
+						active_connections: 0, // Would need to track this
+					},
+					rate_limits: {
+						total_requests: 0, // Would need to track this
+						blocked_requests: 0, // Would need to track this
+					},
+					system: {
+						platform: 'cloudflare-workers',
+						region: env.CF_REGION || 'unknown',
+						colocation: env.CF_COLO || 'unknown',
+					}
+				};
+
+				const statusCode = overallStatus === 'healthy' ? 200 : 503;
+
 				return new Response(JSON.stringify(healthCheck, null, 2), {
+					status: statusCode,
 					headers: {
 						'Content-Type': 'application/json',
-						'Cache-Control': 'no-cache'
+						'Cache-Control': 'no-cache',
+						'X-Health-Check-Time': healthCheckTime.toString(),
 					}
-				})
+				});
 			}
 
 			// Handle static assets (favicon, robots.txt, etc.)
@@ -231,6 +382,8 @@ async function serveSPA(request, env) {
 		return new Response(html, {
 			headers: {
 				'Content-Type': 'text/html; charset=utf-8',
+				...getSecurityHeaders(),
+				...getCORSHeaders(request),
 			},
 		});
 	} catch (error) {
@@ -578,16 +731,130 @@ function generateShareCardHTML(property, propertyId, mainImageUrl) {
 </html>`;
 }
 
+// CORS configuration - secure whitelist
+const ALLOWED_ORIGINS = [
+	'https://salambumi.xyz',
+	'https://www.salambumi.xyz',
+	'http://localhost:5173', // Vite dev server
+	'http://localhost:3000', // Alternative dev port
+	'http://localhost:4173', // Vite preview server
+];
+
+function getCORSHeaders(request) {
+	const origin = request.headers.get('Origin');
+
+	// Only allow requests from whitelisted origins
+	if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+		return {
+			'Access-Control-Allow-Origin': 'null', // Explicitly deny
+			'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+			'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+			'Access-Control-Allow-Credentials': 'false',
+			'Access-Control-Max-Age': '86400',
+		};
+	}
+
+	return {
+		'Access-Control-Allow-Origin': origin,
+		'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+		'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+		'Access-Control-Allow-Credentials': 'true',
+		'Access-Control-Max-Age': '86400',
+	};
+}
+
+// Input sanitization functions
+function sanitizeString(input, maxLength = 1000) {
+	if (typeof input !== 'string') return '';
+
+	// Remove null bytes and other dangerous characters
+	let sanitized = input
+		.replace(/\0/g, '') // Remove null bytes
+		.replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
+		.trim();
+
+	// Limit length
+	if (maxLength > 0 && sanitized.length > maxLength) {
+		sanitized = sanitized.substring(0, maxLength);
+	}
+
+	return sanitized;
+}
+
+function sanitizeEmail(email) {
+	const sanitized = sanitizeString(email, 254); // RFC 5321 limit
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+	if (!emailRegex.test(sanitized)) {
+		throw new Error('Invalid email format');
+	}
+
+	return sanitized.toLowerCase();
+}
+
+function sanitizePhoneNumber(phone) {
+	// Remove all non-numeric characters except +
+	let sanitized = phone.replace(/[^\d+]/g, '');
+
+	// Ensure it starts with +62 for Indonesian numbers
+	if (sanitized.startsWith('0')) {
+		sanitized = '+62' + sanitized.substring(1);
+	} else if (sanitized.startsWith('62')) {
+		sanitized = '+' + sanitized;
+	} else if (!sanitized.startsWith('+')) {
+		sanitized = '+62' + sanitized;
+	}
+
+	// Validate Indonesian phone number format
+	const phoneRegex = /^\+62[8-9]\d{7,11}$/;
+	if (!phoneRegex.test(sanitized)) {
+		throw new Error('Invalid Indonesian phone number format');
+	}
+
+	return sanitized;
+}
+
+function sanitizeNumeric(input, min = 0, max = Number.MAX_SAFE_INTEGER) {
+	const num = parseFloat(input);
+	if (isNaN(num) || num < min || num > max) {
+		throw new Error(`Invalid numeric value: must be between ${min} and ${max}`);
+	}
+	return num;
+}
+
+// Security headers function
+function getSecurityHeaders() {
+	const csp = [
+		"default-src 'self'",
+		"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.googletagmanager.com https://*.google-analytics.com",
+		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+		"font-src 'self' https://fonts.gstatic.com",
+		"img-src 'self' data: https: blob:",
+		"connect-src 'self' https://*.supabase.co https://*.googleapis.com https://*.google-analytics.com https://*.googletagmanager.com",
+		"frame-src 'self'",
+		"object-src 'none'",
+		"base-uri 'self'",
+		"form-action 'self'",
+		"frame-ancestors 'none'"
+	].join('; ');
+
+	return {
+		'Content-Security-Policy': csp,
+		'X-Content-Type-Options': 'nosniff',
+		'X-Frame-Options': 'DENY',
+		'X-XSS-Protection': '1; mode=block',
+		'Referrer-Policy': 'strict-origin-when-cross-origin',
+		'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+		'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
+	};
+}
+
 // Handle AI chat requests
-async function handleChatRequest(request, env) {
+async function handleChatRequest(request, env, ctx) {
 	// CORS handling
 	if (request.method === 'OPTIONS') {
 		return new Response(null, {
-			headers: {
-				'Access-Control-Allow-Origin': '*',
-				'Access-Control-Allow-Methods': 'POST, OPTIONS',
-				'Access-Control-Allow-Headers': 'Content-Type',
-			},
+			headers: getCORSHeaders(request),
 		});
 	}
 
@@ -603,7 +870,7 @@ async function handleChatRequest(request, env) {
 				status: 400,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -616,7 +883,7 @@ async function handleChatRequest(request, env) {
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -681,7 +948,7 @@ Guidelines:
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -694,7 +961,7 @@ Guidelines:
 				status: 500,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -702,7 +969,7 @@ Guidelines:
 		return new Response(JSON.stringify({ response: chatResponse.trim() }), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 
@@ -712,7 +979,7 @@ Guidelines:
 			status: 500,
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	}
@@ -724,7 +991,7 @@ async function handleGenerateDescription(request, env) {
 	if (request.method === 'OPTIONS') {
 		return new Response(null, {
 			headers: {
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Access-Control-Allow-Methods': 'POST, OPTIONS',
 				'Access-Control-Allow-Headers': 'Content-Type',
 			},
@@ -764,7 +1031,7 @@ async function handleGenerateDescription(request, env) {
 				status: 400,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -777,7 +1044,7 @@ async function handleGenerateDescription(request, env) {
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -874,7 +1141,7 @@ FORMAT OUTPUT (harus mengikuti format ini persis):
 						status: 503,
 						headers: {
 							'Content-Type': 'application/json',
-							'Access-Control-Allow-Origin': '*',
+							...getCORSHeaders(request),
 						},
 					});
 				} else if (response.status === 429) {
@@ -917,7 +1184,7 @@ FORMAT OUTPUT (harus mengikuti format ini persis):
 		}), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 
@@ -927,7 +1194,7 @@ FORMAT OUTPUT (harus mengikuti format ini persis):
 			status: 500,
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	}
@@ -939,7 +1206,7 @@ async function handleAIGenerateDescription(request, env) {
 	if (request.method === 'OPTIONS') {
 		return new Response(null, {
 			headers: {
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Access-Control-Allow-Methods': 'POST, OPTIONS',
 				'Access-Control-Allow-Headers': 'Content-Type',
 			},
@@ -978,7 +1245,7 @@ async function handleAIGenerateDescription(request, env) {
 				status: 400,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1032,7 +1299,7 @@ async function handleAIGenerateDescription(request, env) {
 					}), {
 						headers: {
 							'Content-Type': 'application/json',
-							'Access-Control-Allow-Origin': '*',
+							...getCORSHeaders(request),
 						},
 					});
 				}
@@ -1056,7 +1323,7 @@ async function handleAIGenerateDescription(request, env) {
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1116,7 +1383,7 @@ Deskripsi:`;
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1133,7 +1400,7 @@ Deskripsi:`;
 				status: 500,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1150,7 +1417,7 @@ Deskripsi:`;
 		}), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 
@@ -1163,7 +1430,7 @@ Deskripsi:`;
 			status: 500,
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	}
@@ -1329,7 +1596,7 @@ async function handleAnalyticsDiagnostics(request, env) {
 		return new Response(JSON.stringify(diagnostics, null, 2), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Cache-Control': 'no-cache'
 			}
 		});
@@ -1355,11 +1622,7 @@ async function handleAIOptimizeSEO(request, env) {
 	// CORS handling
 	if (request.method === 'OPTIONS') {
 		return new Response(null, {
-			headers: {
-				'Access-Control-Allow-Origin': '*',
-				'Access-Control-Allow-Methods': 'POST, OPTIONS',
-				'Access-Control-Allow-Headers': 'Content-Type',
-			},
+			headers: getCORSHeaders(request),
 		});
 	}
 
@@ -1409,7 +1672,7 @@ async function handleAIOptimizeSEO(request, env) {
 		return new Response(JSON.stringify(fallbackOptimization), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	} catch (error) {
@@ -1429,7 +1692,7 @@ async function handleAIOptimizeSEO(request, env) {
 		return new Response(JSON.stringify(fallbackOptimization), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	}
@@ -1441,7 +1704,7 @@ async function handleAIGenerateSocialPost(request, env) {
 	if (request.method === 'OPTIONS') {
 		return new Response(null, {
 			headers: {
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Access-Control-Allow-Methods': 'POST, OPTIONS',
 				'Access-Control-Allow-Headers': 'Content-Type',
 			},
@@ -1465,7 +1728,7 @@ async function handleAIGenerateSocialPost(request, env) {
 				status: 400,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1479,7 +1742,7 @@ async function handleAIGenerateSocialPost(request, env) {
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1534,7 +1797,7 @@ Make it compelling and include relevant emojis and hashtags.`;
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1550,7 +1813,7 @@ Make it compelling and include relevant emojis and hashtags.`;
 				status: 500,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1564,7 +1827,7 @@ Make it compelling and include relevant emojis and hashtags.`;
 		}), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 
@@ -1577,7 +1840,7 @@ Make it compelling and include relevant emojis and hashtags.`;
 			status: 500,
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	}
@@ -1657,7 +1920,7 @@ async function handleAnalyticsData(request, env) {
 	if (request.method === 'OPTIONS') {
 		return new Response(null, {
 			headers: {
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Access-Control-Allow-Methods': 'GET, OPTIONS',
 				'Access-Control-Allow-Headers': 'Content-Type',
 			},
@@ -1682,7 +1945,7 @@ async function handleAnalyticsData(request, env) {
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -1755,7 +2018,7 @@ async function handleAnalyticsData(request, env) {
 			return new Response(JSON.stringify(fallbackResponse), {
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 					'Cache-Control': 'no-cache'
 				},
 			});
@@ -1968,7 +2231,7 @@ async function handleAnalyticsData(request, env) {
 		return new Response(JSON.stringify(analyticsResponse), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Cache-Control': 'no-cache'
 			},
 		});
@@ -2010,7 +2273,7 @@ async function handleAnalyticsData(request, env) {
 		return new Response(JSON.stringify(fallbackResponse), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	}
@@ -2022,7 +2285,7 @@ async function handleImageUpload(request, env) {
 	if (request.method === 'OPTIONS') {
 		return new Response(null, {
 			headers: {
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Access-Control-Allow-Methods': 'POST, OPTIONS',
 				'Access-Control-Allow-Headers': 'Content-Type',
 			},
@@ -2045,7 +2308,7 @@ async function handleImageUpload(request, env) {
 					status: 400,
 					headers: {
 						'Content-Type': 'application/json',
-						'Access-Control-Allow-Origin': '*',
+						...getCORSHeaders(request),
 					},
 				}
 			);
@@ -2067,7 +2330,7 @@ async function handleImageUpload(request, env) {
 					status: 400,
 					headers: {
 						'Content-Type': 'application/json',
-						'Access-Control-Allow-Origin': '*',
+						...getCORSHeaders(request),
 					},
 				}
 			);
@@ -2080,7 +2343,7 @@ async function handleImageUpload(request, env) {
 					status: 400,
 					headers: {
 						'Content-Type': 'application/json',
-						'Access-Control-Allow-Origin': '*',
+						...getCORSHeaders(request),
 					},
 				}
 			);
@@ -2105,36 +2368,87 @@ async function handleImageUpload(request, env) {
 		const publicDomain = 'https://images.salambumi.xyz';
 		const timestamp = Date.now();
 
-		// --- SIMPAN FILE ASLI KE R2 ---
-		const originalKey = `images/${propertyId}/${timestamp}-original.${ext}`;
+		// --- UPLOAD KE CLOUDFLARE IMAGES UNTUK OPTIMASI ---
+		const cfFormData = new FormData();
+		cfFormData.append('file', file);
+		cfFormData.append('requireSignedURLs', 'false');
 
-		console.log('Saving file to R2:', {
-			key: originalKey,
-			size: file.size,
-			type: file.type,
-			bucket: 'IMAGES_BUCKET'
-		});
+		// Metadata untuk SEO dan organisasi
+		const metadata = {
+			propertyId: propertyId,
+			uploadedAt: new Date().toISOString(),
+			originalName: file.name,
+			fileSize: file.size
+		};
+
+		// Upload to Cloudflare Images
+		const cfImagesResponse = await fetch(
+			`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/images/v1`,
+			{
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${env.CF_IMAGES_TOKEN}`,
+				},
+				body: cfFormData,
+			}
+		);
+
+		if (!cfImagesResponse.ok) {
+			const errorData = await cfImagesResponse.json();
+			console.error('Cloudflare Images upload failed:', errorData);
+			throw new Error(`Image upload failed: ${errorData.errors?.[0]?.message || 'Unknown error'}`);
+		}
+
+		const cfResult = await cfImagesResponse.json();
+		const imageId = cfResult.result.id;
+
+		console.log('Image uploaded to Cloudflare Images:', imageId);
+
+		// --- SIMPAN FILE ASLI KE R2 SEBAGAI BACKUP ---
+		const originalKey = `images/${propertyId}/${timestamp}-original.${ext}`;
 
 		await env.IMAGES_BUCKET.put(originalKey, file, {
 			httpMetadata: { contentType: file.type || `image/${ext}` },
 		});
 
-		console.log('File successfully saved to R2');
+		console.log('File backup saved to R2');
 
-		// --- RETURN URL ORIGINAL (Konversi WebP akan dilakukan di backend) ---
-		const imageUrl = `${publicDomain}/${originalKey}`;
+		// --- RETURN CLOUDFLARE IMAGES URL DENGAN WebP CONVERSION ---
+		// Cloudflare Images otomatis serve WebP jika browser support dengan format=auto
+		const imageUrl = `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/public`;
+
+		// Untuk variants responsive, gunakan transform parameters dengan auto format
+		const imageVariants = {
+			thumbnail: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=300,sharpen=1,format=auto`,
+			small: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=600,sharpen=1,format=auto`,
+			medium: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=800,sharpen=1,format=auto`,
+			large: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=1200,sharpen=1,format=auto`,
+			original: imageUrl
+		};
+
+		// Variants untuk responsive images
+		const variants = {
+			thumbnail: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=300,sharpen=1`,
+			small: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=600,sharpen=1`,
+			medium: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=800,sharpen=1`,
+			large: `https://imagedelivery.net/${env.CF_ACCOUNT_ID}/${imageId}/w=1200,sharpen=1`,
+			original: imageUrl
+		};
 
 		console.log('Generated image URL:', imageUrl);
 
 		return new Response(JSON.stringify({
 			success: true,
-			url: imageUrl,
-			originalUrl: imageUrl,
-			propertyId: propertyId
+			url: variants.medium, // Default medium size
+			originalUrl: variants.original,
+			variants: variants,
+			propertyId: propertyId,
+			imageId: imageId,
+			metadata: metadata
 		}), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	} catch (error) {
@@ -2143,7 +2457,7 @@ async function handleImageUpload(request, env) {
 			status: 500,
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 			},
 		});
 	}
@@ -2165,7 +2479,7 @@ async function handleSearchConsoleData(request, env) {
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -2220,7 +2534,7 @@ async function handleSearchConsoleData(request, env) {
 			return new Response(JSON.stringify(fallbackResponse), {
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 					'Cache-Control': 'no-cache'
 				},
 			});
@@ -2356,7 +2670,7 @@ async function handleSearchConsoleData(request, env) {
 		return new Response(JSON.stringify(searchConsoleResponse), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Cache-Control': 'no-cache'
 			},
 		});
@@ -2389,8 +2703,283 @@ async function handleSearchConsoleData(request, env) {
 			status: 200, // Always return 200 to prevent HTML error pages
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Cache-Control': 'no-cache'
+			},
+		});
+	}
+}
+
+// Handle lead capture
+async function handleLeadCapture(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				...getCORSHeaders(request),
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				'Access-Control-Max-Age': '86400',
+			},
+		});
+	}
+
+	if (request.method !== 'POST') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		const rawData = await request.json();
+		const { user_intent, whatsapp, ip_address, user_agent, page_url, referrer, session_id } = rawData;
+
+		// Sanitize and validate inputs
+		let sanitizedIntent, sanitizedWhatsapp, sanitizedPageUrl, sanitizedReferrer, sanitizedSessionId;
+
+		try {
+			sanitizedIntent = sanitizeString(user_intent, 500);
+			sanitizedWhatsapp = sanitizePhoneNumber(whatsapp);
+			sanitizedPageUrl = sanitizeString(page_url || '', 500);
+			sanitizedReferrer = sanitizeString(referrer || '', 500);
+			sanitizedSessionId = sanitizeString(session_id || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, 100);
+		} catch (validationError) {
+			return new Response(JSON.stringify({
+				error: `Validation error: ${validationError.message}`
+			}), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+					...getCORSHeaders(request),
+					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				},
+			});
+		}
+
+		// Validate required fields
+		if (!sanitizedIntent || !sanitizedWhatsapp) {
+			return new Response(JSON.stringify({
+				error: 'Missing required fields: user_intent and whatsapp'
+			}), {
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+					...getCORSHeaders(request),
+					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				},
+			});
+		}
+
+		// Get Supabase credentials
+		const supabaseUrl = env.SUPABASE_URL;
+		const supabaseKey = env.SUPABASE_ANON_KEY;
+
+		if (!supabaseUrl || !supabaseKey) {
+			console.error('Supabase configuration missing');
+			return new Response(JSON.stringify({ error: 'Database configuration error' }), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					...getCORSHeaders(request),
+					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				},
+			});
+		}
+
+		// Prepare lead data with sanitized inputs
+		const leadData = {
+			user_intent: sanitizedIntent,
+			whatsapp: sanitizedWhatsapp,
+			ip_address: sanitizeString(ip_address || request.headers.get('CF-Connecting-IP') || 'unknown', 45),
+			user_agent: sanitizeString(user_agent || request.headers.get('User-Agent') || 'unknown', 500),
+			page_url: sanitizedPageUrl,
+			referrer: sanitizedReferrer,
+			session_id: sanitizedSessionId,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString()
+		};
+
+		console.log('📝 Capturing lead:', {
+			intent: user_intent,
+			whatsapp: leadData.whatsapp.substring(0, 3) + '***' + leadData.whatsapp.substring(leadData.whatsapp.length - 3),
+			session_id: leadData.session_id
+		});
+
+		// Insert to Supabase
+		const response = await fetch(`${supabaseUrl}/rest/v1/lead_captures`, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${supabaseKey}`,
+				'apikey': supabaseKey,
+				'Content-Type': 'application/json',
+				'Prefer': 'return=minimal'
+			},
+			body: JSON.stringify(leadData)
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error('Supabase insert error:', response.status, errorText);
+			return new Response(JSON.stringify({
+				error: 'Failed to save lead data',
+				details: errorText
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					...getCORSHeaders(request),
+					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				},
+			});
+		}
+
+		console.log('✅ Lead captured successfully');
+
+		return new Response(JSON.stringify({
+			success: true,
+			message: 'Lead captured successfully',
+			session_id: leadData.session_id
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+				...getCORSHeaders(request),
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+			},
+		});
+
+	} catch (error) {
+		console.error('Lead capture error:', error);
+		return new Response(JSON.stringify({
+			error: 'Internal server error during lead capture'
+		}), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				...getCORSHeaders(request),
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+			},
+		});
+	}
+}
+
+// Handle get leads (admin dashboard)
+async function handleGetLeads(request, env) {
+	// CORS handling
+	if (request.method === 'OPTIONS') {
+		return new Response(null, {
+			headers: {
+				...getCORSHeaders(request),
+				'Access-Control-Allow-Methods': 'GET, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				'Access-Control-Max-Age': '86400',
+			},
+		});
+	}
+
+	if (request.method !== 'GET') {
+		return new Response('Method not allowed', { status: 405 });
+	}
+
+	try {
+		// Get Supabase credentials
+		const supabaseUrl = env.SUPABASE_URL;
+		const supabaseKey = env.SUPABASE_ANON_KEY;
+
+		if (!supabaseUrl || !supabaseKey) {
+			console.error('Supabase configuration missing');
+			return new Response(JSON.stringify({ error: 'Database configuration error' }), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					...getCORSHeaders(request),
+					'Access-Control-Allow-Methods': 'GET, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				},
+			});
+		}
+
+		// Parse query parameters
+		const url = new URL(request.url);
+		const page = parseInt(url.searchParams.get('page') || '1');
+		const limit = parseInt(url.searchParams.get('limit') || '50');
+		const offset = (page - 1) * limit;
+
+		console.log('📊 Fetching leads:', { page, limit, offset });
+
+		// Fetch leads from Supabase
+		const response = await fetch(`${supabaseUrl}/rest/v1/lead_captures?select=*&order=created_at.desc&limit=${limit}&offset=${offset}`, {
+			headers: {
+				'Authorization': `Bearer ${supabaseKey}`,
+				'apikey': supabaseKey,
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error('Supabase fetch error:', response.status, errorText);
+			return new Response(JSON.stringify({
+				error: 'Failed to fetch leads',
+				details: errorText
+			}), {
+				status: 500,
+				headers: {
+					'Content-Type': 'application/json',
+					...getCORSHeaders(request),
+					'Access-Control-Allow-Methods': 'GET, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				},
+			});
+		}
+
+		const leads = await response.json();
+
+		// Get total count for pagination
+		const countResponse = await fetch(`${supabaseUrl}/rest/v1/lead_captures?select=id&count=exact`, {
+			headers: {
+				'Authorization': `Bearer ${supabaseKey}`,
+				'apikey': supabaseKey,
+				'Content-Type': 'application/json',
+			},
+		});
+
+		const totalCount = countResponse.headers.get('content-range')?.split('/')[1] || '0';
+
+		console.log(`✅ Fetched ${leads.length} leads (total: ${totalCount})`);
+
+		return new Response(JSON.stringify({
+			leads,
+			pagination: {
+				page,
+				limit,
+				total: parseInt(totalCount),
+				totalPages: Math.ceil(parseInt(totalCount) / limit)
+			}
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+				...getCORSHeaders(request),
+				'Access-Control-Allow-Methods': 'GET, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				'Cache-Control': 'no-cache'
+			},
+		});
+
+	} catch (error) {
+		console.error('Get leads error:', error);
+		return new Response(JSON.stringify({
+			error: 'Internal server error during lead fetch'
+		}), {
+			status: 500,
+			headers: {
+				'Content-Type': 'application/json',
+				...getCORSHeaders(request),
+				'Access-Control-Allow-Methods': 'GET, OPTIONS',
+				'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 			},
 		});
 	}
@@ -2411,7 +3000,7 @@ async function handlePageSpeedInsights(request, env) {
 				status: 503,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -2433,7 +3022,7 @@ async function handlePageSpeedInsights(request, env) {
 				status: response.status,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*',
+					...getCORSHeaders(request),
 				},
 			});
 		}
@@ -2484,7 +3073,7 @@ async function handlePageSpeedInsights(request, env) {
 		return new Response(JSON.stringify(processedData), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Cache-Control': 'no-cache'
 			},
 		});
@@ -2518,7 +3107,7 @@ async function handlePageSpeedInsights(request, env) {
 			status: 200, // Always return 200 to prevent HTML error pages
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*',
+				...getCORSHeaders(request),
 				'Cache-Control': 'no-cache'
 			},
 		});

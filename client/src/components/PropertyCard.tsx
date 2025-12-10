@@ -3,6 +3,8 @@ import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown, Eye } from "lucide-re
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ResponsiveImage } from "@/components/ui/responsive-image";
+import { ImageVariants } from "@/lib/imageUtils";
 import { generatePropertySlug } from "@/lib/utils";
 import type { Property } from "@shared/types";
 import { lazy, Suspense } from "react";
@@ -83,6 +85,28 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
     return getPropertyTypePlaceholder();
   };
 
+  const getImageVariants = (): ImageVariants | undefined => {
+    // Check if property has image variants (from Cloudflare Images)
+    const imageUrl = getPropertyImage();
+    if (imageUrl && imageUrl.includes('imagedelivery.net')) {
+      // Extract image ID from Cloudflare Images URL
+      const urlParts = imageUrl.split('/');
+      const imageId = urlParts[urlParts.length - 2]; // Get image ID before 'public'
+      const accountId = urlParts[3]; // Get account ID
+
+      if (imageId && accountId) {
+        return {
+          thumbnail: `https://imagedelivery.net/${accountId}/${imageId}/w=300,sharpen=1,format=auto`,
+          small: `https://imagedelivery.net/${accountId}/${imageId}/w=600,sharpen=1,format=auto`,
+          medium: `https://imagedelivery.net/${accountId}/${imageId}/w=800,sharpen=1,format=auto`,
+          large: `https://imagedelivery.net/${accountId}/${imageId}/w=1200,sharpen=1,format=auto`,
+          original: imageUrl
+        };
+      }
+    }
+    return undefined; // No variants available
+  };
+
   const getPropertyTypePlaceholder = () => {
     const propertyTypePlaceholders: Record<string, string> = {
       rumah: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop',
@@ -144,8 +168,9 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
       <div onClick={() => window.location.href = slug} className="block cursor-pointer">
         {/* Image Container - Adjusted padding for mobile */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 p-1 sm:p-2">
-          <img
+          <ResponsiveImage
             src={getPropertyImage()}
+            variants={getImageVariants()}
             alt={getTitle()}
             loading="lazy"
             className={`
@@ -153,9 +178,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
               group-hover:scale-110 group-hover:brightness-110
               ${property.isSold ? 'opacity-50 grayscale' : ''}
             `}
-            onError={(e) => {
-              e.currentTarget.src = getPropertyTypePlaceholder();
-            }}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
           />
 
           {/* Gradient Overlay */}

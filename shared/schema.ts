@@ -85,28 +85,28 @@ export const analyticsEvents = pgTable("analytics_events", {
 export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
   id: true,
   createdAt: true,
-});
+}) as any;
 
 export const insertPropertySchema = createInsertSchema(properties).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-});
+}) as any;
 
 export const insertInquirySchema = createInsertSchema(inquiries).omit({
   id: true,
   createdAt: true,
-});
+}) as any;
 
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({
   id: true,
   updatedAt: true,
-});
+}) as any;
 
 export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents).omit({
   id: true,
   createdAt: true,
-});
+}) as any;
 
 // Types
 export type AdminUser = typeof adminUsers.$inferSelect;
