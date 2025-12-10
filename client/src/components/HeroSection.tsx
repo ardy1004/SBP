@@ -54,99 +54,114 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
       // optional callback for parent
       onSearch(Object.fromEntries(new URLSearchParams(qs)));
     }
-    navigate(path);
+    setLocation(path);
   }
 
   return (
-    <section className="relative w-full">
-      {/* Hero background handled by page; this is overlay container */}
-      <div className="max-w-5xl mx-auto px-4 py-12">
+    <section className="relative w-full min-h-[600px] flex items-center justify-center overflow-hidden">
+      {/* Background Image with Dark Overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('https://images.salambumi.xyz/kost%20dijual%20jogja.webp')",
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/50" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-12">
         <h1 className="text-5xl font-bold text-white text-center">Salam Bumi Property</h1>
         <p className="mt-2 text-center text-white/90">Finding the Best Properties Will Be Easier and More Precise</p>
 
-        {/* FILTER CARD: three stacked rows */}
-        <form onSubmit={handleSubmit} className="mt-8 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 max-w-3xl mx-auto">
-          {/* ROW 1: Transaction toggle */}
+        {/* MODERN MARKETPLACE SEARCH BAR */}
+        <div className="mt-8 w-[95%] max-w-8xl mx-auto">
+          {/* Transaction Toggle - Above */}
           <div className="flex justify-center mb-3">
-            <div className="inline-flex rounded-md bg-gray-100 p-1">
+            <div className="inline-flex rounded-lg bg-white border-2 border-gray-200 p-1 shadow-sm">
               <button
                 type="button"
                 aria-pressed={transaction === "sell"}
                 onClick={() => setTransaction("sell")}
-                className={`px-4 py-2 rounded-md focus:outline-none ${transaction === "sell" ? "bg-blue-600 text-white" : "bg-transparent text-gray-700"}`}
+                className={`px-6 py-2 text-sm font-medium rounded-md focus:outline-none transition-all duration-200 ${
+                  transaction === "sell"
+                    ? "bg-blue-600 text-white shadow-md transform scale-105"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
               >
-                Jual
+                Dijual
               </button>
               <button
                 type="button"
                 aria-pressed={transaction === "rent"}
                 onClick={() => setTransaction("rent")}
-                className={`px-4 py-2 rounded-md focus:outline-none ${transaction === "rent" ? "bg-blue-600 text-white" : "bg-transparent text-gray-700"}`}
+                className={`px-6 py-2 text-sm font-medium rounded-md focus:outline-none transition-all duration-200 ${
+                  transaction === "rent"
+                    ? "bg-blue-600 text-white shadow-md transform scale-105"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
               >
-                Sewa
+                Disewa
               </button>
             </div>
           </div>
 
-          {/* ROW 2: Type dropdown + Keyword search */}
-          <div className="flex gap-3 items-center justify-center mb-3 flex-wrap">
-            {/* Type dropdown */}
-            <div className="w-48">
-              <Select onValueChange={(v) => setType(v)} defaultValue="all">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Jenis Properti" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Jenis</SelectItem>
-                  {PROPERTY_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Main Search Bar - Below */}
+          <form onSubmit={handleSubmit} className="bg-white border-2 border-blue-500 rounded-lg shadow-xl p-2">
+            <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+              {/* Property Type Dropdown - MINIMAL */}
+              <div className="w-20 shrink-0">
+                <Select onValueChange={(v) => setType(v)} defaultValue="all">
+                  <SelectTrigger className="h-12 border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs px-1">
+                    <SelectValue placeholder="Jenis" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Jenis</SelectItem>
+                    {PROPERTY_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Keyword input */}
-            <div className="flex-1 min-w-[220px]">
-              <label htmlFor="hero-keyword" className="sr-only">Cari keyword</label>
-              <div className="relative">
+              {/* Search Input - ULTRA DOMINANT WIDTH (85%+ of panel) */}
+              <div className="flex-[8] min-w-0 relative">
+                <label htmlFor="hero-keyword" className="sr-only">Cari properti</label>
                 <Input
                   id="hero-keyword"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Cari: lokasi, nama kompleks, kode listing..."
-                  className="pr-12"
+                  placeholder="Cari lokasi, nama kompleks, atau kode listing..."
+                  className="h-12 border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base placeholder:text-gray-500 pr-12"
                 />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <Search size={18} />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search size={20} />
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* ROW 3: Filter Lanjutan + Submit */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
+              {/* Advanced Filters Icon - TINY */}
               <button
                 type="button"
                 onClick={() => setShowFilters(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50"
-                aria-expanded={showFilters}
-                aria-controls="advanced-filters"
+                className="w-8 h-8 border border-gray-300 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors shrink-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-center"
+                aria-label="Filter lanjutan"
+                title="Filter lanjutan"
               >
-                <Sliders size={16} />
-                Filter Lanjutan
+                <Sliders size={14} />
               </button>
-            </div>
 
-            <div className="ml-auto">
-              <Button type="submit" className="px-6">
-                Cari Properti
+              {/* Search Button - TINY */}
+              <Button
+                type="submit"
+                className="h-12 px-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shrink-0 text-xs"
+              >
+                Cari
               </Button>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
       {/* SIMPLE MODAL / DRAWER FOR ADVANCED FILTERS */}
