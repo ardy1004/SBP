@@ -75,7 +75,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         <p className="mt-2 text-center text-white/90">Finding the Best Properties Will Be Easier and More Precise</p>
 
         {/* MODERN MARKETPLACE SEARCH BAR */}
-        <div className="mt-8 w-[95%] max-w-8xl mx-auto">
+        <div className="mt-8 w-[98%] max-w-9xl mx-auto">
           {/* Transaction Toggle - Above */}
           <div className="flex justify-center mb-3">
             <div className="inline-flex rounded-lg bg-white border-2 border-gray-200 p-1 shadow-sm">
