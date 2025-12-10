@@ -117,6 +117,19 @@ export default function HomePage() {
       if (searchFilters.type) {
         query = query.eq('jenis_properti', searchFilters.type);
       }
+
+      // Debug logging
+      console.log('HomePage: Applying filters - status:', searchFilters.status, 'type:', searchFilters.type);
+
+      // Additional debug: Log the actual query being built
+      console.log('HomePage: Query filters applied - status:', searchFilters.status, 'jenis_properti:', searchFilters.type);
+
+      // Additional debug: Log if status filter is being applied
+      if (searchFilters.status) {
+        console.log('HomePage: Status filter ACTIVE - filtering by status:', searchFilters.status);
+      } else {
+        console.log('HomePage: Status filter INACTIVE - showing all statuses');
+      }
       if (searchFilters.location) {
         const locationTerm = searchFilters.location.toLowerCase();
         query = query.or(`kabupaten.ilike.%${locationTerm}%,provinsi.ilike.%${locationTerm}%,alamat_lengkap.ilike.%${locationTerm}%`);
@@ -200,6 +213,17 @@ export default function HomePage() {
       console.log(`✅ HomePage: Fetched ${data?.length || 0} raw properties from Supabase`);
       console.log('Raw first property:', data?.[0]);
 
+      // Debug: Check if data is empty and what filters were applied
+      if (!data || data.length === 0) {
+        console.warn('HomePage: No properties found with current filters');
+        console.warn('Active filters:', { searchFilters, advancedFilters, keyword });
+      } else {
+        // Log the types of properties found
+        const propertyTypes = data.map(p => p.jenis_properti);
+        const uniqueTypes = Array.from(new Set(propertyTypes));
+        console.log('HomePage: Property types found:', uniqueTypes);
+      }
+
       return {
         properties: data || [],
         nextCursor: data && data.length === PAGE_SIZE ? pageParam + PAGE_SIZE : null
@@ -213,6 +237,7 @@ export default function HomePage() {
   const allProperties = data?.pages.flatMap(page => page.properties).map(transformSupabaseProperty) || [];
 
   const handleSearch = (filters: { status?: string; type?: string; location?: string }) => {
+    console.log('HomePage: handleSearch called with filters:', filters);
     setSearchFilters(filters);
     window.scrollTo({ top: 800, behavior: 'smooth' });
   };

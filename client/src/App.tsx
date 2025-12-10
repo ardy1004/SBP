@@ -107,6 +107,11 @@ function Router() {
             <HomePage />
           </ErrorBoundary>
         </Route>
+        <Route path="/search">
+          <ErrorBoundary>
+            <HomePage />
+          </ErrorBoundary>
+        </Route>
         <Route path="/about">
           <ErrorBoundary>
             <AboutPage />
