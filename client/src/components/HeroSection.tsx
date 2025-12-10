@@ -1,6 +1,6 @@
 // client/src/components/HeroSection.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Search, Sliders } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ onSearch }: HeroSectionProps) {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const [transaction, setTransaction] = useState<"sell" | "rent">("sell");
   const [type, setType] = useState<string>("all");
@@ -98,9 +98,9 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Jenis</SelectItem>
-                  {PROPERTY_TYPE_OPTIONS.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
+                  {PROPERTY_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')}
                     </SelectItem>
                   ))}
                 </SelectContent>
