@@ -129,7 +129,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
   };
 
   const getLabel = () => {
-    if (property.isHot) return { type: 'hot', text: 'HOT LISTING', color: 'bg-orange-500', icon: '🔥' };
+    if (property.isHot) return { type: 'hot', text: 'HOT', color: 'bg-orange-500', icon: '🔥' };
     if (property.isPremium) return { type: 'premium', text: 'PREMIUM', color: 'bg-gradient-to-r from-yellow-400 to-yellow-600', icon: '👑' };
     if (property.isFeatured) return { type: 'featured', text: 'FEATURED', color: 'bg-cyan-500', icon: '💎' };
     return null;
