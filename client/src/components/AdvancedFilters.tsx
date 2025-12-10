@@ -29,6 +29,8 @@ export interface FilterValues {
   minBuildingArea?: number;
   maxBuildingArea?: number;
   legalStatus?: string;
+  province?: string;
+  regency?: string;
 }
 
 interface AdvancedFiltersProps {
@@ -173,6 +175,35 @@ export function AdvancedFilters({ onApplyFilters, currentFilters }: AdvancedFilt
                   value={filters.maxBuildingArea || ""}
                   onChange={(e) => setFilters({ ...filters, maxBuildingArea: e.target.value ? Number(e.target.value) : undefined })}
                   data-testid="input-max-building-area"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Location Filters */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Lokasi</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="province" className="text-sm text-muted-foreground">Provinsi</Label>
+                <Input
+                  id="province"
+                  type="text"
+                  placeholder="Contoh: Jakarta"
+                  value={filters.province || ""}
+                  onChange={(e) => setFilters({ ...filters, province: e.target.value || undefined })}
+                  data-testid="input-province"
+                />
+              </div>
+              <div>
+                <Label htmlFor="regency" className="text-sm text-muted-foreground">Kabupaten/Kota</Label>
+                <Input
+                  id="regency"
+                  type="text"
+                  placeholder="Contoh: Jakarta Selatan"
+                  value={filters.regency || ""}
+                  onChange={(e) => setFilters({ ...filters, regency: e.target.value || undefined })}
+                  data-testid="input-regency"
                 />
               </div>
             </div>

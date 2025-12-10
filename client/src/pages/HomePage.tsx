@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { HeroSection } from "@/components/HeroSection";
+import HeroSection from "@/components/HeroSection";
 import { PropertyPilihanSlider } from "@/components/PropertyPilihanSlider";
 import { PropertyCard } from "@/components/PropertyCard";
 import { AdvancedFilters, FilterValues } from "@/components/AdvancedFilters";
@@ -150,6 +150,12 @@ export default function HomePage() {
       if (advancedFilters.legalStatus) {
         query = query.eq('legalitas', advancedFilters.legalStatus);
       }
+      if (advancedFilters.province) {
+        query = query.ilike('provinsi', `%${advancedFilters.province}%`);
+      }
+      if (advancedFilters.regency) {
+        query = query.ilike('kabupaten', `%${advancedFilters.regency}%`);
+      }
       if (keyword.trim()) {
         const searchTerm = keyword.trim().toLowerCase();
         query = query.or(`kode_listing.ilike.%${searchTerm}%,judul_properti.ilike.%${searchTerm}%,jenis_properti.ilike.%${searchTerm}%,kabupaten.ilike.%${searchTerm}%,provinsi.ilike.%${searchTerm}%,alamat_lengkap.ilike.%${searchTerm}%,status.ilike.%${searchTerm}%,legalitas.ilike.%${searchTerm}%`);
@@ -206,7 +212,7 @@ export default function HomePage() {
   // Flatten the infinite query data
   const allProperties = data?.pages.flatMap(page => page.properties).map(transformSupabaseProperty) || [];
 
-  const handleSearch = (filters: { status?: string; type?: string }) => {
+  const handleSearch = (filters: { status?: string; type?: string; location?: string }) => {
     setSearchFilters(filters);
     window.scrollTo({ top: 800, behavior: 'smooth' });
   };
@@ -215,8 +221,14 @@ export default function HomePage() {
     setAdvancedFilters(filters);
   };
 
-  const handleKeywordSearch = (searchKeyword: string) => {
-    setKeyword(searchKeyword);
+  const handleKeywordSearch = (filters: {
+    type: 'jual' | 'sewa';
+    keyword: string;
+    propertyType: string;
+  }) => {
+    console.log('Search filters:', filters);
+    setKeyword(filters.keyword);
+    // You can add more logic here for type and propertyType
   };
 
   const handleAdvancedFiltersChange = (filters: FilterValues) => {
@@ -233,6 +245,31 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Search Section - Moved above Hero - COMMENTED OUT TO AVOID DUPLICATION */}
+      {/*
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Cari Properti
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <SearchBar
+                onSearch={handleKeywordSearch}
+                placeholder="Cari properti..."
+                initialValue={keyword}
+                className="w-full sm:w-96"
+              />
+              <AdvancedFilters
+                onApplyFilters={handleAdvancedFiltersChange}
+                currentFilters={advancedFilters}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      */}
+
       <HeroSection onSearch={handleSearch} />
 
       {propertyPilihan.length > 0 && (
@@ -240,22 +277,10 @@ export default function HomePage() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-12 md:py-20 flex-1">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="mb-8">
           <h2 className="text-3xl md:text-4xl font-bold">
             Properti Terbaru
           </h2>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <SearchBar
-              onSearch={handleKeywordSearch}
-              placeholder="Cari properti..."
-              initialValue={keyword}
-              className="w-full sm:w-96"
-            />
-            <AdvancedFilters
-              onApplyFilters={handleAdvancedFiltersChange}
-              currentFilters={advancedFilters}
-            />
-          </div>
         </div>
 
         {isLoading ? (

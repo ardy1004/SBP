@@ -1,7 +1,13 @@
 // Check available Gemini models
-// Run with: node check-gemini-models.js
+// Run with: GEMINI_API_KEY=your_key node check-gemini-models.js
 
-const GEMINI_API_KEY = 'AIzaSyAnYY29VTC6qWN_Ikn7EzwK92DquUCvbnw';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+  console.error('❌ GEMINI_API_KEY environment variable is required');
+  console.log('💡 Set it with: export GEMINI_API_KEY=your_api_key_here');
+  process.exit(1);
+}
 
 async function checkAvailableModels() {
   console.log("🔍 Checking available Gemini models...");

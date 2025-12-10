@@ -176,7 +176,7 @@ export function ShareButtons({ property, className, variant = 'default' }: Share
         </Button>
 
         {/* Web Share API (if available) */}
-        {navigator.share && (
+        {typeof navigator !== 'undefined' && 'share' in navigator && (navigator as any).share ? (
           <Button
             variant="outline"
             size="sm"
@@ -186,7 +186,7 @@ export function ShareButtons({ property, className, variant = 'default' }: Share
             <Link className="h-4 w-4" />
             Lainnya
           </Button>
-        )}
+        ) : null}
       </div>
 
       {/* Share Statistics (placeholder for future analytics) */}
