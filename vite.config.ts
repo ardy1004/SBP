@@ -28,68 +28,11 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks - optimized for better caching
-          if (id.includes('node_modules')) {
-            // React ecosystem
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime')) {
-              return 'react-vendor';
-            }
-            // Routing
-            if (id.includes('wouter') || id.includes('react-helmet')) {
-              return 'router-vendor';
-            }
-            // UI libraries
-            if (id.includes('lucide-react') || id.includes('@radix-ui') || id.includes('tailwindcss')) {
-              return 'ui-vendor';
-            }
-            // Data fetching and state
-            if (id.includes('@tanstack/react-query') || id.includes('@supabase') || id.includes('zustand')) {
-              return 'data-vendor';
-            }
-            // Forms
-            if (id.includes('react-hook-form') || id.includes('@hookform')) {
-              return 'form-vendor';
-            }
-            // Date utilities
-            if (id.includes('date-fns') || id.includes('dayjs')) {
-              return 'date-vendor';
-            }
-            // Image processing
-            if (id.includes('sharp') || id.includes('canvas') || id.includes('jimp')) {
-              return 'image-vendor';
-            }
-            // Other large libraries
-            if (id.includes('lodash') || id.includes('axios') || id.includes('zod')) {
-              return 'utils-vendor';
-            }
-            // Other node_modules go to vendor
-            return 'vendor';
-          }
-
-          // Feature-based chunks
-          if (id.includes('/pages/admin/') || id.includes('/components/admin/')) {
-            return 'admin-chunk';
-          }
-          if (id.includes('/pages/blog/') || id.includes('/components/Blog') || id.includes('/services/articleService')) {
-            return 'blog-chunk';
-          }
-          if (id.includes('/components/Property') || id.includes('/pages/Property') || id.includes('/services/propertyApi')) {
-            return 'property-chunk';
-          }
-          if (id.includes('/components/ui/') || id.includes('/lib/utils')) {
-            return 'ui-chunk';
-          }
-          if (id.includes('/store/') || id.includes('/hooks/')) {
-            return 'state-chunk';
-          }
-          if (id.includes('/utils/') || id.includes('/lib/')) {
-            return 'utils-chunk';
-          }
-        }
+        // Temporarily disable manual chunking to fix initialization error
+        manualChunks: undefined,
       }
     },
-    chunkSizeWarningLimit: 600, // Increase limit to 600kb
+    chunkSizeWarningLimit: 1000, // Increase limit to 1000kb
   },
   server: {
     fs: {

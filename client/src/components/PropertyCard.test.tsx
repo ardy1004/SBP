@@ -1,28 +1,31 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { PropertyCard } from './PropertyCard'
 import type { Property } from '@shared/types'
+import { vi } from 'vitest'
 
 // Mock the ResponsiveImage component
-jest.mock('./ui/responsive-image', () => ({
+vi.mock('./ui/responsive-image', () => ({
   ResponsiveImage: ({ alt }: { alt: string }) => <img alt={alt} src="test-image.jpg" />
 }))
 
 // Mock the ShareButtons component
-jest.mock('./ShareButtons', () => ({
+vi.mock('./ShareButtons', () => ({
   ShareButtons: () => <div data-testid="share-buttons">Share Buttons</div>
 }))
 
 // Mock wouter Link
-jest.mock('wouter', () => ({
+vi.mock('wouter', () => ({
   Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
   ),
 }))
 
 // Mock formatPrice utility
-jest.mock('@/lib/utils', () => ({
-  generatePropertySlug: jest.fn(() => '/test-slug'),
-  formatPrice: jest.fn((price) => `Rp ${price}`),
+vi.mock('@/lib/utils', () => ({
+  generatePropertySlug: vi.fn(() => '/test-slug'),
+  formatPrice: vi.fn((price) => `Rp ${price}`),
+  formatPriceNew: vi.fn((price) => `Rp ${price}`),
+  cn: vi.fn((...classes: any[]) => classes.join(' ')),
 }))
 
 const mockProperty: Property = {
@@ -51,7 +54,7 @@ describe('PropertyCard', () => {
 
     expect(screen.getByText('TEST001')).toBeInTheDocument()
     expect(screen.getByText('Test Property')).toBeInTheDocument()
-    expect(screen.getByText('sleman, yogyakarta')).toBeInTheDocument()
+    expect(screen.getByText('Sleman, Yogyakarta')).toBeInTheDocument()
     expect(screen.getByText('Rp 500000000')).toBeInTheDocument()
     expect(screen.getByText('🏠 Rumah')).toBeInTheDocument()
   })
@@ -64,7 +67,7 @@ describe('PropertyCard', () => {
   })
 
   it('shows favorite button when onToggleFavorite is provided', () => {
-    const mockToggleFavorite = jest.fn()
+    const mockToggleFavorite = vi.fn()
     render(
       <PropertyCard
         property={mockProperty}
@@ -90,20 +93,20 @@ describe('PropertyCard', () => {
     const premiumProperty = { ...mockProperty, isPremium: true }
     render(<PropertyCard property={premiumProperty} />)
 
-    expect(screen.getByText('PREMIUM')).toBeInTheDocument()
+    expect(screen.getByTestId('badge-premium')).toBeInTheDocument()
   })
 
   it('displays hot badge for hot properties', () => {
     const hotProperty = { ...mockProperty, isHot: true }
     render(<PropertyCard property={hotProperty} />)
 
-    expect(screen.getByText('HOT')).toBeInTheDocument()
+    expect(screen.getByTestId('badge-hot')).toBeInTheDocument()
   })
 
   it('displays featured badge for featured properties', () => {
     const featuredProperty = { ...mockProperty, isFeatured: true }
     render(<PropertyCard property={featuredProperty} />)
 
-    expect(screen.getByText('FEATURED')).toBeInTheDocument()
+    expect(screen.getByTestId('badge-featured')).toBeInTheDocument()
   })
 })
