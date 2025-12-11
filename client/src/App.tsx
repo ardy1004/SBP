@@ -4,12 +4,13 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Navigation } from "@/components/Navigation";
 import { OrganizationSchemaMarkup } from "@/components/SchemaMarkup";
 import { useCoreWebVitals } from "@/hooks/use-core-web-vitals";
 import { Footer } from "@/components/Footer";
+import { logger } from "@/lib/logger";
 
 // Lazy load pages for better performance
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -33,12 +34,22 @@ const AdminPageInsightsPage = lazy(() => import("@/pages/admin/AdminPageInsights
 const AdminIntegrationsPage = lazy(() => import("@/pages/admin/AdminIntegrationsPage"));
 const AdminLeadsPage = lazy(() => import("@/pages/admin/AdminLeadsPage"));
 
+// Blog pages - separate chunk
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const BlogDetailPage = lazy(() => import("@/pages/BlogDetailPage"));
+const BlogAdminPage = lazy(() => import("@/pages/admin/blog"));
+const BlogEditorPage = lazy(() => import("@/pages/admin/blog/editor.tsx"));
+const SeedTestDataPage = lazy(() => import("@/pages/admin/blog/seed-test-data"));
+
+// API Documentation page
+const ApiDocsPage = lazy(() => import("@/pages/ApiDocsPage"));
+
 // Loading fallback component for Suspense
 function PageLoadingFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+        <div className="loading-spinner" />
         <p className="text-gray-600">Memuat halaman...</p>
       </div>
     </div>
@@ -141,6 +152,47 @@ function Router() {
           <ErrorBoundary>
             <Contact />
           </ErrorBoundary>
+        </Route>
+
+        {/* Blog Routes */}
+        <Route path="/blog">
+          <ErrorBoundary>
+            <BlogPage />
+          </ErrorBoundary>
+        </Route>
+        <Route path="/blog/:slug">
+          <ErrorBoundary>
+            <BlogDetailPage />
+          </ErrorBoundary>
+        </Route>
+
+        {/* API Documentation */}
+        <Route path="/api-docs">
+          <ErrorBoundary>
+            <ApiDocsPage />
+          </ErrorBoundary>
+        </Route>
+
+        {/* Admin Blog Routes */}
+        <Route path="/admin/blog">
+          <AdminGuard>
+            <BlogAdminPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/blog/editor">
+          <AdminGuard>
+            <BlogEditorPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/blog/editor/:id">
+          <AdminGuard>
+            <BlogEditorPage />
+          </AdminGuard>
+        </Route>
+        <Route path="/admin/blog/seed-test-data">
+          <AdminGuard>
+            <SeedTestDataPage />
+          </AdminGuard>
         </Route>
 
         {/* SEO-friendly Property URLs - Handle property detail slugs */}
@@ -297,11 +349,11 @@ function App() {
   return (
     <ErrorBoundary
       onError={(error, errorInfo) => {
-        // Log to console in development
-        console.error('App Error:', error, errorInfo);
-
-        // In production, you could send to error reporting service
-        // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+        // Error is already logged by ErrorBoundary component
+        logger.error('App-level error boundary triggered', {
+          error: error.message,
+          componentStack: errorInfo.componentStack
+        });
       }}
     >
       <QueryClientProvider client={queryClient}>

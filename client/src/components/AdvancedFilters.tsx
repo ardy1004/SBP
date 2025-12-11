@@ -3,13 +3,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sheet,
   SheetContent,
@@ -28,7 +22,7 @@ export interface FilterValues {
   maxLandArea?: number;
   minBuildingArea?: number;
   maxBuildingArea?: number;
-  legalStatus?: string;
+  legalStatus?: string[];
   province?: string;
   regency?: string;
 }
@@ -51,6 +45,14 @@ export function AdvancedFilters({ onApplyFilters, currentFilters }: AdvancedFilt
     const resetFilters = {};
     setFilters(resetFilters);
     onApplyFilters(resetFilters);
+  };
+
+  const handleLegalStatusChange = (status: string) => {
+    const currentLegal = filters.legalStatus || [];
+    const newLegal = currentLegal.includes(status)
+      ? currentLegal.filter((s) => s !== status)
+      : [...currentLegal, status];
+    setFilters({ ...filters, legalStatus: newLegal.length > 0 ? newLegal : undefined });
   };
 
   return (
@@ -210,23 +212,22 @@ export function AdvancedFilters({ onApplyFilters, currentFilters }: AdvancedFilt
           </div>
 
           {/* Legal Status */}
-          <div>
-            <Label htmlFor="legal-status">Status Legal</Label>
-            <Select
-              value={filters.legalStatus || ""}
-              onValueChange={(value) => setFilters({ ...filters, legalStatus: value || undefined })}
-            >
-              <SelectTrigger id="legal-status" data-testid="select-legal-status">
-                <SelectValue placeholder="Pilih status legal" />
-              </SelectTrigger>
-              <SelectContent>
-                {LEGAL_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Status Legal</Label>
+            <div className="space-y-2">
+              {LEGAL_STATUSES.map((status) => (
+                <div key={status} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`legal-${status}`}
+                    checked={filters.legalStatus?.includes(status)}
+                    onCheckedChange={() => handleLegalStatusChange(status)}
+                  />
+                  <Label htmlFor={`legal-${status}`} className="font-normal">
                     {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </Label>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Actions */}

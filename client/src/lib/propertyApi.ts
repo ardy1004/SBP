@@ -97,10 +97,10 @@ export async function fetchFilteredProperties(searchFilters: SearchFilters, adva
 
   // Apply advanced filters
   if (advancedFilters.minPrice) {
-    query = query.gte('harga_properti', advancedFilters.minPrice.toString());
+    query = query.gte('harga_properti', advancedFilters.minPrice);
   }
   if (advancedFilters.maxPrice) {
-    query = query.lte('harga_properti', advancedFilters.maxPrice.toString());
+    query = query.lte('harga_properti', advancedFilters.maxPrice);
   }
   if (advancedFilters.bedrooms) {
     query = query.eq('kamar_tidur', advancedFilters.bedrooms);
@@ -109,25 +109,52 @@ export async function fetchFilteredProperties(searchFilters: SearchFilters, adva
     query = query.eq('kamar_mandi', advancedFilters.bathrooms);
   }
   if (advancedFilters.minLandArea) {
-    query = query.gte('luas_tanah', advancedFilters.minLandArea.toString());
+    query = query.gte('luas_tanah', advancedFilters.minLandArea);
   }
   if (advancedFilters.maxLandArea) {
-    query = query.lte('luas_tanah', advancedFilters.maxLandArea.toString());
+    query = query.lte('luas_tanah', advancedFilters.maxLandArea);
   }
   if (advancedFilters.minBuildingArea) {
-    query = query.gte('luas_bangunan', advancedFilters.minBuildingArea.toString());
+    query = query.gte('luas_bangunan', advancedFilters.minBuildingArea);
   }
   if (advancedFilters.maxBuildingArea) {
-    query = query.lte('luas_bangunan', advancedFilters.maxBuildingArea.toString());
+    query = query.lte('luas_bangunan', advancedFilters.maxBuildingArea);
   }
   if (advancedFilters.legalStatus) {
     query = query.eq('legalitas', advancedFilters.legalStatus);
   }
 
-  // Apply keyword search (searches across multiple fields)
+  // Apply keyword search (searches across multiple fields with flexible matching)
   if (keyword.trim()) {
     const searchTerm = keyword.trim().toLowerCase();
-    query = query.or(`kode_listing.ilike.%${searchTerm}%,judul_properti.ilike.%${searchTerm}%,jenis_properti.ilike.%${searchTerm}%,kabupaten.ilike.%${searchTerm}%,provinsi.ilike.%${searchTerm}%,alamat_lengkap.ilike.%${searchTerm}%,status.ilike.%${searchTerm}%,legalitas.ilike.%${searchTerm}%`);
+    const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0);
+    const searchConditions = [];
+
+    // Primary search fields (exact matches get higher priority)
+    searchConditions.push(`kode_listing.ilike.%${searchTerm}%`);
+    searchConditions.push(`judul_properti.ilike.%${searchTerm}%`);
+    searchConditions.push(`deskripsi.ilike.%${searchTerm}%`);
+    searchConditions.push(`jenis_properti.ilike.%${searchTerm}%`);
+    searchConditions.push(`kabupaten.ilike.%${searchTerm}%`);
+    searchConditions.push(`provinsi.ilike.%${searchTerm}%`);
+    searchConditions.push(`alamat_lengkap.ilike.%${searchTerm}%`);
+    searchConditions.push(`status.ilike.%${searchTerm}%`);
+    searchConditions.push(`legalitas.ilike.%${searchTerm}%`);
+
+    // If search term has multiple words, also search for partial matches
+    if (searchWords.length > 1) {
+      searchWords.forEach(word => {
+        if (word.length > 2) { // Only search words longer than 2 characters
+          searchConditions.push(`judul_properti.ilike.%${word}%`);
+          searchConditions.push(`deskripsi.ilike.%${word}%`);
+          searchConditions.push(`kabupaten.ilike.%${word}%`);
+          searchConditions.push(`provinsi.ilike.%${word}%`);
+          searchConditions.push(`alamat_lengkap.ilike.%${word}%`);
+        }
+      });
+    }
+
+    query = query.or(searchConditions.join(','));
   }
 
   const { data, error } = await query;

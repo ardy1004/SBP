@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { authService } from "./auth";
+import { logger } from "./logger";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -31,10 +32,7 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${supabaseToken}`;
   }
 
-  console.log('=== API REQUEST ===');
-  console.log('Method:', method);
-  console.log('URL:', fullUrl);
-  console.log('Data:', data);
+  logger.debug('API Request', { method, url: fullUrl, hasData: !!data });
 
   const res = await fetch(fullUrl, {
     method,
@@ -43,8 +41,7 @@ export async function apiRequest(
     credentials: "same-origin",
   });
 
-  console.log('Response status:', res.status);
-  console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+  logger.debug('API Response', { status: res.status, url: fullUrl });
 
   await throwIfResNotOk(res);
 
@@ -52,35 +49,31 @@ export async function apiRequest(
   const contentLength = res.headers.get('content-length');
   const contentType = res.headers.get('content-type');
 
-  console.log('Content-Length:', contentLength);
-  console.log('Content-Type:', contentType);
-
   // For PUT requests that return empty body, return success indicator
   if (method === 'PUT' && (!contentLength || contentLength === '0')) {
-    console.log('PUT request with empty response body - assuming success');
+    logger.debug('PUT request with empty response body - assuming success', { url: fullUrl });
     return { success: true };
   }
 
   // Check if response is JSON by content-type, not content-length (which can be null)
   if (!contentType?.includes('application/json')) {
-    console.log('Non-JSON response, returning empty object');
+    logger.debug('Non-JSON response, returning empty object', { contentType, url: fullUrl });
     return {};
   }
 
   const responseText = await res.text();
-  console.log('Response text:', responseText);
 
   if (!responseText.trim()) {
-    console.log('Empty response text, returning empty object');
+    logger.debug('Empty response text, returning empty object', { url: fullUrl });
     return {};
   }
 
   try {
     const jsonResponse = JSON.parse(responseText);
-    console.log('Parsed JSON response:', jsonResponse);
+    logger.debug('API Response parsed successfully', { url: fullUrl, hasData: !!jsonResponse });
     return jsonResponse;
   } catch (error) {
-    console.error('Failed to parse JSON:', error);
+    logger.apiError('JSON parsing failed', error as Error, { url: fullUrl, responseText: responseText.substring(0, 100) });
     throw new Error(`Invalid JSON response: ${responseText}`);
   }
 }
@@ -103,7 +96,7 @@ export const getQueryFn: <T>(options: {
     // Use absolute URL for production, relative for development
     const isProduction = typeof window !== 'undefined' && window.location.hostname === 'salambumi.xyz';
     const baseUrl = isProduction ? 'https://salambumi.xyz' : (import.meta.env.VITE_API_BASE_URL || '');
-    console.log('🔧 Environment detection:', { hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR', isProduction, baseUrl, VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL });
+    logger.debug('Environment detection', { hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR', isProduction, baseUrl });
     const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
     // Use admin token for admin endpoints, supabase token for others

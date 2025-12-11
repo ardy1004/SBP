@@ -6,15 +6,39 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "ANALYZE=true vite build",
     "preview": "vite preview",
     "check": "tsc",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:vitest": "vitest",
+    "test:vitest:ui": "vitest --ui",
+    "test:vitest:run": "vitest run",
+    "test:vitest:coverage": "vitest run --coverage",
     "lighthouse": "lhci autorun",
     "lighthouse:local": "lhci autorun --config=lighthouserc.json",
-    "deploy": "npm run build && wrangler pages deploy dist"
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "prepare": "husky",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "type-check": "tsc --noEmit",
+    "commit": "cz",
+    "release": "npm run build && npm run test && git tag -a v$(node -p \"require('./package.json').version\") -m \"Release v$(node -p \"require('./package.json').version\")\""
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "jest --findRelatedTests --passWithNoTests"
+    ],
+    "*.{ts,tsx}": [
+      "tsc --noEmit --skipLibCheck"
+    ]
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -81,9 +105,12 @@
     "web-vitals": "^5.1.0",
     "wouter": "^3.3.5",
     "zod": "^3.24.2",
-    "zod-validation-error": "^3.4.0"
+    "zod-validation-error": "^3.4.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/typography": "^0.5.15",
@@ -97,12 +124,24 @@
     "@types/react-helmet": "^6.1.11",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
     "drizzle-kit": "^0.31.7",
+    "husky": "^9.1.7",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "jsdom": "^27.2.0",
+    "lint-staged": "^16.2.7",
+    "msw": "^2.12.4",
     "postcss": "^8.4.47",
+    "rollup-plugin-visualizer": "^6.0.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-dist": "^5.30.3",
     "tailwindcss": "^3.4.17",
+    "ts-jest": "^29.4.6",
     "typescript": "5.6.3",
     "vite": "^7.1.12",
+    "vite-plugin-static-copy": "^3.1.4",
     "vitest": "^4.0.12",
     "wrangler": "^4.47.0"
   },

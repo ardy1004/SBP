@@ -31,6 +31,11 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   const [type, setType] = useState<string>("all");
   const [keyword, setKeyword] = useState<string>("");
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
+  const [isInView, setIsInView] = useState<boolean>(true);
+
+  // Conditional flag for hiding keyword search
+  const hideKeyword = true;
 
   // Example advanced filters (extend as needed)
   const [minPrice, setMinPrice] = useState<number | "">("");
@@ -48,8 +53,25 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   useEffect(() => {
     // This code will only run on the client side
     if (isClientSide) {
-      // Any window/localStorage operations can go here
-      console.log('HeroSection: Client-side initialization complete');
+      // Setup Intersection Observer for performance optimization
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          setIsInView(entry.isIntersecting);
+        },
+        { threshold: 0.1 }
+      );
+
+      // Observe the hero section
+      const heroElement = document.querySelector('[data-hero-section]');
+      if (heroElement) {
+        observer.observe(heroElement);
+      }
+
+      return () => {
+        if (heroElement) {
+          observer.unobserve(heroElement);
+        }
+      };
     }
   }, []);
 
@@ -77,8 +99,8 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   useEffect(() => {
-    // Stop animation if user is typing
-    if (keyword !== "") {
+    // Stop animation if user is typing, input is focused, or component is not in view
+    if (keyword !== "" || isInputFocused || !isInView) {
       return;
     }
 
@@ -94,13 +116,15 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
     }, 2500); // Change keyword every 2.5 seconds
 
     return () => clearInterval(interval);
-  }, [keyword, keywords.length]);
+  }, [keyword, isInputFocused, isInView, keywords.length]);
   // --- End of Animated Placeholder Logic ---
 
   function buildQueryParams() {
     const params: Record<string, string> = {};
-    // Map transaction to status for database query
-    params["status"] = transaction === "sell" ? "dijual" : "disewakan";
+    // Only set status if no keyword (for flexible keyword search)
+    if (!keyword.trim()) {
+      params["status"] = transaction === "sell" ? "dijual" : "disewakan";
+    }
     if (type && type !== "all") params["type"] = type;
     if (keyword.trim()) params["q"] = keyword.trim();
     if (minPrice !== "") params["minPrice"] = String(minPrice);
@@ -138,7 +162,10 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   }
 
   return (
-    <section className="relative w-full min-h-[600px] flex items-center justify-center overflow-hidden">
+    <section
+      className="relative w-full min-h-[600px] flex items-center justify-center overflow-hidden"
+      data-hero-section
+    >
       {/* Background Image with Dark Overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -154,8 +181,8 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         <h1 className="text-5xl font-bold text-white text-center">Salam Bumi Property</h1>
         <p className="mt-2 text-center text-white/90">Finding the Best Properties Will Be Easier and More Precise</p>
 
-        {/* MODERN MARKETPLACE SEARCH BAR - EXTRA WIDE LAYOUT */}
-        <div className="mt-8 w-full lg:w-[85%] lg:max-w-[1300px] mx-auto">
+        {/* MODERN MARKETPLACE SEARCH BAR - FULL WIDTH LAYOUT */}
+        <div className="mt-8 w-full max-w-none mx-auto px-4 lg:px-8">
           {/* Transaction Toggle - TOP LEFT POSITION */}
           <div className="mb-3">
             <div className="inline-flex rounded-lg bg-white border-2 border-gray-200 p-1 shadow-sm">
@@ -211,43 +238,47 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
                   </Select>
                 </div>
 
-                {/* Search Input - SUPER WIDE (100% width) */}
-                <div className="w-full relative h-14">
-                  <label htmlFor="hero-keyword-mobile" className="sr-only">Cari properti</label>
+                {/* Search Input - HIDDEN with conditional rendering */}
+                {false && (
+                  <div className="w-full relative h-14">
+                    <label htmlFor="hero-keyword-mobile" className="sr-only">Cari properti</label>
 
-                  {/* Placeholder Wrapper with overflow:hidden */}
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg" style={{ zIndex: 30 }}>
-                    <AnimatePresence>
-                      {keyword === "" && (
-                        <motion.div
-                          key={placeholderIndex}
-                          initial={{ y: "100%" }}
-                          animate={{ y: "0%" }}
-                          exit={{ y: "-100%" }}
-                          transition={{ duration: 0.5, ease: "easeInOut" }}
-                          className="absolute w-full h-full"
-                        >
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 px-4 w-full">
-                            <span className="text-gray-900 text-base whitespace-nowrap text-ellipsis overflow-hidden block" style={{ opacity: 1 }}>
-                              {keywords[placeholderIndex]}
-                            </span>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                    {/* Placeholder Wrapper with overflow:hidden */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg" style={{ zIndex: 30 }}>
+                      <AnimatePresence>
+                        {keyword === "" && !isInputFocused && (
+                          <motion.div
+                            key={placeholderIndex}
+                            initial={{ y: "100%" }}
+                            animate={{ y: "0%" }}
+                            exit={{ y: "-100%" }}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
+                            className="absolute w-full h-full"
+                          >
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 px-4 w-full">
+                              <span className="text-gray-900 text-base whitespace-nowrap text-ellipsis overflow-hidden block" style={{ opacity: 1 }}>
+                                {keywords[placeholderIndex]}
+                              </span>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
-                  <Input
-                    id="hero-keyword-mobile"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    placeholder={keyword === "" ? "" : "Cari lokasi, nama, atau kode listing..."}
-                    className="h-14 w-full border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base placeholder:text-gray-500 px-4 pr-14 transition-all duration-300 relative z-10"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 z-20">
-                    <Search size={24} />
+                    <Input
+                      id="hero-keyword-mobile"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
+                      placeholder={keyword === "" ? "" : "Cari lokasi, nama, atau kode listing..."}
+                      className="h-14 w-full border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base placeholder:text-gray-500 px-4 pr-14 transition-all duration-300 relative z-10"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 z-20">
+                      <Search size={24} />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Search Button - FULL WIDTH */}
                 <Button
@@ -270,13 +301,13 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
                 </button>
               </div>
 
-              {/* DESKTOP LAYOUT - HORIZONTAL */}
-              <div className="hidden lg:flex items-center gap-2 flex-wrap">
-                {/* Property Type Dropdown - MEDIUM WIDTH (20-25%) */}
-                <div className="w-[120px] shrink-0 lg:w-[20%] lg:min-w-[180px]">
+              {/* DESKTOP LAYOUT - HORIZONTAL - COMPACT AFTER HIDING SEARCH INPUT */}
+              <div className={`hidden lg:flex items-center gap-4 ${hideKeyword ? 'justify-start' : 'flex-wrap'}`}>
+                {/* Property Type Dropdown - FLEXIBLE WIDTH */}
+                <div className={`shrink-0 ${hideKeyword ? 'flex-1 min-w-[200px]' : 'w-[160px] lg:w-[30%] lg:min-w-[200px]'}`}>
                   <Select onValueChange={(v) => setType(v)} defaultValue="all">
-                    <SelectTrigger className="h-12 border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs px-3 lg:text-lg lg:leading-relaxed">
-                      <SelectValue placeholder="Jenis" className="lg:text-lg" />
+                    <SelectTrigger className="h-12 border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 lg:text-lg lg:leading-relaxed">
+                      <SelectValue placeholder={`Jenis Properti${hideKeyword ? '' : ''}`} className="lg:text-lg" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all" className="lg:text-lg">Semua Jenis</SelectItem>
@@ -289,62 +320,66 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
                   </Select>
                 </div>
 
-                {/* Search Input - DOMINANT WIDTH (45-55%) */}
-                <div className="flex-1 min-w-0 relative h-12 lg:flex-[5]">
-                  <label htmlFor="hero-keyword-desktop" className="sr-only">Cari properti</label>
+                {/* Search Input - HIDDEN with conditional rendering */}
+                {false && (
+                  <div className="flex-1 min-w-0 relative h-12 lg:flex-[5]">
+                    <label htmlFor="hero-keyword-desktop" className="sr-only">Cari properti</label>
 
-                  {/* Placeholder Wrapper with overflow:hidden */}
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg" style={{ zIndex: 30 }}>
-                    <AnimatePresence>
-                      {keyword === "" && (
-                        <motion.div
-                          key={placeholderIndex}
-                          initial={{ y: "100%" }}
-                          animate={{ y: "0%" }}
-                          exit={{ y: "-100%" }}
-                          transition={{ duration: 0.7, ease: "easeInOut" }}
-                          className="absolute w-full h-full"
-                        >
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 px-4 w-full">
-                            <span className="text-gray-900 text-base whitespace-nowrap text-ellipsis overflow-hidden block" style={{ opacity: 1 }}>
-                              {keywords[placeholderIndex]}
-                            </span>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {/* Placeholder Wrapper with overflow:hidden */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg" style={{ zIndex: 30 }}>
+                      <AnimatePresence>
+                        {keyword === "" && !isInputFocused && (
+                          <motion.div
+                            key={placeholderIndex}
+                            initial={{ y: "100%" }}
+                            animate={{ y: "0%" }}
+                            exit={{ y: "-100%" }}
+                            transition={{ duration: 0.7, ease: "easeInOut" }}
+                            className="absolute w-full h-full"
+                          >
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 px-4 w-full">
+                              <span className="text-gray-900 text-base whitespace-nowrap text-ellipsis overflow-hidden block" style={{ opacity: 1 }}>
+                                {keywords[placeholderIndex]}
+                              </span>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <Input
+                      id="hero-keyword-desktop"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
+                      placeholder={keyword === "" ? "" : "Cari lokasi, nama kompleks, atau kode listing..."}
+                      className="h-12 w-full border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base placeholder:text-gray-500 px-4 pr-12 transition-all duration-300 relative z-10"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 z-20">
+                      <Search size={20} />
+                    </div>
                   </div>
+                )}
 
-                  <Input
-                    id="hero-keyword-desktop"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    placeholder={keyword === "" ? "" : "Cari lokasi, nama kompleks, atau kode listing..."}
-                    className="h-12 w-full border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base placeholder:text-gray-500 px-4 pr-12 transition-all duration-300 relative z-10"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 z-20">
-                    <Search size={20} />
-                  </div>
-                </div>
-
-                {/* Advanced Filters Icon - COMPACT */}
+                {/* Advanced Filters Icon - PROPORTIONAL SIZE */}
                 <button
                   type="button"
                   onClick={() => setShowFilters(true)}
-                  className="w-10 h-10 border border-gray-300 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors shrink-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-center"
+                  className={`border border-gray-300 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors shrink-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-center ${hideKeyword ? 'w-14 h-14' : 'w-12 h-12'}`}
                   aria-label="Filter lanjutan"
                   title="Filter lanjutan"
                 >
-                  <Sliders size={16} />
+                  <Sliders size={hideKeyword ? 20 : 18} />
                 </button>
 
-                {/* Search Button - FIXED WIDTH (15-20%) */}
+                {/* Search Button - FLEXIBLE WIDTH */}
                 <Button
                   type="submit"
-                  className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shrink-0 lg:w-[18%] lg:min-w-[150px]"
+                  className={`h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shrink-0 ${hideKeyword ? 'flex-1 min-w-[200px] px-6 text-lg' : 'px-8 lg:w-[25%] lg:min-w-[180px] text-lg'}`}
                 >
-                  <Search size={18} className="mr-2" />
-                  Cari
+                  <Search size={20} className="mr-2" />
+                  Cari Properti
                 </Button>
               </div>
             </form>

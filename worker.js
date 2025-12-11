@@ -112,11 +112,137 @@ export default {
 				if (slugResult) return slugResult;
 			}
 
+			/**
+			 * @swagger
+			 * /api/chat:
+			 *   post:
+			 *     summary: AI Chat for property inquiries
+			 *     description: Interactive AI chatbot for property-related questions and inquiries
+			 *     tags: [AI, Chat]
+			 *     requestBody:
+			 *       required: true
+			 *       content:
+			 *         application/json:
+			 *           schema:
+			 *             type: object
+			 *             required:
+			 *               - messages
+			 *             properties:
+			 *               messages:
+			 *                 type: array
+			 *                 items:
+			 *                   $ref: '#/components/schemas/ChatMessage'
+			 *                 description: Array of chat messages
+			 *     responses:
+			 *       200:
+			 *         description: Chat response generated successfully
+			 *         content:
+			 *           application/json:
+			 *             schema:
+			 *               type: object
+			 *               properties:
+			 *                 response:
+			 *                   type: string
+			 *                   description: AI-generated response
+			 *       400:
+			 *         description: Invalid request data
+			 *         $ref: '#/components/schemas/Error'
+			 *       503:
+			 *         description: AI service unavailable
+			 *         $ref: '#/components/schemas/Error'
+			 */
 			// Handle AI chat requests
 			if (request.method === 'POST' && url.pathname === '/api/chat') {
 				return handleChatRequest(request, env, ctx);
 			}
 
+			/**
+			 * @swagger
+			 * /api/generate-description:
+			 *   post:
+			 *     summary: Generate AI-powered property descriptions
+			 *     description: Uses AI to generate compelling property descriptions and titles for real estate listings
+			 *     tags: [AI, Content Generation]
+			 *     requestBody:
+			 *       required: true
+			 *       content:
+			 *         application/json:
+			 *           schema:
+			 *             type: object
+			 *             properties:
+			 *               title:
+			 *                 type: string
+			 *                 description: Current property title
+			 *               type:
+			 *                 type: string
+			 *                 description: Property type (rumah, apartemen, etc.)
+			 *               status:
+			 *                 type: string
+			 *                 enum: [dijual, disewakan]
+			 *                 description: Property status
+			 *               price:
+			 *                 type: number
+			 *                 description: Property price
+			 *               land_area:
+			 *                 type: number
+			 *                 description: Land area in m²
+			 *               building_area:
+			 *                 type: number
+			 *                 description: Building area in m²
+			 *               bedrooms:
+			 *                 type: integer
+			 *                 description: Number of bedrooms
+			 *               bathrooms:
+			 *                 type: integer
+			 *                 description: Number of bathrooms
+			 *               legal:
+			 *                 type: string
+			 *                 description: Legal status
+			 *               location:
+			 *                 type: object
+			 *                 properties:
+			 *                   province:
+			 *                     type: string
+			 *                     description: Province name
+			 *                   district:
+			 *                     type: string
+			 *                     description: District/City name
+			 *               old_description:
+			 *                 type: string
+			 *                 description: Existing description to improve
+			 *               model:
+			 *                 type: string
+			 *                 description: AI model to use
+			 *                 default: gemini-2.0-flash-exp
+			 *     responses:
+			 *       200:
+			 *         description: AI-generated content
+			 *         content:
+			 *           application/json:
+			 *             schema:
+			 *               type: object
+			 *               properties:
+			 *                 ai_title:
+			 *                   type: string
+			 *                   description: Generated title
+			 *                 ai_description:
+			 *                   type: string
+			 *                   description: Generated description
+			 *                 keywords:
+			 *                   type: array
+			 *                   items:
+			 *                     type: string
+			 *                   description: Extracted keywords
+			 *                 is_generated:
+			 *                   type: boolean
+			 *                   description: Whether new content was generated
+			 *       400:
+			 *         description: Missing required fields
+			 *         $ref: '#/components/schemas/Error'
+			 *       503:
+			 *         description: AI service unavailable
+			 *         $ref: '#/components/schemas/Error'
+			 */
 			// Handle AI description generation with performance monitoring
 			if (request.method === 'POST' && url.pathname === '/api/generate-description') {
 				return withPerformanceMonitoring(
@@ -125,6 +251,33 @@ export default {
 				)
 			}
 
+			/**
+			 * @swagger
+			 * /api/analytics:
+			 *   get:
+			 *     summary: Get Google Analytics 4 data
+			 *     description: Fetches comprehensive analytics data including user metrics, page views, demographics, and geography
+			 *     tags: [Analytics]
+			 *     parameters:
+			 *       - in: query
+			 *         name: days
+			 *         schema:
+			 *           type: integer
+			 *           default: 30
+			 *           minimum: 1
+			 *           maximum: 365
+			 *         description: Number of days to analyze (default 30)
+			 *     responses:
+			 *       200:
+			 *         description: Analytics data retrieved successfully
+			 *         content:
+			 *           application/json:
+			 *             schema:
+			 *               $ref: '#/components/schemas/AnalyticsData'
+			 *       503:
+			 *         description: Analytics service not configured
+			 *         $ref: '#/components/schemas/Error'
+			 */
 			// Handle analytics data fetching
 			if (request.method === 'GET' && url.pathname === '/api/analytics') {
 				return withPerformanceMonitoring(
@@ -146,6 +299,72 @@ export default {
 				)
 			}
 
+			/**
+			 * @swagger
+			 * /api/leads:
+			 *   post:
+			 *     summary: Capture lead information
+			 *     description: Records user inquiries and contact information for property leads
+			 *     tags: [Leads, CRM]
+			 *     requestBody:
+			 *       required: true
+			 *       content:
+			 *         application/json:
+			 *           schema:
+			 *             type: object
+			 *             required:
+			 *               - user_intent
+			 *               - whatsapp
+			 *             properties:
+			 *               user_intent:
+			 *                 type: string
+			 *                 maxLength: 500
+			 *                 description: User's inquiry or interest description
+			 *               whatsapp:
+			 *                 type: string
+			 *                 pattern: '^\+62[8-9]\d{7,11}$'
+			 *                 description: Indonesian WhatsApp number with country code
+			 *               ip_address:
+			 *                 type: string
+			 *                 description: User IP address (auto-detected if not provided)
+			 *               user_agent:
+			 *                 type: string
+			 *                 description: Browser user agent (auto-detected if not provided)
+			 *               page_url:
+			 *                 type: string
+			 *                 format: uri
+			 *                 description: URL where the lead was captured
+			 *               referrer:
+			 *                 type: string
+			 *                 format: uri
+			 *                 description: Referrer URL
+			 *               session_id:
+			 *                 type: string
+			 *                 description: Session identifier (auto-generated if not provided)
+			 *     responses:
+			 *       200:
+			 *         description: Lead captured successfully
+			 *         content:
+			 *           application/json:
+			 *             schema:
+			 *               type: object
+			 *               properties:
+			 *                 success:
+			 *                   type: boolean
+			 *                   example: true
+			 *                 message:
+			 *                   type: string
+			 *                   example: "Lead captured successfully"
+			 *                 session_id:
+			 *                   type: string
+			 *                   description: Session identifier for tracking
+			 *       400:
+			 *         description: Invalid input data
+			 *         $ref: '#/components/schemas/Error'
+			 *       500:
+			 *         description: Database error
+			 *         $ref: '#/components/schemas/Error'
+			 */
 			// Handle lead capture
 			if (request.method === 'POST' && url.pathname === '/api/leads') {
 				return withPerformanceMonitoring(
@@ -203,11 +422,171 @@ export default {
 				)
 			}
 
+			/**
+			 * @swagger
+			 * /upload:
+			 *   post:
+			 *     summary: Upload property images
+			 *     description: Uploads images to Cloudflare Images with automatic optimization and multiple size variants
+			 *     tags: [Media, Upload]
+			 *     requestBody:
+			 *       required: true
+			 *       content:
+			 *         multipart/form-data:
+			 *           schema:
+			 *             type: object
+			 *             required:
+			 *               - image
+			 *               - propertyId
+			 *             properties:
+			 *               image:
+			 *                 type: string
+			 *                 format: binary
+			 *                 description: Image file (JPG, PNG, GIF, WebP) - max 10MB
+			 *               propertyId:
+			 *                 type: string
+			 *                 description: Property identifier for organization
+			 *     responses:
+			 *       200:
+			 *         description: Image uploaded successfully
+			 *         content:
+			 *           application/json:
+			 *             schema:
+			 *               type: object
+			 *               properties:
+			 *                 success:
+			 *                   type: boolean
+			 *                   example: true
+			 *                 url:
+			 *                   type: string
+			 *                   format: uri
+			 *                   description: Optimized image URL
+			 *                 originalUrl:
+			 *                   type: string
+			 *                   format: uri
+			 *                   description: Original image URL
+			 *                 variants:
+			 *                   type: object
+			 *                   properties:
+			 *                     thumbnail:
+			 *                       type: string
+			 *                       format: uri
+			 *                       description: 300px thumbnail
+			 *                     small:
+			 *                       type: string
+			 *                       format: uri
+			 *                       description: 600px version
+			 *                     medium:
+			 *                       type: string
+			 *                       format: uri
+			 *                       description: 800px version
+			 *                     large:
+			 *                       type: string
+			 *                       format: uri
+			 *                       description: 1200px version
+			 *                 propertyId:
+			 *                   type: string
+			 *                   description: Associated property ID
+			 *                 imageId:
+			 *                   type: string
+			 *                   description: Cloudflare Images ID
+			 *       400:
+			 *         description: Invalid file or missing propertyId
+			 *         $ref: '#/components/schemas/Error'
+			 *       413:
+			 *         description: File too large
+			 *         $ref: '#/components/schemas/Error'
+			 */
 			// Handle image upload (existing functionality)
 			if (request.method === 'POST' && url.pathname === '/upload') {
 				return handleImageUpload(request, env);
 			}
 
+			/**
+			 * @swagger
+			 * /api/health:
+			 *   get:
+			 *     summary: System health check
+			 *     description: Comprehensive health check for all system services and dependencies
+			 *     tags: [System, Monitoring]
+			 *     responses:
+			 *       200:
+			 *         description: System is healthy
+			 *         content:
+			 *           application/json:
+			 *             schema:
+			 *               type: object
+			 *               properties:
+			 *                 status:
+			 *                   type: string
+			 *                   enum: [healthy, degraded]
+			 *                   description: Overall system status
+			 *                 timestamp:
+			 *                   type: string
+			 *                   format: date-time
+			 *                   description: Health check timestamp
+			 *                 version:
+			 *                   type: string
+			 *                   description: API version
+			 *                 environment:
+			 *                   type: string
+			 *                   description: Deployment environment
+			 *                 response_time_ms:
+			 *                   type: integer
+			 *                   description: Response time in milliseconds
+			 *                 services:
+			 *                   type: object
+			 *                   properties:
+			 *                     database:
+			 *                       type: string
+			 *                       enum: [healthy, unhealthy, error]
+			 *                       description: Database connectivity status
+			 *                     ai_api:
+			 *                       type: string
+			 *                       enum: [healthy, unhealthy, error]
+			 *                       description: AI service status
+			 *                     cloudflare_images:
+			 *                       type: string
+			 *                       enum: [healthy, unhealthy, error]
+			 *                       description: Image service status
+			 *                     rate_limiting:
+			 *                       type: string
+			 *                       example: active
+			 *                       description: Rate limiting status
+			 *                     cors:
+			 *                       type: string
+			 *                       example: configured
+			 *                       description: CORS configuration status
+			 *                 metrics:
+			 *                   type: object
+			 *                   properties:
+			 *                     uptime_seconds:
+			 *                       type: integer
+			 *                       description: System uptime in seconds
+			 *                     memory_usage_mb:
+			 *                       type: integer
+			 *                       nullable: true
+			 *                       description: Memory usage in MB
+			 *                     active_connections:
+			 *                       type: integer
+			 *                       description: Number of active connections
+			 *       503:
+			 *         description: System is degraded or unhealthy
+			 *         content:
+			 *           application/json:
+			 *             schema:
+			 *               type: object
+			 *               properties:
+			 *                 status:
+			 *                   type: string
+			 *                   example: degraded
+			 *                 timestamp:
+			 *                   type: string
+			 *                   format: date-time
+			 *                 error:
+			 *                   type: string
+			 *                   description: Error description
+			 */
 			// Enhanced health check endpoint for monitoring
 			if (url.pathname === '/api/health') {
 				const startTime = Date.now();
@@ -321,6 +700,184 @@ Sitemap: https://salambumi.xyz/sitemap.xml`;
 					headers: {
 						'Content-Type': 'text/plain; charset=utf-8',
 						'Cache-Control': 'public, max-age=86400',
+					},
+				});
+			}
+
+			// Serve OpenAPI specification
+			if (url.pathname === '/api/docs') {
+				const openApiSpec = {
+					openapi: '3.0.0',
+					info: {
+						title: 'Salam Bumi Property API',
+						version: '1.0.0',
+						description: 'Comprehensive API for Salam Bumi Property real estate platform',
+						contact: {
+							name: 'Salam Bumi Property',
+							email: 'admin@salambumi.xyz',
+							url: 'https://salambumi.xyz'
+						}
+					},
+					servers: [
+						{ url: 'https://salambumi.xyz', description: 'Production server' },
+						{ url: 'http://localhost:5173', description: 'Development server' }
+					],
+					paths: {
+						'/api/chat': {
+							post: {
+								summary: 'AI Chat for property inquiries',
+								description: 'Interactive AI chatbot for property-related questions',
+								tags: ['AI', 'Chat'],
+								requestBody: {
+									required: true,
+									content: {
+										'application/json': {
+											schema: {
+												type: 'object',
+												required: ['messages'],
+												properties: {
+													messages: {
+														type: 'array',
+														items: { $ref: '#/components/schemas/ChatMessage' }
+													}
+												}
+											}
+										}
+									}
+								},
+								responses: {
+									200: { description: 'Chat response generated successfully' },
+									400: { description: 'Invalid request data' },
+									503: { description: 'AI service unavailable' }
+								}
+							}
+						},
+						'/api/generate-description': {
+							post: {
+								summary: 'Generate AI-powered property descriptions',
+								description: 'Uses AI to generate compelling property descriptions',
+								tags: ['AI', 'Content Generation'],
+								responses: {
+									200: { description: 'AI-generated content' },
+									400: { description: 'Missing required fields' },
+									503: { description: 'AI service unavailable' }
+								}
+							}
+						},
+						'/api/analytics': {
+							get: {
+								summary: 'Get Google Analytics 4 data',
+								description: 'Fetches comprehensive analytics data',
+								tags: ['Analytics'],
+								parameters: [
+									{
+										in: 'query',
+										name: 'days',
+										schema: { type: 'integer', default: 30 },
+										description: 'Number of days to analyze'
+									}
+								],
+								responses: {
+									200: { description: 'Analytics data retrieved successfully' },
+									503: { description: 'Analytics service not configured' }
+								}
+							}
+						},
+						'/api/leads': {
+							post: {
+								summary: 'Capture lead information',
+								description: 'Records user inquiries and contact information',
+								tags: ['Leads', 'CRM'],
+								requestBody: {
+									required: true,
+									content: {
+										'application/json': {
+											schema: {
+												type: 'object',
+												required: ['user_intent', 'whatsapp'],
+												properties: {
+													user_intent: { type: 'string', description: 'User inquiry message' },
+													whatsapp: { type: 'string', description: 'WhatsApp contact number' }
+												}
+											}
+										}
+									}
+								},
+								responses: {
+									200: { description: 'Lead captured successfully' },
+									400: { description: 'Invalid input data' },
+									500: { description: 'Database error' }
+								}
+							}
+						},
+						'/upload': {
+							post: {
+								summary: 'Upload property images',
+								description: 'Uploads images to Cloudflare Images with optimization',
+								tags: ['Media', 'Upload'],
+								requestBody: {
+									required: true,
+									content: {
+										'multipart/form-data': {
+											schema: {
+												type: 'object',
+												required: ['image', 'propertyId'],
+												properties: {
+													image: { type: 'string', format: 'binary', description: 'Image file' },
+													propertyId: { type: 'string', description: 'Property identifier' }
+												}
+											}
+										}
+									}
+								},
+								responses: {
+									200: { description: 'Image uploaded successfully' },
+									400: { description: 'Invalid file or missing propertyId' },
+									413: { description: 'File too large' }
+								}
+							}
+						},
+						'/api/health': {
+							get: {
+								summary: 'System health check',
+								description: 'Comprehensive health check for all system services',
+								tags: ['System', 'Monitoring'],
+								responses: {
+									200: { description: 'System is healthy' },
+									503: { description: 'System is degraded or unhealthy' }
+								}
+							}
+						}
+					},
+					components: {
+						schemas: {
+							ChatMessage: {
+								type: 'object',
+								properties: {
+									role: { type: 'string', enum: ['user', 'assistant'] },
+									content: { type: 'string' }
+								}
+							}
+						}
+					},
+					tags: [
+						{ name: 'AI', description: 'Artificial Intelligence services' },
+						{ name: 'Analytics', description: 'Google Analytics 4 data' },
+						{ name: 'Chat', description: 'AI chatbot functionality' },
+						{ name: 'Content Generation', description: 'AI-powered content creation' },
+						{ name: 'CRM', description: 'Customer Relationship Management' },
+						{ name: 'Leads', description: 'Lead capture and management' },
+						{ name: 'Media', description: 'File upload and media management' },
+						{ name: 'Monitoring', description: 'System monitoring and health checks' },
+						{ name: 'System', description: 'System-level operations' },
+						{ name: 'Upload', description: 'File upload operations' }
+					]
+				};
+
+				return new Response(JSON.stringify(openApiSpec, null, 2), {
+					headers: {
+						'Content-Type': 'application/json',
+						'Cache-Control': 'public, max-age=3600',
 					},
 				});
 			}

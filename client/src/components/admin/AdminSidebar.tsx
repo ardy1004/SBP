@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, BarChart3, Settings, LogOut, Upload, Search, Zap, Users } from "lucide-react";
+import { Home, FileText, BarChart3, Settings, LogOut, Upload, Search, Zap, Users, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function AdminSidebar() {
@@ -8,6 +8,7 @@ export function AdminSidebar() {
   const menuItems = [
     { path: "/admin/dashboard", label: "Dashboard", icon: Home },
     { path: "/admin/properties", label: "Properti", icon: FileText },
+    { path: "/admin/blog", label: "Blog", icon: BookOpen },
     { path: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     { path: "/admin/leads", label: "Leads", icon: Users },
     { path: "/admin/search-console", label: "Search Console", icon: Search },

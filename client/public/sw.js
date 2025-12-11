@@ -12,7 +12,13 @@ const STATIC_FILES = [
   '/manifest.json',
   '/favicon.ico',
   '/robots.txt',
-  '/sitemap.xml'
+  '/sitemap.xml',
+  '/index.html',
+  '/assets/index-*.js',
+  '/assets/index-*.css',
+  '/assets/vendor-*.js',
+  '/assets/vendor-*.css',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap'
 ];
 
 // API endpoints to cache
@@ -168,19 +174,25 @@ function isStaticAsset(request) {
          pathname.endsWith('.woff') ||
          pathname.endsWith('.ttf') ||
          pathname.includes('/static/') ||
-         pathname === '/manifest.json';
+         pathname.includes('/assets/') ||
+         pathname === '/manifest.json' ||
+         pathname === '/index.html';
 }
 
 function isImage(request) {
   const url = new URL(request.url);
-  return url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ||
-         url.hostname.includes('imagedelivery.net');
+  return url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg|avif)$/i) ||
+         url.hostname.includes('imagedelivery.net') ||
+         url.hostname.includes('salambumi.xyz') ||
+         url.hostname.includes('fonts.googleapis.com') ||
+         url.hostname.includes('fonts.gstatic.com');
 }
 
 function isAPIRequest(request) {
   const url = new URL(request.url);
-  return url.pathname.startsWith('/api/') &&
-         API_ENDPOINTS.some(endpoint => url.pathname.startsWith(endpoint));
+  return url.pathname.startsWith('/api/') ||
+         url.hostname.includes('salambumi.xyz') ||
+         url.hostname.includes('supabase.co');
 }
 
 // Background sync for offline actions

@@ -1,25 +1,26 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useDebounce } from "@/hooks/use-debounce";
 import HeroSection from "@/components/HeroSection";
 import { PropertyPilihanSlider } from "@/components/PropertyPilihanSlider";
 import { PropertyCard } from "@/components/PropertyCard";
-import { AdvancedFilters, FilterValues } from "@/components/AdvancedFilters";
-import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
+import type { FilterValues } from "@/components/AdvancedFilters";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Property } from "@shared/types";
 import { supabase } from "@/lib/supabase";
+import { usePropertyStore } from "@/store/propertyStore";
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
   const [searchFilters, setSearchFilters] = useState<any>({});
   const [advancedFilters, setAdvancedFilters] = useState<FilterValues>({});
   const [keyword, setKeyword] = useState<string>("");
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { favorites, addFavorite, removeFavorite } = usePropertyStore();
+
+  // Debounce search keyword to avoid excessive API calls
+  const debouncedKeyword = useDebounce(keyword, 300);
 
   // Transform function to convert Supabase snake_case to camelCase
   const transformSupabaseProperty = (supabaseProperty: any): Property => {
@@ -99,7 +100,7 @@ export default function HomePage() {
     status,
     isLoading
   } = useInfiniteQuery({
-    queryKey: ['properties-infinite', searchFilters, advancedFilters, keyword],
+    queryKey: ['properties-infinite', searchFilters, advancedFilters, debouncedKeyword],
     queryFn: async ({ pageParam = 0 }) => {
       console.log('🏠 HomePage: Fetching properties from Supabase...', { pageParam });
 
@@ -110,25 +111,21 @@ export default function HomePage() {
         .order('created_at', { ascending: false })
         .range(pageParam, pageParam + PAGE_SIZE - 1);
 
-      // Apply filters
-      if (searchFilters.status) {
+      // Apply filters - skip status filter when searching by keyword for more flexible results
+      console.log('HomePage: Keyword check - debouncedKeyword:', debouncedKeyword, 'trimmed:', debouncedKeyword.trim(), 'hasKeyword:', !!debouncedKeyword.trim());
+
+      if (searchFilters.status && !debouncedKeyword.trim()) {
+        console.log('HomePage: Applying status filter:', searchFilters.status);
         query = query.eq('status', searchFilters.status);
+      } else if (searchFilters.status && debouncedKeyword.trim()) {
+        console.log('HomePage: Skipping status filter due to keyword search - status:', searchFilters.status, 'keyword:', debouncedKeyword);
+      } else {
+        console.log('HomePage: No status filter applied');
       }
+
       if (searchFilters.type) {
         query = query.eq('jenis_properti', searchFilters.type);
-      }
-
-      // Debug logging
-      console.log('HomePage: Applying filters - status:', searchFilters.status, 'type:', searchFilters.type);
-
-      // Additional debug: Log the actual query being built
-      console.log('HomePage: Query filters applied - status:', searchFilters.status, 'jenis_properti:', searchFilters.type);
-
-      // Additional debug: Log if status filter is being applied
-      if (searchFilters.status) {
-        console.log('HomePage: Status filter ACTIVE - filtering by status:', searchFilters.status);
-      } else {
-        console.log('HomePage: Status filter INACTIVE - showing all statuses');
+        console.log('HomePage: Applied property type filter:', searchFilters.type);
       }
       if (searchFilters.location) {
         const locationTerm = searchFilters.location.toLowerCase();
@@ -137,10 +134,12 @@ export default function HomePage() {
 
       // Apply advanced filters
       if (advancedFilters.minPrice) {
-        query = query.gte('harga_properti', advancedFilters.minPrice.toString());
+        console.log('HomePage: Applying minPrice filter:', advancedFilters.minPrice);
+        query = query.gte('harga_properti', advancedFilters.minPrice);
       }
       if (advancedFilters.maxPrice) {
-        query = query.lte('harga_properti', advancedFilters.maxPrice.toString());
+        console.log('HomePage: Applying maxPrice filter:', advancedFilters.maxPrice);
+        query = query.lte('harga_properti', advancedFilters.maxPrice);
       }
       if (advancedFilters.bedrooms) {
         query = query.eq('kamar_tidur', advancedFilters.bedrooms);
@@ -149,19 +148,20 @@ export default function HomePage() {
         query = query.eq('kamar_mandi', advancedFilters.bathrooms);
       }
       if (advancedFilters.minLandArea) {
-        query = query.gte('luas_tanah', advancedFilters.minLandArea.toString());
+        query = query.gte('luas_tanah', advancedFilters.minLandArea);
       }
       if (advancedFilters.maxLandArea) {
-        query = query.lte('luas_tanah', advancedFilters.maxLandArea.toString());
+        query = query.lte('luas_tanah', advancedFilters.maxLandArea);
       }
       if (advancedFilters.minBuildingArea) {
-        query = query.gte('luas_bangunan', advancedFilters.minBuildingArea.toString());
+        query = query.gte('luas_bangunan', advancedFilters.minBuildingArea);
       }
       if (advancedFilters.maxBuildingArea) {
-        query = query.lte('luas_bangunan', advancedFilters.maxBuildingArea.toString());
+        query = query.lte('luas_bangunan', advancedFilters.maxBuildingArea);
       }
-      if (advancedFilters.legalStatus) {
-        query = query.eq('legalitas', advancedFilters.legalStatus);
+      if (advancedFilters.legalStatus && advancedFilters.legalStatus.length > 0) {
+        console.log('🔍 Applying legal status filter:', advancedFilters.legalStatus);
+        query = query.in('legalitas', advancedFilters.legalStatus);
       }
       if (advancedFilters.province) {
         query = query.ilike('provinsi', `%${advancedFilters.province}%`);
@@ -169,9 +169,43 @@ export default function HomePage() {
       if (advancedFilters.regency) {
         query = query.ilike('kabupaten', `%${advancedFilters.regency}%`);
       }
-      if (keyword.trim()) {
-        const searchTerm = keyword.trim().toLowerCase();
-        query = query.or(`kode_listing.ilike.%${searchTerm}%,judul_properti.ilike.%${searchTerm}%,jenis_properti.ilike.%${searchTerm}%,kabupaten.ilike.%${searchTerm}%,provinsi.ilike.%${searchTerm}%,alamat_lengkap.ilike.%${searchTerm}%,status.ilike.%${searchTerm}%,legalitas.ilike.%${searchTerm}%`);
+      // Implementasi pencarian fleksibel dengan ilike di multiple kolom
+      if (debouncedKeyword.trim()) {
+        const searchTerm = debouncedKeyword.trim();
+        const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0);
+        const searchConditions = [];
+
+        console.log('HomePage: Building search query for term:', searchTerm, 'words:', searchWords);
+
+        // Primary search fields (judul, deskripsi, kode_listing)
+        searchConditions.push(`judul_properti.ilike.%${searchTerm}%`);
+        searchConditions.push(`deskripsi.ilike.%${searchTerm}%`);
+        searchConditions.push(`kode_listing.ilike.%${searchTerm}%`);
+
+        // Location fields (kabupaten, provinsi, alamat_lengkap)
+        searchConditions.push(`kabupaten.ilike.%${searchTerm}%`);
+        searchConditions.push(`provinsi.ilike.%${searchTerm}%`);
+        searchConditions.push(`alamat_lengkap.ilike.%${searchTerm}%`);
+
+        // Property type and status
+        searchConditions.push(`jenis_properti.ilike.%${searchTerm}%`);
+        searchConditions.push(`status.ilike.%${searchTerm}%`);
+
+        // Search for individual words if multiple words (for better matching)
+        if (searchWords.length > 1) {
+          searchWords.forEach(word => {
+            if (word.length > 2) { // Skip very short words
+              searchConditions.push(`judul_properti.ilike.%${word}%`);
+              searchConditions.push(`deskripsi.ilike.%${word}%`);
+              searchConditions.push(`kabupaten.ilike.%${word}%`);
+              searchConditions.push(`provinsi.ilike.%${word}%`);
+              searchConditions.push(`alamat_lengkap.ilike.%${word}%`);
+            }
+          });
+        }
+
+        console.log('HomePage: Search conditions count:', searchConditions.length);
+        query = query.or(searchConditions.join(','));
       }
 
       const { data, error } = await query;
@@ -205,6 +239,30 @@ export default function HomePage() {
             is_property_pilihan: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+          }, {
+            id: "fallback-2",
+            kode_listing: "KAL001",
+            judul_properti: "Rumah Mewah di Jl Kaliurang Yogyakarta",
+            deskripsi: "Rumah cantik di lokasi strategis Jl Kaliurang dengan akses mudah ke pusat kota",
+            jenis_properti: "rumah",
+            luas_tanah: "200",
+            luas_bangunan: "150",
+            kamar_tidur: 4,
+            kamar_mandi: 3,
+            legalitas: "SHM & PBG",
+            harga_properti: "1200000000",
+            provinsi: "Yogyakarta",
+            kabupaten: "Sleman",
+            alamat_lengkap: "Jl. Kaliurang KM 5, Sleman, Yogyakarta",
+            image_url: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=600&fit=crop",
+            status: "dijual",
+            is_premium: true,
+            is_featured: true,
+            is_hot: false,
+            is_sold: false,
+            is_property_pilihan: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           }],
           nextCursor: null
         };
@@ -222,6 +280,12 @@ export default function HomePage() {
         const propertyTypes = data.map(p => p.jenis_properti);
         const uniqueTypes = Array.from(new Set(propertyTypes));
         console.log('HomePage: Property types found:', uniqueTypes);
+
+        // Log legal statuses found for debugging
+        const legalStatuses = data.map(p => p.legalitas).filter(Boolean);
+        const uniqueLegalStatuses = Array.from(new Set(legalStatuses));
+        console.log('HomePage: Legal statuses found:', uniqueLegalStatuses);
+        console.log('HomePage: All legal statuses in data:', legalStatuses);
       }
 
       return {
@@ -233,67 +297,313 @@ export default function HomePage() {
     initialPageParam: 0,
   });
 
-  // Flatten the infinite query data
-  const allProperties = data?.pages.flatMap(page => page.properties).map(transformSupabaseProperty) || [];
+  // Search ranking function for better relevance
+  const calculateSearchRelevance = (property: any, searchTerm: string): number => {
+    if (!searchTerm.trim()) return 0;
 
-  const handleSearch = (filters: { status?: string; type?: string; location?: string }) => {
+    const term = searchTerm.toLowerCase();
+    const terms = term.split(/\s+/).filter(word => word.length > 0);
+    let score = 0;
+
+    // Helper function to count matches
+    const countMatches = (text: string, searchTerm: string): number => {
+      if (!text) return 0;
+      const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const matches = text.toLowerCase().match(regex);
+      return matches ? matches.length : 0;
+    };
+
+    // Exact matches get highest score
+    if (property.kode_listing?.toLowerCase() === term) score += 100;
+    if (property.judul_properti?.toLowerCase().includes(term)) score += 50;
+    if (property.deskripsi?.toLowerCase().includes(term)) score += 30;
+
+    // Partial matches with different weights
+    terms.forEach(word => {
+      if (word.length < 3) return; // Skip very short words
+
+      // Primary fields (highest weight)
+      score += countMatches(property.kode_listing, word) * 20;
+      score += countMatches(property.judul_properti, word) * 15;
+      score += countMatches(property.deskripsi, word) * 10;
+
+      // Secondary fields (medium weight)
+      score += countMatches(property.jenis_properti, word) * 8;
+      score += countMatches(property.kabupaten, word) * 6;
+      score += countMatches(property.provinsi, word) * 6;
+      score += countMatches(property.alamat_lengkap, word) * 4;
+
+      // Tertiary fields (lower weight)
+      score += countMatches(property.status, word) * 2;
+      score += countMatches(property.legalitas, word) * 2;
+    });
+
+    // Boost score for properties that match multiple search terms
+    const matchedTerms = terms.filter(word =>
+      word.length >= 3 && (
+        property.kode_listing?.toLowerCase().includes(word) ||
+        property.judul_properti?.toLowerCase().includes(word) ||
+        property.deskripsi?.toLowerCase().includes(word) ||
+        property.jenis_properti?.toLowerCase().includes(word) ||
+        property.kabupaten?.toLowerCase().includes(word) ||
+        property.provinsi?.toLowerCase().includes(word) ||
+        property.alamat_lengkap?.toLowerCase().includes(word)
+      )
+    );
+    score += matchedTerms.length * 5; // Bonus for matching multiple terms
+
+    return score;
+  };
+
+  // Flatten and rank the infinite query data
+  const rawProperties = data?.pages.flatMap(page => page.properties) || [];
+  const allProperties = useMemo(() => {
+    return rawProperties
+      .map(transformSupabaseProperty)
+      .map(property => ({
+        ...property,
+        searchRelevance: debouncedKeyword.trim() ? calculateSearchRelevance(property, debouncedKeyword) : 0
+      }))
+      .sort((a, b) => {
+        // If searching, sort by relevance score (descending)
+        if (debouncedKeyword.trim()) {
+          return b.searchRelevance - a.searchRelevance;
+        }
+        // Otherwise, maintain original order (newest first)
+        return 0;
+      });
+  }, [rawProperties, debouncedKeyword]);
+
+  const handleSearch = (filters: { [key: string]: any }) => {
     console.log('HomePage: handleSearch called with filters:', filters);
-    setSearchFilters(filters);
+
+    const { status, type, q, legalitas, minPrice, maxPrice, lt_min, lt_max, lb_min, lb_max, bedrooms } = filters;
+
+    setSearchFilters({ status, type, location: q });
+
+    const newAdvancedFilters: FilterValues = {};
+    if (legalitas && legalitas !== 'ALL') {
+      newAdvancedFilters.legalStatus = [legalitas.replace(/_/g, ' & ')];
+    } else {
+      newAdvancedFilters.legalStatus = [];
+    }
+
+    if (minPrice) newAdvancedFilters.minPrice = Number(minPrice);
+    if (maxPrice) newAdvancedFilters.maxPrice = Number(maxPrice);
+    if (lt_min) newAdvancedFilters.minLandArea = Number(lt_min);
+    if (lt_max) newAdvancedFilters.maxLandArea = Number(lt_max);
+    if (lb_min) newAdvancedFilters.minBuildingArea = Number(lb_min);
+    if (lb_max) newAdvancedFilters.maxBuildingArea = Number(lb_max);
+    if (bedrooms) newAdvancedFilters.bedrooms = Number(bedrooms);
+
+    setAdvancedFilters(newAdvancedFilters);
+    
+    if (q) {
+      setKeyword(q);
+    }
+
     window.scrollTo({ top: 800, behavior: 'smooth' });
   };
 
   const handleApplyAdvancedFilters = (filters: FilterValues) => {
+    console.log('Applying advanced filters:', filters);
     setAdvancedFilters(filters);
   };
 
-  const handleKeywordSearch = (filters: {
-    type: 'jual' | 'sewa';
-    keyword: string;
-    propertyType: string;
-  }) => {
-    console.log('Search filters:', filters);
-    setKeyword(filters.keyword);
-    // You can add more logic here for type and propertyType
+  // Smart search parsing function
+  const parseSearchIntent = (searchTerm: string) => {
+    const term = searchTerm.toLowerCase().trim();
+    const suggestions: Partial<FilterValues & { propertyType?: string; status?: string }> = {};
+
+    // Property type detection
+    const propertyTypes = {
+      'rumah': 'rumah',
+      'apartemen': 'apartemen',
+      'kost': 'kost',
+      'villa': 'villa',
+      'ruko': 'ruko',
+      'tanah': 'tanah',
+      'kantor': 'kantor',
+      'gedung': 'gedung',
+      'gudang': 'gudang'
+    };
+
+    for (const [key, value] of Object.entries(propertyTypes)) {
+      if (term.includes(key)) {
+        suggestions.propertyType = value;
+        break;
+      }
+    }
+
+    // Status detection
+    if (term.includes('jual') || term.includes('dijual')) {
+      suggestions.status = 'dijual';
+    } else if (term.includes('sewa') || term.includes('disewa')) {
+      suggestions.status = 'disewakan';
+    }
+
+    // Landmark and location mapping (Indonesian landmarks and their cities)
+    const landmarkMap: { [key: string]: { province: string; regency?: string } } = {
+      // Yogyakarta landmarks
+      'ugm': { province: 'Yogyakarta', regency: 'Sleman' },
+      'universitas gadjah mada': { province: 'Yogyakarta', regency: 'Sleman' },
+      'ugm yogyakarta': { province: 'Yogyakarta', regency: 'Sleman' },
+      'ugm jogja': { province: 'Yogyakarta', regency: 'Sleman' },
+      'ugm sleman': { province: 'Yogyakarta', regency: 'Sleman' },
+      'universitas islam indonesia': { province: 'Yogyakarta', regency: 'Sleman' },
+      'uii': { province: 'Yogyakarta', regency: 'Sleman' },
+      'universitas negeri yogyakarta': { province: 'Yogyakarta', regency: 'Sleman' },
+      'uny': { province: 'Yogyakarta', regency: 'Sleman' },
+      'institut teknologi bandung': { province: 'Jawa Barat', regency: 'Bandung' },
+      'itb': { province: 'Jawa Barat', regency: 'Bandung' },
+      'universitas indonesia': { province: 'Jakarta', regency: 'Depok' },
+      'ui': { province: 'Jakarta', regency: 'Depok' },
+      'institut teknologi sepuluh nopember': { province: 'Jawa Timur', regency: 'Surabaya' },
+      'its': { province: 'Jawa Timur', regency: 'Surabaya' },
+      'universitas brawijaya': { province: 'Jawa Timur', regency: 'Malang' },
+      'ub': { province: 'Jawa Timur', regency: 'Malang' },
+      'universitas diponegoro': { province: 'Jawa Tengah', regency: 'Semarang' },
+      'undip': { province: 'Jawa Tengah', regency: 'Semarang' },
+
+      // Shopping centers and landmarks
+      'grand indonesia mall': { province: 'Jakarta', regency: 'Jakarta Pusat' },
+      'grand indonesia': { province: 'Jakarta', regency: 'Jakarta Pusat' },
+      'plaza indonesia': { province: 'Jakarta', regency: 'Jakarta Pusat' },
+      'trans studio mall': { province: 'Jawa Barat', regency: 'Bandung' },
+      'trans studio': { province: 'Jawa Barat', regency: 'Bandung' },
+      'ciputra mall': { province: 'Jawa Barat', regency: 'Bandung' },
+      'ciputra': { province: 'Jawa Barat', regency: 'Bandung' },
+      'malioboro': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+      'kraton yogyakarta': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+      'kraton jogja': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+      'tugu yogyakarta': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+      'tugu jogja': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+
+      // Transportation hubs
+      'stasiun yogyakarta': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+      'stasiun jogja': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+      'stasiun tugu': { province: 'Yogyakarta', regency: 'Yogyakarta' },
+      'bandara adisutjipto': { province: 'Yogyakarta', regency: 'Sleman' },
+      'bandara yogyakarta': { province: 'Yogyakarta', regency: 'Sleman' },
+      'bandara jogja': { province: 'Yogyakarta', regency: 'Sleman' },
+      'bandara soekarno hatta': { province: 'Jakarta', regency: 'Tangerang' },
+      'bandara cengkareng': { province: 'Jakarta', regency: 'Tangerang' },
+
+      // Districts and areas
+      'condong catur': { province: 'Yogyakarta', regency: 'Sleman' },
+      'seturan': { province: 'Yogyakarta', regency: 'Sleman' },
+      'depok': { province: 'Yogyakarta', regency: 'Sleman' },
+      'gamping': { province: 'Yogyakarta', regency: 'Sleman' },
+      'mlati': { province: 'Yogyakarta', regency: 'Sleman' },
+      'sleman': { province: 'Yogyakarta', regency: 'Sleman' },
+      'bantul': { province: 'Yogyakarta', regency: 'Bantul' },
+      'kulon progo': { province: 'Yogyakarta', regency: 'Kulon Progo' },
+      'gunung kidul': { province: 'Yogyakarta', regency: 'Gunung Kidul' }
+    };
+
+    // Check for landmarks first (more specific)
+    for (const [landmark, location] of Object.entries(landmarkMap)) {
+      if (term.includes(landmark) || landmark.includes(term)) {
+        suggestions.province = location.province;
+        if (location.regency) {
+          suggestions.regency = location.regency;
+        }
+        console.log(`🏛️ Landmark detected: "${landmark}" → ${location.province}${location.regency ? `, ${location.regency}` : ''}`);
+        break;
+      }
+    }
+
+    // Location detection (Indonesian cities/provinces) - fallback if no landmark found
+    if (!suggestions.province) {
+      const locations = [
+        'jakarta', 'bandung', 'surabaya', 'yogyakarta', 'jogja', 'semarang', 'medan', 'makassar',
+        'palembang', 'batam', 'pekanbaru', 'bali', 'lombok', 'jawa', 'sumatera', 'kalimantan'
+      ];
+
+      for (const location of locations) {
+        if (term.includes(location)) {
+          if (location.length > 3) { // Avoid false positives with short words
+            suggestions.province = location.charAt(0).toUpperCase() + location.slice(1);
+            // Special case for 'jogja' → 'Yogyakarta'
+            if (location === 'jogja') {
+              suggestions.province = 'Yogyakarta';
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // Contextual phrase detection (e.g., "dekat UGM", "sekitar ITB")
+    const contextualPatterns = [
+      /(dekat|sekitar|deket|sekitar)\s+(\w+)/i,
+      /(di\s+area|di\s+daerah)\s+(\w+)/i,
+      /(lokasi|area)\s+(\w+)/i
+    ];
+
+    for (const pattern of contextualPatterns) {
+      const match = term.match(pattern);
+      if (match && match[2]) {
+        const contextLocation = match[2].toLowerCase();
+        // Check if the contextual word is a known landmark
+        for (const [landmark, location] of Object.entries(landmarkMap)) {
+          if (landmark.includes(contextLocation) || contextLocation.includes(landmark.split(' ')[0])) {
+            suggestions.province = location.province;
+            if (location.regency) {
+              suggestions.regency = location.regency;
+            }
+            console.log(`📍 Contextual location detected: "${match[0]}" → ${location.province}${location.regency ? `, ${location.regency}` : ''}`);
+            break;
+          }
+        }
+        break;
+      }
+    }
+
+    // Price range detection
+    const pricePatterns = [
+      /(\d+(?:\.\d+)?)\s*juta/i,
+      /(\d+(?:\.\d+)?)\s*milyar/i,
+      /rp\s*(\d+(?:\.\d+)?(?:m|juta|milyar)?)/i,
+      /(\d+(?:\.\d+)?)\s*jt/i,
+      /(\d+(?:\.\d+)?)\s*m/i
+    ];
+
+    for (const pattern of pricePatterns) {
+      const match = term.match(pattern);
+      if (match) {
+        let price = parseFloat(match[1]);
+
+        // Convert to rupiah
+        if (match[0].includes('milyar') || match[0].includes('m ') || match[0].includes(' m')) {
+          price *= 1000000000; // Convert billion to rupiah
+        } else if (match[0].includes('juta') || match[0].includes('jt') || match[0].includes('m')) {
+          price *= 1000000; // Convert million to rupiah
+        }
+
+        // Set as minimum price, allow some flexibility
+        suggestions.minPrice = Math.max(0, price * 0.8); // 80% of stated price
+        suggestions.maxPrice = price * 1.5; // 150% of stated price
+        break;
+      }
+    }
+
+    return suggestions;
   };
 
-  const handleAdvancedFiltersChange = (filters: FilterValues) => {
-    setAdvancedFilters(filters);
-  };
+
 
   const toggleFavorite = (id: string) => {
-    const newFavorites = favorites.includes(id)
-      ? favorites.filter((fav) => fav !== id)
-      : [...favorites, id];
-    setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+    if (favorites.includes(id)) {
+      removeFavorite(id);
+    } else {
+      addFavorite(id);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Search Section - Moved above Hero - COMMENTED OUT TO AVOID DUPLICATION */}
-      {/*
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Cari Properti
-            </h2>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <SearchBar
-                onSearch={handleKeywordSearch}
-                placeholder="Cari properti..."
-                initialValue={keyword}
-                className="w-full sm:w-96"
-              />
-              <AdvancedFilters
-                onApplyFilters={handleAdvancedFiltersChange}
-                currentFilters={advancedFilters}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      */}
+      {/* SearchBar and AdvancedFilters are now hidden - using HeroSection only */}
 
       <HeroSection onSearch={handleSearch} />
 
@@ -330,9 +640,9 @@ export default function HomePage() {
         ) : allProperties.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-lg text-muted-foreground">
-              {keyword ? `Tidak ada properti yang sesuai dengan kata kunci "${keyword}"` : 'Tidak ada properti yang sesuai dengan filter Anda'}
+              {debouncedKeyword ? `Tidak ada properti yang sesuai dengan kata kunci "${debouncedKeyword}"` : 'Tidak ada properti yang sesuai dengan filter Anda'}
             </p>
-            {keyword && (
+            {debouncedKeyword && (
               <p className="text-sm text-muted-foreground mt-2">
                 Coba gunakan kata kunci yang berbeda atau kurangi filter lainnya
               </p>

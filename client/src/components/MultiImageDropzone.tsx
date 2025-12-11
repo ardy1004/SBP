@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
 import {
   DndContext,
@@ -79,6 +79,8 @@ function SortableImageItem({
             src={image.url}
             alt="Property"
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200&h=200&fit=crop';
             }}
@@ -130,12 +132,16 @@ export function MultiImageDropzone({
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
 
-  const sensors = useSensors(
+  // Memoize sensors to prevent unnecessary re-renders
+  const sensors = useMemo(() => useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  );
+  ), []);
+
+  // Memoize image list to prevent unnecessary re-renders
+  const memoizedImages = useMemo(() => images, [images]);
 
   useEffect(() => {
     // Initialize images from initialImages prop
@@ -614,9 +620,9 @@ export function MultiImageDropzone({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={images.map(img => img.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={memoizedImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {images.map((image, index) => (
+              {memoizedImages.map((image, index) => (
                 <SortableImageItem
                   key={image.id}
                   image={image}

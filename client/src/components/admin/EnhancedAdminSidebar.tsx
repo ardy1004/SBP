@@ -21,7 +21,8 @@ import {
   Shield,
   Bell,
   UserCheck,
-  Activity
+  Activity,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
@@ -56,6 +57,15 @@ export function EnhancedAdminSidebar() {
         { onClick: () => setLocation("/admin/properties/add"), label: "Add New", icon: Upload },
         { onClick: () => setLocation("/admin/properties/categories"), label: "Categories", icon: Database },
         { onClick: () => setLocation("/admin/properties/templates"), label: "Templates", icon: FileText },
+      ]
+    },
+    {
+      path: "/admin/blog",
+      label: "Blog",
+      icon: BookOpen,
+      children: [
+        { path: "/admin/blog", label: "All Posts", icon: FileText },
+        { onClick: () => setLocation("/admin/blog/editor"), label: "Add New", icon: Upload },
       ]
     },
     {

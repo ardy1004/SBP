@@ -4,12 +4,10 @@ import { Heart } from "lucide-react";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Property } from "@shared/types";
+import { usePropertyStore } from "@/store/propertyStore";
 
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { favorites, removeFavorite } = usePropertyStore();
 
   const { data: allProperties = [] } = useQuery<Property[]>({
     queryKey: ['/api/properties/newest'],
@@ -20,9 +18,7 @@ export default function FavoritesPage() {
   );
 
   const toggleFavorite = (id: string) => {
-    const newFavorites = favorites.filter((fav) => fav !== id);
-    setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+    removeFavorite(id);
   };
 
   return (

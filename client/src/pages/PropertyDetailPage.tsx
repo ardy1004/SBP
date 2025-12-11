@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import { parsePropertySlug } from "@/lib/utils";
 import type { Property } from "@shared/types";
+import { usePropertyStore } from "@/store/propertyStore";
 
 // Helper function to extract YouTube video ID from URL
 function getYouTubeVideoId(url: string): string {
@@ -91,10 +92,7 @@ export default function PropertyDetailPage() {
   propertyId = params.id || propertyId;
   console.log('🆔 Final propertyId used for query:', propertyId);
 
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { favorites, addFavorite, removeFavorite } = usePropertyStore();
 
   const { data: property, isLoading } = useQuery<Property>({
     queryKey: ['property-detail', propertyId],
@@ -234,11 +232,11 @@ export default function PropertyDetailPage() {
 
   const toggleFavorite = () => {
     if (!property) return;
-    const newFavorites = favorites.includes(property.id)
-      ? favorites.filter((fav) => fav !== property.id)
-      : [...favorites, property.id];
-    setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+    if (favorites.includes(property.id)) {
+      removeFavorite(property.id);
+    } else {
+      addFavorite(property.id);
+    }
   };
 
   const handleShare = async () => {
@@ -807,7 +805,7 @@ function RelatedPropertiesSection({ currentProperty }: { currentProperty: Proper
                     Properti Lain di {currentProperty.kabupaten}
                   </h3>
                   <a
-                    href={`/${currentProperty.kabupaten.toLowerCase()}`}
+                    href={`/dijual/${currentProperty.kabupaten.toLowerCase()}`}
                     className="text-primary hover:text-primary/80 text-sm font-medium"
                   >
                     Lihat Semua →
@@ -834,7 +832,7 @@ function RelatedPropertiesSection({ currentProperty }: { currentProperty: Proper
                     {currentProperty.jenisProperti.charAt(0).toUpperCase() + currentProperty.jenisProperti.slice(1)} Lainnya
                   </h3>
                   <a
-                    href={`/${currentProperty.jenisProperti.toLowerCase()}-dijual`}
+                    href={`/${currentProperty.jenisProperti}-dijual/${currentProperty.kabupaten.toLowerCase()}`}
                     className="text-primary hover:text-primary/80 text-sm font-medium"
                   >
                     Lihat Semua →
@@ -861,7 +859,7 @@ function RelatedPropertiesSection({ currentProperty }: { currentProperty: Proper
                     Properti Terbaru
                   </h3>
                   <a
-                    href="/portfolio"
+                    href="/"
                     className="text-primary hover:text-primary/80 text-sm font-medium"
                   >
                     Lihat Semua →

@@ -9,6 +9,7 @@ export function Navigation() {
 
   const navItems = [
     { path: "/", label: "Home" },
+    { path: "/blog", label: "Blog" },
     { path: "/about", label: "About Us" },
     { path: "/portfolio", label: "Portfolio Gallery" },
     { path: "/notaris", label: "Notaris" },

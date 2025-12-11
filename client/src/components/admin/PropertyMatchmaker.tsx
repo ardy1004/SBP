@@ -1,7 +1,7 @@
 // AI-Powered Property Matchmaker
 // Recommends properties based on user preferences and market analysis
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +51,14 @@ export function PropertyMatchmaker() {
   const [marketInsights, setMarketInsights] = useState<any>(null);
   const { toast } = useToast();
 
-  const handleFindMatches = async () => {
+  // Memoize recommendations to prevent unnecessary re-renders
+  const memoizedRecommendations = useMemo(() => recommendations, [recommendations]);
+
+  // Memoize market insights to prevent unnecessary re-renders
+  const memoizedMarketInsights = useMemo(() => marketInsights, [marketInsights]);
+
+  // Memoize the handleFindMatches function to prevent unnecessary re-creations
+  const handleFindMatches = useCallback(async () => {
     setIsAnalyzing(true);
     try {
       // Fetch properties from database
@@ -86,7 +93,7 @@ export function PropertyMatchmaker() {
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [preferences, toast]);
 
   const analyzeMarketData = (properties: any[]) => {
     const insights = {
@@ -406,7 +413,7 @@ export function PropertyMatchmaker() {
       </Card>
 
       {/* Market Insights */}
-      {marketInsights && (
+      {memoizedMarketInsights && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -419,7 +426,7 @@ export function PropertyMatchmaker() {
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <DollarSign className="h-8 w-8 text-blue-600 mx-auto mb-2" />
                 <div className="text-lg font-bold text-blue-600">
-                  {formatPrice(marketInsights.averagePrice.toString())}
+                  {formatPrice(memoizedMarketInsights.averagePrice.toString())}
                 </div>
                 <div className="text-sm text-muted-foreground">Harga Rata-rata</div>
               </div>
@@ -427,7 +434,7 @@ export function PropertyMatchmaker() {
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <MapPin className="h-8 w-8 text-green-600 mx-auto mb-2" />
                 <div className="text-lg font-bold text-green-600">
-                  {marketInsights.popularLocations[0] || 'N/A'}
+                  {memoizedMarketInsights.popularLocations[0] || 'N/A'}
                 </div>
                 <div className="text-sm text-muted-foreground">Lokasi Terpopuler</div>
               </div>
@@ -435,17 +442,17 @@ export function PropertyMatchmaker() {
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <Users className="h-8 w-8 text-purple-600 mx-auto mb-2" />
                 <div className="text-lg font-bold text-purple-600">
-                  {marketInsights.totalProperties}
+                  {memoizedMarketInsights.totalProperties}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Properti</div>
               </div>
             </div>
 
-            {marketInsights.marketTrends.length > 0 && (
+            {memoizedMarketInsights.marketTrends.length > 0 && (
               <div>
                 <h4 className="font-semibold mb-2">Market Trends:</h4>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  {marketInsights.marketTrends.map((trend: string, index: number) => (
+                  {memoizedMarketInsights.marketTrends.map((trend: string, index: number) => (
                     <li key={index}>{trend}</li>
                   ))}
                 </ul>
@@ -456,17 +463,17 @@ export function PropertyMatchmaker() {
       )}
 
       {/* Recommendations */}
-      {recommendations.length > 0 && (
+      {memoizedRecommendations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Rekomendasi Properti ({recommendations.length})</CardTitle>
+            <CardTitle>Rekomendasi Properti ({memoizedRecommendations.length})</CardTitle>
             <CardDescription>
               Properti yang paling cocok dengan preferensi Anda
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recommendations.map((property) => (
+              {memoizedRecommendations.map((property) => (
                 <div key={property.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
                     <div>

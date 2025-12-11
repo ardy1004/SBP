@@ -3,56 +3,26 @@ import { MapPin, Bed, Bath, Maximize, Heart, TrendingDown, Eye } from "lucide-re
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ResponsiveImage } from "@/components/ui/responsive-image";
-import { ImageVariants } from "@/lib/imageUtils";
-import { generatePropertySlug } from "@/lib/utils";
+import { OptimizedImage } from "@/components/ui/optimized-image";
+import { generateBlurPlaceholder } from "@/utils/imageOptimization";
+import { generatePropertySlug, formatPriceNew } from "@/lib/utils";
+import { usePropertyStore } from "@/store/propertyStore";
 import type { Property } from "@shared/types";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, memo } from "react";
 
 // Lazy load heavy components
 const ShareButtons = lazy(() => import("@/components/ShareButtons").then(module => ({ default: module.ShareButtons })));
 
 interface PropertyCardProps {
   property: Property;
-  onToggleFavorite?: (id: string) => void;
-  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void; // Kept for backward compatibility
+  isFavorite?: boolean; // Kept for backward compatibility
 }
 
-export function PropertyCard({ property, onToggleFavorite, isFavorite }: PropertyCardProps) {
-  const formatPrice = (price: string, isPerMeter: boolean = false) => {
-    const num = parseFloat(price);
-    let displayPrice = num;
-
-    if (isPerMeter) {
-      // For per meter pricing, show as "Rp 8.5jt/m²"
-      if (num >= 1000000000) {
-        const value = num / 1000000000;
-        const rounded = Math.round(value * 10) / 10;
-        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
-      } else if (num >= 1000000) {
-        const value = num / 1000000;
-        const rounded = Math.round(value * 10) / 10;
-        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}jt/m²`;
-      } else if (num >= 1000) {
-        const value = num / 1000;
-        const rounded = Math.round(value * 10) / 10;
-        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}rb/m²`;
-      }
-      return `Rp ${num.toLocaleString('id-ID')}/m²`;
-    } else {
-      // Regular pricing
-      if (num >= 1000000000) {
-        const value = num / 1000000000;
-        const rounded = Math.round(value * 10) / 10;
-        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
-      } else if (num >= 1000000) {
-        const value = num / 1000000;
-        const rounded = Math.round(value * 10) / 10;
-        return `Rp ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
-      }
-      return `Rp ${num.toLocaleString('id-ID')}`;
-    }
-  };
+const PropertyCardComponent = ({ property, onToggleFavorite, isFavorite }: PropertyCardProps) => {
+  // Use store for favorites management
+  const { toggleFavorite, isFavorite: isFavoriteFromStore } = usePropertyStore()
+  const isFav = isFavorite !== undefined ? isFavorite : isFavoriteFromStore(property.id)
 
   const getPropertyTypeLabel = (type: string) => {
     if (!type) return '🏠 Properti';
@@ -85,26 +55,9 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
     return getPropertyTypePlaceholder();
   };
 
-  const getImageVariants = (): ImageVariants | undefined => {
-    // Check if property has image variants (from Cloudflare Images)
-    const imageUrl = getPropertyImage();
-    if (imageUrl && imageUrl.includes('imagedelivery.net')) {
-      // Extract image ID from Cloudflare Images URL
-      const urlParts = imageUrl.split('/');
-      const imageId = urlParts[urlParts.length - 2]; // Get image ID before 'public'
-      const accountId = urlParts[3]; // Get account ID
-
-      if (imageId && accountId) {
-        return {
-          thumbnail: `https://imagedelivery.net/${accountId}/${imageId}/w=300,sharpen=1,format=auto`,
-          small: `https://imagedelivery.net/${accountId}/${imageId}/w=600,sharpen=1,format=auto`,
-          medium: `https://imagedelivery.net/${accountId}/${imageId}/w=800,sharpen=1,format=auto`,
-          large: `https://imagedelivery.net/${accountId}/${imageId}/w=1200,sharpen=1,format=auto`,
-          original: imageUrl
-        };
-      }
-    }
-    return undefined; // No variants available
+  const getBlurDataURL = () => {
+    // Generate a simple blur placeholder for the property type
+    return generateBlurPlaceholder(16, 12);
   };
 
   const getPropertyTypePlaceholder = () => {
@@ -168,17 +121,20 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
       <div onClick={() => window.location.href = slug} className="block cursor-pointer">
         {/* Image Container - Adjusted padding for mobile */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 p-1 sm:p-2">
-          <ResponsiveImage
+          <OptimizedImage
             src={getPropertyImage()}
-            variants={getImageVariants()}
             alt={getTitle()}
-            loading="lazy"
+            width={400}
+            height={300}
+            quality={80}
+            placeholder="blur"
+            blurDataURL={getBlurDataURL()}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
             className={`
               w-full h-full object-cover transition-all duration-500
               group-hover:scale-110 group-hover:brightness-110
               ${property.isSold ? 'opacity-50 grayscale' : ''}
             `}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
           />
 
           {/* Gradient Overlay */}
@@ -249,13 +205,18 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onToggleFavorite(property.id);
+                // Use store's toggleFavorite, fallback to prop for backward compatibility
+                if (onToggleFavorite) {
+                  onToggleFavorite(property.id);
+                } else {
+                  toggleFavorite(property.id);
+                }
               }}
               data-testid="button-favorite"
             >
               <Heart
                 className={`h-4 w-4 transition-colors duration-200 ${
-                  isFavorite ? 'fill-red-500 text-red-500' : 'text-white'
+                  isFav ? 'fill-red-500 text-red-500' : 'text-white'
                 }`}
               />
             </Button>
@@ -301,7 +262,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             <div className="flex items-center gap-1.5 sm:gap-2">
               <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
               <span className="text-xs sm:text-sm text-gray-500 line-through">
-                {formatPrice(property.priceOld, (property as any).hargaPerMeter)}
+                {formatPriceNew(property.priceOld, (property as any).hargaPerMeter)}
               </span>
             </div>
           )}
@@ -309,7 +270,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
             className="text-lg sm:text-xl font-bold text-gray-900"
             data-testid="text-price"
           >
-            {formatPrice(property.hargaProperti, (property as any).hargaPerMeter)}
+            {formatPriceNew(property.hargaProperti, (property as any).hargaPerMeter)}
           </p>
         </div>
 
@@ -387,4 +348,7 @@ export function PropertyCard({ property, onToggleFavorite, isFavorite }: Propert
       </div>
     </Card>
   );
-}
+};
+
+// Export with React.memo for performance optimization
+export const PropertyCard = memo(PropertyCardComponent);

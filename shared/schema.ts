@@ -81,6 +81,29 @@ export const analyticsEvents = pgTable("analytics_events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Articles table for blog functionality
+export const articles = pgTable("articles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  thumbnailUrl: text("thumbnail_url"),
+  status: text("status").default("draft").notNull(),
+  category: text("category"),
+  tags: text("tags").array(),
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  seoKeywords: text("seo_keywords"),
+  authorId: varchar("author_id"),
+  views: integer("views").default(0),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
   id: true,
@@ -108,6 +131,12 @@ export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents).om
   createdAt: true,
 }) as any;
 
+export const insertArticleSchema = createInsertSchema(articles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}) as any;
+
 // Types
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
@@ -123,6 +152,9 @@ export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
 
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
+
+export type Article = typeof articles.$inferSelect;
+export type InsertArticle = z.infer<typeof insertArticleSchema>;
 
 // Property types and statuses
 export const PROPERTY_TYPES = [
