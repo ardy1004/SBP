@@ -1,32 +1,27 @@
-# Ignore environment files
-*.env
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
 .env*
-!.env.example
 
-# Google Cloud credentials - NEVER commit these!
-*.json
-!package.json
-!tsconfig.json
-!vitest.config.ts
-!wrangler.toml
-!wrangler-worker.toml
-!lighthouserc.json
-!components.json
-!playwright.config.ts
-!vercel.json
+# vercel
+.vercel
 
-# Service account keys - DANGER: Never commit these!
-*service-account*.json
-*analytics*.json
-*firebase*.json
-*gcp*.json
-*google*.json
-
-node_modules
-dist
-uploads
-.DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
-.wrangler/
+# typescript
+*.tsbuildinfo
+next-env.d.ts
