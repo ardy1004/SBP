@@ -1,0 +1,16 @@
+import { SearchConsoleDashboard } from "@/components/admin/SearchConsoleDashboard";
+import { AdminSidebar } from "@/components/admin/layouts";
+
+export default function AdminSearchConsolePage() {
+  return (
+    <div className="flex h-screen">
+      <AdminSidebar />
+
+      <div className="flex-1 overflow-auto">
+        <div className="p-6 md:p-8">
+          <SearchConsoleDashboard />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,27 @@
+# Cloudflare Worker configuration - SECURE VERSION
+name = "sbp-upload-worker"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables (non-sensitive only)
+[vars]
+GA_PROPERTY_ID = "513948591"
+SEARCH_CONSOLE_SITE_URL = "https://salambumi.xyz"
+
+# Secrets will be set via wrangler secret put commands:
+# wrangler secret put SUPABASE_URL
+# wrangler secret put SUPABASE_ANON_KEY
+# wrangler secret put GEMINI_API_KEY
+# wrangler secret put GA_SERVICE_ACCOUNT_KEY
+# wrangler secret put SEARCH_CONSOLE_SERVICE_ACCOUNT_KEY
+# wrangler secret put PAGESPEED_API_KEY
+# wrangler secret put CF_IMAGES_TOKEN
+# wrangler secret put CF_ACCOUNT_ID
+# wrangler secret put META_CAPI_TOKEN
+
+# R2 Bucket binding for image storage
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "images"
+preview_bucket_name = "images"

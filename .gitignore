@@ -1,0 +1,32 @@
+# Ignore environment files
+*.env
+.env*
+!.env.example
+
+# Google Cloud credentials - NEVER commit these!
+*.json
+!package.json
+!tsconfig.json
+!vitest.config.ts
+!wrangler.toml
+!wrangler-worker.toml
+!lighthouserc.json
+!components.json
+!playwright.config.ts
+!vercel.json
+
+# Service account keys - DANGER: Never commit these!
+*service-account*.json
+*analytics*.json
+*firebase*.json
+*gcp*.json
+*google*.json
+
+node_modules
+dist
+uploads
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+.wrangler/
