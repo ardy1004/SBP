@@ -43,10 +43,9 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
 // Parse route: {propertyType}-dijual-{location}
 // Contoh: rumah-dijual-sleman → { propertyType: "rumah", location: "sleman" }
-function CategoryRoute({ params }: { params: { slug: string } }) {
-  const slug = params.slug || "";
-  const parts = slug.split("-dijual-");
-  
+function CategoryRoute({ slug }: { slug: string }) {
+  const parts = (slug || "").split("-dijual-");
+
   if (parts.length !== 2) {
     return <NotFound />;
   }
