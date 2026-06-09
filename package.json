@@ -1,0 +1,15 @@
+{
+  "name": "salam-bumi-root",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "pnpm -C artifacts/salam-bumi run build",
+    "build:frontend": "pnpm -C artifacts/salam-bumi run build",
+    "dev": "pnpm -C artifacts/salam-bumi run dev",
+    "dev:full": "wrangler pages dev --port 8787"
+  }
+}

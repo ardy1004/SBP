@@ -1,0 +1,603 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: properties
+    description: Property operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /properties:
+    get:
+      operationId: getProperties
+      tags: [properties]
+      summary: List properties
+      description: Get a list of properties with optional filters and pagination
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: purpose
+          in: query
+          description: Filter by purpose (Dijual, Disewakan, Dijual & Disewakan)
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by property type
+          required: false
+          schema:
+            type: string
+        - name: city
+          in: query
+          description: Filter by city
+          required: false
+          schema:
+            type: string
+        - name: district
+          in: query
+          description: Filter by district
+          required: false
+          schema:
+            type: string
+        - name: province
+          in: query
+          description: Filter by province
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search in title, listing_code, or address
+          required: false
+          schema:
+            type: string
+        - name: min_price
+          in: query
+          description: Minimum price offer
+          required: false
+          schema:
+            type: integer
+        - name: max_price
+          in: query
+          description: Maximum price offer
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Filter by status
+          required: false
+          schema:
+            type: string
+        - name: is_sold
+          in: query
+          description: Filter by sold status
+          required: false
+          schema:
+            type: string
+            enum: [true, false]
+      responses:
+        "200":
+          description: A paginated list of properties
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Property"
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      total_pages:
+                        type: integer
+    post:
+      operationId: createProperty
+      tags: [properties]
+      summary: Create a new property
+      description: Create a new property (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PropertyCreateInput"
+      responses:
+        "201":
+          description: Property created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  id:
+                    type: string
+                  slug:
+                    type: string
+                  listing_code:
+                    type: string
+                  message:
+                    type: string
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+  /properties/{slug}:
+    get:
+      operationId: getPropertyBySlug
+      tags: [properties]
+      summary: Get property by slug
+      description: Get a single property by its slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A single property
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Property"
+        "404":
+          description: Property not found
+        "500":
+          description: Internal server error
+    put:
+      operationId: updateProperty
+      tags: [properties]
+      summary: Update property
+      description: Update a property by its slug (admin only)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PropertyUpdateInput"
+      responses:
+        "200":
+          description: Property updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Property not found
+        "500":
+          description: Internal server error
+    delete:
+      operationId: deleteProperty
+      tags: [properties]
+      summary: Delete property
+      description: Delete a property by its slug (admin only)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Property deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "404":
+          description: Property not found
+        "500":
+          description: Internal server error
+  /properties/upload-image:
+    post:
+      operationId: uploadPropertyImage
+      tags: [properties]
+      summary: Upload property image
+      description: Upload an image for a property (admin only)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+              required:
+                - image
+      responses:
+        "200":
+          description: Image uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  url:
+                    type: string
+                  filename:
+                    type: string
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Property:
+      type: object
+      properties:
+        id:
+          type: string
+        listing_code:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        purpose:
+          type: string
+        property_type:
+          type: string
+        price_offer:
+          type: integer
+        price_rent:
+          type: integer
+        old_price:
+          type: integer
+        price_type:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        district:
+          type: string
+        village:
+          type: string
+        address:
+          type: string
+        google_maps_url:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        land_area:
+          type: integer
+        building_area:
+          type: integer
+        front_width:
+          type: integer
+        floors:
+          type: integer
+        bedrooms:
+          type: integer
+        bathrooms:
+          type: integer
+        legal_status:
+          type: string
+        ownership_status:
+          type: string
+        bank_name:
+          type: string
+        outstanding_amount:
+          type: integer
+        environmental_status:
+          type: string
+        distance_to_river:
+          type: integer
+        distance_to_grave:
+          type: integer
+        distance_to_powerline:
+          type: integer
+        road_width:
+          type: integer
+        description:
+          type: string
+        facilities:
+          type: string
+        selling_reason:
+          type: string
+        owner_name:
+          type: string
+        owner_whatsapp_1:
+          type: string
+        owner_whatsapp_2:
+          type: string
+        is_premium:
+          type: integer
+        is_featured:
+          type: integer
+        is_hot:
+          type: integer
+        is_sold:
+          type: integer
+        is_choice:
+          type: integer
+        views_count:
+          type: integer
+        status:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        primary_image:
+          type: string
+        image_count:
+          type: integer
+    PropertyCreateInput:
+      type: object
+      required:
+        - title
+        - purpose
+        - property_type
+        - city
+      properties:
+        title:
+          type: string
+        listing_code:
+          type: string
+        slug:
+          type: string
+        purpose:
+          type: string
+          enum: [Dijual, Disewakan, Dijual & Disewakan]
+        property_type:
+          type: string
+          enum: [Rumah, Tanah, Kost, Hotel, Homestay, Villa, Apartment, Gudang, Komersial Lainnya]
+        price_offer:
+          type: integer
+        price_rent:
+          type: integer
+        old_price:
+          type: integer
+        price_type:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        district:
+          type: string
+        village:
+          type: string
+        address:
+          type: string
+        google_maps_url:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        land_area:
+          type: integer
+        building_area:
+          type: integer
+        front_width:
+          type: integer
+        floors:
+          type: integer
+        bedrooms:
+          type: integer
+        bathrooms:
+          type: integer
+        legal_status:
+          type: string
+        ownership_status:
+          type: string
+        bank_name:
+          type: string
+        outstanding_amount:
+          type: integer
+        environmental_status:
+          type: string
+        distance_to_river:
+          type: integer
+        distance_to_grave:
+          type: integer
+        distance_to_powerline:
+          type: integer
+        road_width:
+          type: integer
+        description:
+          type: string
+        facilities:
+          type: string
+        selling_reason:
+          type: string
+        owner_name:
+          type: string
+        owner_whatsapp_1:
+          type: string
+        owner_whatsapp_2:
+          type: string
+        is_premium:
+          type: integer
+        is_featured:
+          type: integer
+        is_hot:
+          type: integer
+        is_choice:
+          type: integer
+        status:
+          type: string
+    PropertyUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+        listing_code:
+          type: string
+        slug:
+          type: string
+        purpose:
+          type: string
+          enum: [Dijual, Disewakan, Dijual & Disewakan]
+        property_type:
+          type: string
+          enum: [Rumah, Tanah, Kost, Hotel, Homestay, Villa, Apartment, Gudang, Komersial Lainnya]
+        price_offer:
+          type: integer
+        price_rent:
+          type: integer
+        old_price:
+          type: integer
+        price_type:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        district:
+          type: string
+        village:
+          type: string
+        address:
+          type: string
+        google_maps_url:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        land_area:
+          type: integer
+        building_area:
+          type: integer
+        front_width:
+          type: integer
+        floors:
+          type: integer
+        bedrooms:
+          type: integer
+        bathrooms:
+          type: integer
+        legal_status:
+          type: string
+        ownership_status:
+          type: string
+        bank_name:
+          type: string
+        outstanding_amount:
+          type: integer
+        environmental_status:
+          type: string
+        distance_to_river:
+          type: integer
+        distance_to_grave:
+          type: integer
+        distance_to_powerline:
+          type: integer
+        road_width:
+          type: integer
+        description:
+          type: string
+        facilities:
+          type: string
+        selling_reason:
+          type: string
+        owner_name:
+          type: string
+        owner_whatsapp_1:
+          type: string
+        owner_whatsapp_2:
+          type: string
+        is_premium:
+          type: integer
+        is_featured:
+          type: integer
+        is_hot:
+          type: integer
+        is_sold:
+          type: integer
+        is_choice:
+          type: integer
+        status:
+          type: string

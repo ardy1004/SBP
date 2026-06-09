@@ -1,0 +1,10 @@
+packages:
+  "framer-motion": "For polished scroll reveals and micro-interactions"
+  "lucide-react": "For UI icons across the application"
+
+images: []
+
+notes:
+  - "The app uses a strict static frontend design. All data is mocked in src/data/properties.ts."
+  - "Swiper.js is utilized for the featured property carousel."
+  - "Design follows a corporate Real Estate theme with Navy (#1E3A8A) and Gold (#F59E0B) accents."

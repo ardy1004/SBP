@@ -1,0 +1,92 @@
+INSERT OR REPLACE INTO properties (
+  id, listing_code, title, slug, purpose, property_type,
+  price_offer, price_rent, old_price, price_type,
+  province, city, district, village, address,
+  google_maps_url, latitude, longitude,
+  land_area, building_area, front_width, floors, bedrooms, bathrooms,
+  legal_status, ownership_status, bank_name, outstanding_amount,
+  environmental_status, distance_to_river, distance_to_grave, distance_to_powerline, road_width,
+  description, facilities, selling_reason,
+  owner_name, owner_whatsapp_1, owner_whatsapp_2,
+  is_premium, is_featured, is_hot, is_choice,
+  views_count, leads_count, status, created_at, updated_at
+) VALUES (
+  '1',
+  'R1.100',
+  'Rumah Cantik Minimalis di Perum Pakuncen - 15 Menit ke Malioboro dan Alun-Alun',
+  'rumah-cantik-minimalis-di-perum-pakuncen-15-menit-ke-malioboro-dan-alun-alun-r1.100',
+  'Dijual', 'rumah',
+  1350000000, 0, NULL, 'Nego',
+  'DI Yogyakarta', 'Sleman', NULL, NULL, NULL,
+  NULL, NULL, NULL,
+  71, 65, NULL, 1, 3, 2,
+  'SHM & IMB/PBG Lengkap', 'On Hand', NULL, NULL,
+  'Ya Jauh', NULL, NULL, NULL, NULL,
+  'Rumah Cantik Minimalis di Perum Pakuncen! Terletak hanya 15 menit dari pusat kota Malioboro dan Alun-Alun. Dapatkan kesempatan langka untuk memiliki rumah minimalis yang menawan di Perum Pakuncen! Dengan harga Rp 1.350.000.000 (nego), Anda akan memiliki hunian yang siap huni. Spesifikasi: Luas Tanah 71 m², Luas Bangunan 65 m², 3 Kamar Tidur, 2 Kamar Mandi, Carport tersedia. Legalitas: HGB (dapat ditingkatkan ke SHM) & IMB.',
+  NULL, NULL,
+  NULL, NULL, NULL,
+  0, 0, 0, 0,
+  0, 0, 'active', datetime('now'), datetime('now')
+);
+
+INSERT OR REPLACE INTO properties (
+  id, listing_code, title, slug, purpose, property_type,
+  price_offer, price_rent, old_price, price_type,
+  province, city, district, village, address,
+  google_maps_url, latitude, longitude,
+  land_area, building_area, front_width, floors, bedrooms, bathrooms,
+  legal_status, ownership_status, bank_name, outstanding_amount,
+  environmental_status, distance_to_river, distance_to_grave, distance_to_powerline, road_width,
+  description, facilities, selling_reason,
+  owner_name, owner_whatsapp_1, owner_whatsapp_2,
+  is_premium, is_featured, is_hot, is_choice,
+  views_count, leads_count, status, created_at, updated_at
+) VALUES (
+  '2',
+  'KST.200',
+  'Kost Elit Dekat UGM - Fully Furnished',
+  'kost-elit-dekat-ugm-kst.200',
+  'Disewakan', 'kost',
+  2500000, 0, NULL, 'Nett',
+  'DI Yogyakarta', 'Sleman', 'Condongcatur', NULL, 'Jl. Condongcatur No. 123',
+  NULL, -7.7715, 110.3795,
+  200, 150, NULL, 3, 1, 1,
+  'HGB', 'On Hand', NULL, NULL,
+  'Ya Jauh', NULL, NULL, NULL, NULL,
+  'Kost elit dekat UGM. Fully furnished, include AC dan water heater. Cocok untuk mahasiswa dan professional.',
+  '["AC", "Water Heater", "WiFi", "Security"]', NULL,
+  'Pak Budi', '08123456789', NULL,
+  1, 1, 0, 1,
+  150, 20, 'active', datetime('now'), datetime('now')
+);
+
+INSERT OR REPLACE INTO properties (
+  id, listing_code, title, slug, purpose, property_type,
+  price_offer, price_rent, old_price, price_type,
+  province, city, district, village, address,
+  google_maps_url, latitude, longitude,
+  land_area, building_area, front_width, floors, bedrooms, bathrooms,
+  legal_status, ownership_status, bank_name, outstanding_amount,
+  environmental_status, distance_to_river, distance_to_grave, distance_to_powerline, road_width,
+  description, facilities, selling_reason,
+  owner_name, owner_whatsapp_1, owner_whatsapp_2,
+  is_premium, is_featured, is_hot, is_choice,
+  views_count, leads_count, status, created_at, updated_at
+) VALUES (
+  '3',
+  'TNH.300',
+  'Tanah di Bukit Dieng dengan View Gunung',
+  'tanah-di-bukit-dieng-tnh.300',
+  'Dijual', 'tanah',
+  850000000, 0, NULL, 'Nett',
+  'DI Yogyakarta', 'Wonosari', NULL, 'Tirtomulyo', NULL,
+  NULL, NULL, NULL,
+  600, 0, NULL, 1, 0, 0,
+  'SHM', 'On Hand', NULL, NULL,
+  'Ya Dekat', 2000, 500, NULL, 5,
+  'Tanah抬眼 Bukit Dieng dengan view gunung yang indah. Cocok untuk pembangunan vila atau hunian. Akses jalan lebat 5 meter.',
+  NULL, 'Investasi jangka panjang',
+  'Ibu Siti', '08987654321', NULL,
+  0, 0, 1, 0,
+  80, 5, 'active', datetime('now'), datetime('now')
+);

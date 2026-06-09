@@ -1,0 +1,120 @@
+{
+  "video_metadata": {
+    "title": "Kost Ekslusif Baru 10+1 Kamar di Jl Garuda - Investasi Properti Terbaik 2024!",
+    "niche": "real_estate",
+    "platform_primary": "tiktok",
+    "platform_all": [
+      "tiktok"
+    ],
+    "ai_video_tool": "veo3",
+    "total_scenes": 2,
+    "total_duration_seconds": 16,
+    "ratio": "9:16",
+    "language": "id",
+    "viral_elements_used": [
+      "pattern interrupt",
+      "curiosity gap",
+      "social proof",
+      "emotional trigger",
+      "micro-hooks"
+    ],
+    "viral_score_estimate": "78/100 - Kombinasi pattern interrupt visual, social proof numerik, dan emotional trigger joy dengan eksekusi konsisten",
+    "hook_type": "auto",
+    "cta_type": "auto",
+    "cta_keyword": null
+  },
+  "global_style": {
+    "visual_style": "Modern Real Estate Tour",
+    "cinematography_detail": "Dynamic camera movements dengan transitional wipes antar scene",
+    "color_palette_dominant": [
+      "#F5F5F5",
+      "#2D2D",
+      "#C0B8B8"
+    ],
+    "color_palette_accent": [
+      "#E31E24"
+    ],
+    "lighting_style": "Natural daylight dengan soft fill light",
+    "camera_style_global": "Smooth dolly movements dengan occasional Dutch angles",
+    "music_direction": "Upbeat pop track (110 BPM) dengan build-up energik",
+    "sfx_palette": "Whoosh transitions + subtle cash register SFX",
+    "overall_emotional_arc": "Hook: Curiosity → Body: Trust Building → CTA: Urgency",
+    "subtitle_style": "Bold sans-serif dengan stroke hitam",
+    "font_overlay_style": "Modern geometric typeface dengan animasi slide-in"
+  },
+  "character_sheet": {
+    "used": true,
+    "description": "21-year-old Southeast Asian female, Kasual Modern style, cantik elegant dengan pakaian baju warna hitam ber kerah, excited and joyful expression",
+    "visual_anchor_note": null,
+    "consistency_note": "EDITOR: Setiap ai_ready_prompt di semua scene WAJIB dimulai dengan character_sheet.description yang SAMA PERSIS kata per kata."
+  },
+  "scenes": [
+    {
+      "scene_number": 1,
+      "scene_type": "hook",
+      "duration_seconds": 8,
+      "max_words": 26,
+      "speech_pace": "normal",
+      "script_narration": "Mau punya properti penghasil passive income? Kost eksklusif baru 10+1 kamar di lokasi strategis! Full furnish, SHM IMB lengkap. Harga 2.95M nego!",
+      "script_subtitle": null,
+      "script_word_count": 25,
+      "script_fit_confirmation": "25 kata, muat 8 detik pace normal",
+      "visual_description": "Karakter berjalan cepat ke kamar kost sambil tunjuk fasilitas",
+      "camera_direction": "Tracking shot mengikuti karakter dari belakang",
+      "character_action": "Berjalan energik sambil menunjuk fasilitas kamar",
+      "character_expression": "Excited dengan senyum lebar",
+      "text_overlay": "none",
+      "sound_design": "Musik upbeat + SFX kaki berjalan cepat",
+      "transition_to_next": "Whip pan ke kiri",
+      "viral_element_in_scene": "Pattern interrupt (gerakan kamera dinamis 0-2 detik) + social proof (10+ kamar)",
+      "cliffhanger_to_next": "Tunjukkan fasilitas lengkap",
+      "ai_ready_prompt": "21-year-old Southeast Asian female, Kasual Modern style, cantik elegant dengan pakaian baju warna hitam ber kerah, excited and joyful expression — walking energetically while pointing to room facilities. Tracking shot following from behind. This scene MUST visually reference the uploaded property/product photo. Match the exact building facade, color scheme, architectural details, and surroundings from the reference image. Do not invent generic environments. Bright natural lighting. Confident and enthusiastic mood. 8s, 9:16 vertical frame"
+    },
+    {
+      "scene_number": 2,
+      "scene_type": "cta",
+      "duration_seconds": 8,
+      "max_words": 26,
+      "speech_pace": "normal",
+      "script_narration": "Hanya 2.95M nego! Kost eksklusif 10+1 kamar siap huni. Lokasi strategis di Jl Garuda. SHM IMB lengkap. Hubungi sekarang sebelum kehabisan!",
+      "script_subtitle": null,
+      "script_word_count": 26,
+      "script_fit_confirmation": "26 kata, muat 8 detik pace normal",
+      "visual_description": "Karakter berdiri di depan bangunan kost sambil pegang kunci",
+      "camera_direction": "Low angle dolly zoom menampilkan bangunan utuh",
+      "character_action": "Memegang kunci besar sambil melambaikan tangan",
+      "character_expression": "Bersemangat dengan gesture tangan terbuka",
+      "text_overlay": "none",
+      "sound_design": "Musik climax + SFX kunci gemerincing",
+      "transition_to_next": "Hard cut dengan SFX 'cha-ching'",
+      "viral_element_in_scene": "Scarcity (harga) + authority (SHM IMB)",
+      "cliffhanger_to_next": "none",
+      "ai_ready_prompt": "21-year-old Southeast Asian female, Kasual Modern style, cantik elegant dengan pakaian baju warna hitam ber kerah, excited and joyful expression — standing proudly holding giant key in front of building. Low angle dolly zoom showing full property. This scene MUST visually reference the uploaded property/product photo. Match the exact building facade, color scheme, architectural details, and surroundings from the reference image. Do not invent generic environments. Golden hour lighting. Triumphant mood. 8s, 9:16 vertical frame"
+    }
+  ],
+  "production_notes": {
+    "lipsync_summary": "Pace sedang dengan penekanan di kata kunci: 'passive income', '2.95M nego'",
+    "editing_sequence": "Scene 1: Tour kamar → Transition whip pan → Scene 2: Tampak bangunan",
+    "color_grade_lut": "Teal & Orange LUT untuk kesan profesional",
+    "thumbnail_concept": "Karakter tersenyum memegang kunci besar di depan kost dengan text '2.95M NEGO!'",
+    "caption_first_line": "BISA NEGO! Kost Ekslusif Baru 10+1 Kamar Full Furnish ⚡",
+    "hashtag_strategy": {
+      "primary": [
+        "#KostMurah",
+        "#InvestasiProperti",
+        "#KostEksklusif"
+      ],
+      "secondary": [
+        "#JogjaProperti",
+        "#KostStrategis"
+      ],
+      "niche": [
+        "#KostDiJogja",
+        "#SewaKost",
+        "#InvestasiMudah"
+      ]
+    },
+    "posting_time_suggestion": "19.00-21.00 WIB (prime time TikTok)",
+    "ab_test_suggestion": "Variasi hook: 'Passive Income 10 Juta/Bulan?' vs 'Bisa Nego 500 Juta?'"
+  }
+}

@@ -1,0 +1,361 @@
+[
+  {
+    "results": [
+      {
+        "id": "296676e5-ab4b-4f92-b3db-91e9590388c6",
+        "listing_code": "R4.05",
+        "title": "Rumah Mewah dengan Kolam Renang Pribadi di Jl. Palagan km 12 - Harga Turun!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "446d8b9b-e362-4525-9adf-91d25609246f",
+        "listing_code": "R2.61",
+        "title": "Rumah Mewah Furnished Strategis di Jalan Kaliurang KM 13,5 - Ideal untuk Kost atau Tempat Tinggal!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      },
+      {
+        "id": "5c2a5b7a-0479-4af4-a15a-7adff231a88c",
+        "listing_code": "R5.10",
+        "title": "Rumah Mewah Siap Huni di Kawasan Elit Baciro Baru, Yogyakarta!",
+        "is_choice": 1,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "5ca9e065-e839-4e34-8780-b32e7d0f0025",
+        "listing_code": "R10.14",
+        "title": "Rumah Heritage Eksklusif Ex Sultan HB VII - Investasi Budaya di Yogyakarta!",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "1fb0efe4-8530-4782-8897-07a53dccc3e9",
+        "listing_code": "R6.07",
+        "title": "Rumah Mewah Perum Jogja Regency Fullfurnish dalam Ringroad",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "ca768941-a33a-411e-a5da-b8d65fbe7adc",
+        "listing_code": "R4.25",
+        "title": "Rumah Mewah di Bale Mulia Residence - Penawaran Spesial! Harga Turun dari 4,5M menjadi 4,2M!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "2eda27b7-604e-45b8-84c4-ea1148e8d278",
+        "listing_code": "R4.18",
+        "title": "Joglo Etnik Modern Maguwoharjo: Hunian Strategis dengan Suasana Pedesaan",
+        "is_choice": 1,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "08505a1f-ea01-47d6-bd24-e2110b456efa",
+        "listing_code": "R8.01",
+        "title": "Rumah Mewah 3 Lantai di Jl Godean Jogja  Full Furnished, Kolam Renang, Lift, Siap Huni! Harga 8.4 M",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "d2d96939-b1f2-463f-b084-d22015bd6f58",
+        "listing_code": "T53",
+        "title": "Tanah Premium 431 m? di Seturan, Dekat UPN ? Investasi Kost Eksklusif yang Menguntungkan!",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "83befa07-07e1-4de3-8e3b-dcf1200c6852",
+        "listing_code": "R5.01",
+        "title": "Rumah Mewah Spek Premium di Perumahan Elite Taman Palagan Asri Utara Hyatt Hotel, Dekat UGM dan RS Sardjito",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "2ecd203f-d557-452c-be31-5bf581a3c2a5",
+        "listing_code": "R2.38",
+        "title": "Rumah Cantik 2 Lantai di Perumahan Strategis Dekat UPN dan Ambarukmo Plaza",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "1b2b2373-846b-4a43-81e6-3c2aae74c2ba",
+        "listing_code": "K2.22",
+        "title": "Kost dan Toko di Papringan, Dekat Sanata Dharma, Gejayan, dan UIN Yogyakarta ? 11 Kamar Full Furnished",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "ede92476-211c-4681-b9a9-2dbe655d0fcc",
+        "listing_code": "K10.02",
+        "title": "Dijual Cepat Kost Exclusive 22 Kamar, Luas 1222m2, Dekat UGM ? Potensi Investasi Tinggi!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "d86406b1-491e-4928-9e07-966b32c16253",
+        "listing_code": "K8.05",
+        "title": "Rumah Induk + 23 Kost Exclusive Jl Kaliurang KM 12,5 Dekat UII",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "d5a88762-15d9-4598-bca7-b026746b178b",
+        "listing_code": "R4.21",
+        "title": "Rumah Cantik Etnik Dekat Keraton Jogja, Malioboro, dan Namburan Lor - Kesempatan Langka!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "9846f180-a444-41b6-b255-093defa4599e",
+        "listing_code": "T56",
+        "title": "Bangunan Hitung Tanah SHMP 162m2 Dekat Pakuwon Mall Dalam Ringroad",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      },
+      {
+        "id": "91004d0a-6f20-428c-b429-84153d7ba56c",
+        "listing_code": "R3.27",
+        "title": "Rumah Mewah Perum Elite Greenhills Residence Utara UGM",
+        "is_choice": 1,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      },
+      {
+        "id": "6f06fda1-3a40-455f-9dbd-c20a24ed5e2a",
+        "listing_code": "K10.24",
+        "title": "Kost Exclusive Pogung Dekat UGM 30 Kamar",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "e5ec1094-9937-4a18-a33b-e73eb4fd89cc",
+        "listing_code": "R1.96",
+        "title": "Rumah Cantik Minimalis Full Furnish di Jl. Palagan Km 7 Barat Hyatt, Dekat UGM, Jongke",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "8e516b46-7cd7-4e8b-8e8d-c832326fb201",
+        "listing_code": "H12",
+        "title": "Hotel Bintang 2+ Strategis di Pusat Kota Jogja Dekat Balaikota dan Malioboro",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "89c1cdf6-4fad-4f61-b10e-18e203bce88c",
+        "listing_code": "R2.60",
+        "title": "Rumah Mewah di Perumahan Green Hills, Ngaglik, Sleman - Dekat Segala Akses!",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "d7348688-a27f-4d85-b8c1-2de97aacb4ce",
+        "listing_code": "K3.32",
+        "title": "Rumah Induk + 13 Kost Exclusive FullyFurnished, FullyOccupied dekat UGM",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "8d03c265-ee88-4761-bca2-d8e602e6f916",
+        "listing_code": "R1.103",
+        "title": "Dijual Rumah Cantik Ala Villa Fully Furnished Dekat Jogja Bay, Maguwoharjo - Kesempatan Emas!",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "a8763a7e-26b0-4f37-9602-f1adb8a9b404",
+        "listing_code": "R2.58",
+        "title": "Rumah Cantik Istimewa di Condongcatur - Dekat FE UII, Fully Furnished!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "d9c41bbf-8724-4e68-8fe1-3324aa21c353",
+        "listing_code": "SBP-MLZYWXW5-KWJU",
+        "title": "Hotel Budget Bonus Ruang Usaha Pinggir Jalan Utama Barat Tugu Jogja Dalam Ringroad",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 1
+      },
+      {
+        "id": "c8a075cf-a464-4895-8ffd-607026447792",
+        "listing_code": "R1.85",
+        "title": "Rumah Cantik Minimalis 2 Lantai Dekat UGM di Jl. Palagan Km 7",
+        "is_choice": 1,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "93eebdcd-4d82-4fc6-a377-1d5f4c901539",
+        "listing_code": "K5.02",
+        "title": "Rumah Induk+13 Homestay Strategis di Condongcatur - Dekat POLDA DIY & Hartono Mall",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "d0e1fc49-75ff-493b-be5e-33658def4a64",
+        "listing_code": "R4.03",
+        "title": "Penurunan Harga Menarik! Rumah Perumahan Elite Casagrande Dekat UPN",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "5793a1ae-3376-4cf4-ac1c-242f65d0ef7b",
+        "listing_code": "K3.18",
+        "title": "Kost Exclusive 12 Kamar 12 Kamar Mandi Fully Furnished Dekat UPN Seturan - Investasi Cerdas di Yogyakarta!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      },
+      {
+        "id": "669a63fc-855c-4864-882e-18575314941a",
+        "listing_code": "K7.05",
+        "title": "Dijual Kost Eksklusif 22 Kamar + Rumah Induk di Jalan Damai Palagan KM 8",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "8cb40bef-c6f9-46c7-bbf2-9a803e65fad7",
+        "listing_code": "SBP-MLZYLD17-4WXU",
+        "title": "Kost Putri Aktif 9 Kamar Tanah Luas Full Perabot Jl Kaliurang KM 14 Dekat UII",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      },
+      {
+        "id": "3dd04028-4613-4886-adc8-fe82d2c9b367",
+        "listing_code": "H19",
+        "title": "Boutique Hotel Link Premium Dekat Malioboro Jogja Kota",
+        "is_choice": 1,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "3517119b-510e-40f9-98eb-60af823520cc",
+        "listing_code": "K9.02",
+        "title": "??Kost UGM ROI 20%! FULL Furnished 16 Kamar Cuma 6.5M! BURUAN! ??",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      },
+      {
+        "id": "b404e125-cdd8-4e97-8dcd-2eb1ce493a13",
+        "listing_code": "R4.26",
+        "title": "Rumah Mewah di Taman Palagan Asri - Dekat UGM! Kesempatan Emas!",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "0b8c4e61-a9b2-4673-b922-516f0785bd6a",
+        "listing_code": "R4.27",
+        "title": "Rumah Mewah di Perum Elite Palagan Asri - Dekat UGM! Kesempatan Emas!",
+        "is_choice": 1,
+        "is_premium": 1,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "6a37fb79-312d-4b1b-93cd-f1a31b0af34d",
+        "listing_code": "R1.70",
+        "title": "Rumah Cantik Minimalis di Perum Maguwo, Tajem - Dekat Jogja Bay",
+        "is_choice": 1,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 0
+      },
+      {
+        "id": "30330cb1-f60f-4015-a1df-8e9be8fb24cb",
+        "listing_code": "SBP-MM2X2JNU-OQR5",
+        "title": "Tanah Luas Bonus Rumah Imogiri Timur",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      },
+      {
+        "id": "c8e9c5ab-ada8-4de1-a511-e236520c7718",
+        "listing_code": "K1.02",
+        "title": "Dijual Cepat! Kost 9 Kamar Strategis Dekat UGM, Peluang Investasi Emas!",
+        "is_choice": 1,
+        "is_premium": 0,
+        "is_featured": 1,
+        "is_hot": 0
+      },
+      {
+        "id": "992fc283-634a-490f-8b97-9ea72578a748",
+        "listing_code": "K5.07",
+        "title": "Kost Eksklusif 16 Kamar + Ruang Usaha di Jl. Aspal Lebar Dekat Ambarukmo Plaza",
+        "is_choice": 0,
+        "is_premium": 0,
+        "is_featured": 0,
+        "is_hot": 1
+      }
+    ],
+    "success": true,
+    "meta": {
+      "duration": 2
+    }
+  }
+]

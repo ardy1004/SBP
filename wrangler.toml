@@ -1,0 +1,16 @@
+name = "sbp-dfg"
+compatibility_date = "2025-03-01"
+pages_build_output_dir = "artifacts/salam-bumi/dist/public"
+
+# D1 Database binding untuk production
+# Cloudflare Pages akan merge ini dengan dashboard settings
+[[d1_databases]]
+binding = "DB"
+database_name = "salambumi-property-db"
+database_id = "b18256d7-e4b8-4bc9-addc-31ad230898ce"
+preview_database_id = "DB"
+
+# R2 Bucket binding
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "images"

@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "workspaces": ["artifacts/*"],
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build:frontend": "pnpm -C artifacts/salam-bumi run build"
+  }
+}
