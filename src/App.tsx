@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, useParams, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -44,17 +44,15 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
 // Parse route: {propertyType}-dijual-{location}
 // Contoh: rumah-dijual-sleman → { propertyType: "rumah", location: "sleman" }
-function CategoryRoute({ slug }: { slug: string }) {
+function CategoryRoute() {
+  const { slug } = useParams();
   const parts = (slug || "").split("-dijual-");
 
   if (parts.length !== 2) {
     return <NotFound />;
   }
 
-  const propertyType = parts[0];
-  const location = parts[1];
-
-  return <CategoryPage propertyType={propertyType} location={location} />;
+  return <CategoryPage propertyType={parts[0]} location={parts[1]} />;
 }
 
 function Router() {
