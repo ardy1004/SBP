@@ -80,12 +80,17 @@ export function CategoryPage({ propertyType, location = "yogyakarta" }: Category
     const fetchProperties = async () => {
       setLoading(true);
       try {
-        const result = await propertiesApi.getAll({
+        const params: Record<string, string | number> = {
           limit: ITEMS_PER_PAGE,
           page,
-          type: typeLabel,
-          search: locationLabel,
-        });
+          type: propertyType.toLowerCase(),
+          purpose: "Dijual",
+          is_sold: "false",
+        };
+
+        params.location = locationLabel;
+
+        const result = await propertiesApi.getAll(params as any);
 
         if (result.success && result.data && result.data.length > 0) {
           setProperties(result.data.map(apiToCardProperty));
