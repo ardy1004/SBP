@@ -88,7 +88,10 @@ export function CategoryPage({ propertyType, location = "yogyakarta" }: Category
           is_sold: "false",
         };
 
-        params.location = locationLabel;
+        // Only apply location filter for specific sub-locations (not generic "yogyakarta")
+        if (location.toLowerCase() !== "yogyakarta") {
+          params.location = locationLabel;
+        }
 
         const result = await propertiesApi.getAll(params as any);
 
