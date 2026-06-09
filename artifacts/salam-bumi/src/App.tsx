@@ -84,7 +84,7 @@ function Router() {
       <Route path="/admin" component={() => <Redirect to="/admin/dashboard" />} />
 
       {/* Programmatic SEO Pages: {propertyType}-dijual-{location} */}
-      <Route path="/:slug{.*-dijual-.*}" component={CategoryRoute} />
+      <Route path="/:slug" component={CategoryRoute} />
 
       <Route component={NotFound} />
     </Switch>
